@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "ScaleLog",
+    "slug": "scalelog",
+    "version": "1.0.0",
+    "icon": "./assets/scalelog-app-icon.png",
+    "orientation": "portrait",
+    "scheme": "scalelog",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/scalelog-app-icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      ["expo-audio", { "microphonePermission": false }]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
