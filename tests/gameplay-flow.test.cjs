@@ -199,8 +199,25 @@ test('failed runs retain read-only access to completed scenarios and their recor
   assert.doesNotMatch(markup, /REDIRECT/);
   assert.match(markup, /Your recorded decision/);
   assert.equal(decks[0].completed, true);
+  assert.equal(decks[0].loggedChoiceId, store.getState().history[0].choiceId);
   button('Review this outcome').onPress();
   assert.deepEqual(navigation.at(-1), ['push', { pathname: '/outcome', params: { levelId: allLevels[0].id } }]);
+});
+
+test('reviewing an older decision passes its saved choice to the option picker, including legacy saves', () => {
+  chooseRecommended(0);
+  const recorded = store.getState().history[0];
+  chooseRecommended(1);
+  params = { levelId: recorded.levelId };
+  render(Gameplay);
+  assert.equal(decks[0].completed, true);
+  assert.equal(decks[0].loggedChoiceId, recorded.choiceId);
+  assert.notEqual(decks[0].loggedChoiceId, store.getState().lastOutcome.choiceId);
+
+  store.setState({ history: [] });
+  render(Gameplay);
+  assert.equal(decks[0].completed, true);
+  assert.equal(decks[0].loggedChoiceId, recorded.choiceId);
 });
 
 test('historical debrief survives removal of its source choice and returns to the map', () => {

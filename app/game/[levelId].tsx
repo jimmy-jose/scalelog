@@ -92,6 +92,7 @@ export default function GameplayScreen() {
           company={companyAtStart}
           playerName={playerName}
           completed={isCompleted}
+          loggedChoiceId={recordedOutcome?.choiceId ?? progress.selectedChoices[level.id]}
           onChoose={(choice) => {
             if (!isCompleted && companyAtStart.cash >= choice.cost) {
               gameFeedback.trigger("choiceSelected");

@@ -23,20 +23,24 @@ interface DecisionDeckProps {
   company: CampaignCompanyState;
   playerName: string;
   completed: boolean;
+  loggedChoiceId?: string;
   onChoose: (choice: Choice) => void;
 }
 
-export function DecisionDeck({ choices, xpReward, company, playerName, completed, onChoose }: DecisionDeckProps) {
+export function DecisionDeck({ choices, xpReward, company, playerName, completed, loggedChoiceId, onChoose }: DecisionDeckProps) {
   const { width } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
   const [orderedChoices, setOrderedChoices] = useState<Choice[] | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   useEffect(() => {
-    setOrderedChoices(shuffleChoices(choices));
-    setSelectedIndex(0);
-  }, [choices]);
+    const ordered = shuffleChoices(choices);
+    setOrderedChoices(ordered);
+    setSelectedIndex(completed ? Math.max(0, ordered.findIndex((choice) => choice.id === loggedChoiceId)) : 0);
+  }, [choices, completed, loggedChoiceId]);
   const selected = orderedChoices?.[selectedIndex];
   if (!orderedChoices || !selected) return null;
+  const loggedChoice = completed ? choices.find((choice) => choice.id === loggedChoiceId) : undefined;
+  const isLoggedChoice = completed && selected.id === loggedChoiceId;
   const blockedReason = getChoiceBlockReason(company, selected);
   const cashAfterMonth = company.cash - selected.cost + company.monthlyRevenue - (company.monthlyBurn + (selected.effects.monthlyBurn ?? 0));
 
@@ -45,8 +49,8 @@ export function DecisionDeck({ choices, xpReward, company, playerName, completed
       <View style={styles.headingRow}>
         <View style={styles.headingCopy}>
           <Text style={styles.kicker}>YOUR DECISION</Text>
-          <Text style={styles.heading}>{playerName.trim() ? `Your call, ${playerName.trim()}` : "Your call, CTO"}</Text>
-          <Text style={styles.subheading}>Pick an option to preview before committing.</Text>
+          <Text style={styles.heading}>{completed ? "Review your decision" : playerName.trim() ? `Your call, ${playerName.trim()}` : "Your call, CTO"}</Text>
+          <Text style={styles.subheading}>{completed ? loggedChoice ? `You logged: ${loggedChoice.label}. Explore any option below.` : "Your decision is saved. Explore the available options below." : "Pick an option to preview before committing."}</Text>
         </View>
         <Text style={styles.count}>{String(selectedIndex + 1).padStart(2, "0")} / {String(choices.length).padStart(2, "0")}</Text>
       </View>
@@ -54,12 +58,13 @@ export function DecisionDeck({ choices, xpReward, company, playerName, completed
       <View style={[styles.hand, width < 480 && styles.handStack]} accessibilityRole="tablist">
         {orderedChoices.map((choice, index) => {
           const active = index === selectedIndex;
+          const logged = completed && choice.id === loggedChoiceId;
           return (
             <Pressable
               key={choice.id}
               accessibilityRole="tab"
-              accessibilityLabel={`Option ${index + 1}: ${choice.label}`}
-              accessibilityHint="Show this option’s details without committing"
+              accessibilityLabel={`Option ${index + 1}: ${choice.label}${logged ? ", your logged choice" : completed ? ", not chosen" : ""}`}
+              accessibilityHint={completed ? "Show this option’s details. Your logged decision will not change." : "Show this option’s details without committing"}
               accessibilityState={{ selected: active }}
               onPress={() => {
                 if (!active) gameFeedback.trigger("tabSelect");
@@ -68,7 +73,10 @@ export function DecisionDeck({ choices, xpReward, company, playerName, completed
               style={({ pressed }) => [styles.handCard, width < 480 && styles.handCardCompact, active && styles.handCardActive, pressed && styles.handCardPressed]}
             >
               <Text style={[styles.handNumber, active && styles.handNumberActive]}>{active ? "◆" : String(index + 1).padStart(2, "0")}</Text>
-              <Text style={[styles.handTitle, width < 480 && styles.compactTitle, active && styles.handTitleActive]}>{choice.label}</Text>
+              <View style={[styles.handCopy, width < 480 && styles.compactTitle]}>
+                <Text style={[styles.handTitle, active && styles.handTitleActive]}>{choice.label}</Text>
+                {logged && <Text style={styles.loggedBadge}>LOGGED</Text>}
+              </View>
               <Text style={[styles.handCost, company.cash < choice.cost && styles.unaffordable]}>{company.cash < choice.cost ? "OVER BUDGET" : choice.cost === 0 ? "NO COST" : `${formatMoney(choice.cost)}`}</Text>
             </Pressable>
           );
@@ -76,6 +84,7 @@ export function DecisionDeck({ choices, xpReward, company, playerName, completed
       </View>
 
       <Animated.View key={selected.id} entering={reducedMotion ? undefined : FadeInDown.duration(190)} style={styles.focusedCard}>
+        {completed && <Text style={[styles.reviewStatus, isLoggedChoice && styles.loggedStatus]}>{isLoggedChoice ? "YOUR LOGGED CHOICE" : "ALTERNATIVE · NOT CHOSEN"}</Text>}
         <ChoiceCard
           choice={selected}
           xpReward={xpReward}
@@ -83,11 +92,11 @@ export function DecisionDeck({ choices, xpReward, company, playerName, completed
           forecast={`Cash after this month: ${formatMoney(Math.max(0, cashAfterMonth))}.${cashAfterMonth <= 0 ? " This will end your run." : ""}`}
           cashExhausted={cashAfterMonth <= 0}
           disabled={completed || Boolean(blockedReason)}
-          disabledLabel={completed ? "DECISION ALREADY LOGGED" : blockedReason}
+          disabledLabel={completed ? isLoggedChoice ? "YOUR LOGGED CHOICE" : "REVIEW ONLY · NOT CHOSEN" : blockedReason}
           onPress={() => onChoose(selected)}
         />
       </Animated.View>
-      {completed && <Text style={styles.footer}>DECISION ALREADY LOGGED · EXPLORE ANY OPTION</Text>}
+      {completed && <Text style={styles.footer}>REVIEW ONLY · YOUR LOGGED DECISION WILL NOT CHANGE</Text>}
 
     </View>
   );
@@ -113,7 +122,11 @@ const styles = StyleSheet.create({
   handCardPressed: { opacity: 0.75 },
   handNumber: { color: "#657B95", fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
   handTitle: { color: "#BCC8D8", fontSize: 12, lineHeight: 17, fontWeight: "800" },
+  handCopy: { minWidth: 0, gap: 6 },
+  loggedBadge: { alignSelf: "flex-start", color: colors.mint, backgroundColor: colors.panelRaised, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3, fontSize: 10, lineHeight: 14, fontWeight: "900", letterSpacing: 0.5 },
   handCost: { color: "#9BAFC7", fontSize: 9, lineHeight: 13, fontWeight: "800", letterSpacing: 0.2 },
   focusedCard: { marginTop: 13 },
-  footer: { color: "#657B95", fontSize: 7, fontWeight: "800", letterSpacing: 0.65, textAlign: "center", marginTop: 2 },
+  reviewStatus: { color: colors.text, fontSize: 11, lineHeight: 16, fontWeight: "900", letterSpacing: 0.65, marginBottom: 8 },
+  loggedStatus: { color: colors.mint },
+  footer: { color: colors.text, fontSize: 9, lineHeight: 14, fontWeight: "800", letterSpacing: 0.65, textAlign: "center", marginTop: 2 },
 });
