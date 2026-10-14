@@ -7,7 +7,7 @@ export const level036 = defineStartupLevel({
   "description": "The founder proposes a global merchant launch. The expected peak load is 4 million registered users, 400,000 daily active users, 3,000 peak origin requests per second, and 6 terabytes of relational data. Every architectural decision we made over the past three years will now be put to the ultimate test.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Three years of scaling have brought us here. We don't launch on hope or whiteboard diagrams; we launch on proven benchmarks, rehearsed disaster recovery drills, and realistic capacity boundaries."
       }
@@ -62,7 +62,7 @@ export const level036 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "An earned launch contract combines capacity, correctness and recovery evidence.",
         "downside": "A full production rehearsal consumes significant compute budget and engineering time; ongoing traffic growth will still require continuous measurement.",
-        "jimmyExplanation": "We subject our entire production topology to a full end-to-end rehearsal at peak forecast load plus 30% headroom, simulate regional failover, verify payment idempotency, and test priority load shedding. We only sign off when the data proves we can handle the load.",
+        "byteExplanation": "We subject our entire production topology to a full end-to-end rehearsal at peak forecast load plus 30% headroom, simulate regional failover, verify payment idempotency, and test priority load shedding. We only sign off when the data proves we can handle the load.",
         "effectReasons": {
           "upfrontCost": "$60,000 covers full-scale synthetic load testing, chaos engineering drills, and third-party security audits.",
           "monthlyBurn": "Full-scale production monitoring, enterprise support tiers, and infrastructure capacity cost $15,000/month.",
@@ -99,7 +99,7 @@ export const level036 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A viable narrower launch preserves the architecture actually built.",
         "downside": "It sacrifices near-term revenue and the premium global SLA; omitted capabilities remain visible.",
-        "jimmyExplanation": "Limiting the initial launch cohort to 1 million users with a staged waitlist guarantees our existing architecture will not be overwhelmed, while giving the engineering team time to observe real production metrics before unlocking global scale.",
+        "byteExplanation": "Limiting the initial launch cohort to 1 million users with a staged waitlist guarantees our existing architecture will not be overwhelmed, while giving the engineering team time to observe real production metrics before unlocking global scale.",
         "effectReasons": {
           "upfrontCost": "$27,000 covers waitlist onboarding portals and cohort management tooling.",
           "monthlyBurn": "Staged launch monitoring and cohort support cost $12,750/month.",
@@ -136,7 +136,7 @@ export const level036 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "The market window opens immediately.",
         "downside": "Unverified bottlenecks and failure domains turn a forecast into an unsupported contractual promise.",
-        "jimmyExplanation": "Opening the floodgates globally without integrated load testing or disaster rehearsals is pure gambling. Untested bottlenecks in payment reconciliation or shard routing will fail simultaneously under peak traffic.",
+        "byteExplanation": "Opening the floodgates globally without integrated load testing or disaster rehearsals is pure gambling. Untested bottlenecks in payment reconciliation or shard routing will fail simultaneously under peak traffic.",
         "effectReasons": {
           "upfrontCost": "$39,000 is burned in emergency hotfixes, PR damage control, and incident triage.",
           "monthlyBurn": "Emergency incident response retainers and crisis infrastructure cost $17,250/month.",
@@ -199,7 +199,7 @@ export const level036 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "concerned",
           "text": "We cannot promise the full forecast with the capabilities currently recorded. The review should name the gaps and reduce the launch scope, not draw boxes we never built."
         }
@@ -227,7 +227,7 @@ export const level036 = defineStartupLevel({
             "downsideLabel": "Cost and ownership",
             "upside": "The review prevents an unsupported SLA and names an owner for each missing prerequisite.",
             "downside": "Growth is capped until the unresolved capacity, consistency and recovery gaps have been addressed.",
-            "jimmyExplanation": "Your topology is the evidence. A constrained launch is viable; a premium promise is not yet supported.",
+            "byteExplanation": "Your topology is the evidence. A constrained launch is viable; a premium promise is not yet supported.",
             "effectReasons": {
               "upfrontCost": "$60,000 funds this rollout, verification and migration effort.",
               "monthlyBurn": "The monthly change is $+15,000, including 0 hires and the operating costs of this response.",
@@ -264,7 +264,7 @@ export const level036 = defineStartupLevel({
             "downsideLabel": "Limits accepted",
             "upside": "A viable narrower launch preserves the architecture actually built.",
             "downside": "It sacrifices near-term revenue and the premium global SLA; omitted capabilities remain visible.",
-            "jimmyExplanation": "A viable narrower launch preserves the architecture actually built. It sacrifices near-term revenue and the premium global SLA; omitted capabilities remain visible.",
+            "byteExplanation": "A viable narrower launch preserves the architecture actually built. It sacrifices near-term revenue and the premium global SLA; omitted capabilities remain visible.",
             "effectReasons": {
               "upfrontCost": "$27,000 funds this rollout, verification and migration effort.",
               "monthlyBurn": "The monthly change is $+12,750, including 0 hires and the operating costs of this response.",
@@ -301,7 +301,7 @@ export const level036 = defineStartupLevel({
             "downsideLabel": "Unresolved risk",
             "upside": "The market window opens immediately.",
             "downside": "Unverified bottlenecks and failure domains turn a forecast into an unsupported contractual promise.",
-            "jimmyExplanation": "The market window opens immediately. Unverified bottlenecks and failure domains turn a forecast into an unsupported contractual promise.",
+            "byteExplanation": "The market window opens immediately. Unverified bottlenecks and failure domains turn a forecast into an unsupported contractual promise.",
             "effectReasons": {
               "upfrontCost": "$39,000 funds this rollout, verification and migration effort.",
               "monthlyBurn": "The monthly change is $+17,250, including 0 hires and the operating costs of this response.",

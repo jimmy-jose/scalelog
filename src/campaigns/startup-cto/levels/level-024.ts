@@ -6,7 +6,7 @@ export const level024 = defineStartupLevel({
   "description": "Merchants demand advanced storefront search: typo tolerance ('snakers' -> 'sneakers'), relevance ranking, and multi-faceted filtering (size, color, brand) across 8 million product variants. An indexed PostgreSQL trigram and full-text prototype handles simple searches, but complex faceted queries take 1.8 seconds and drive database CPU to 90%.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "PostgreSQL is built for ACID transactions, not inverted search indexes! Running complex fuzzy matching, stemming, and multi-facet aggregations on our primary transactional database is dragging down core checkouts. We need a derived search index."
       }
@@ -51,7 +51,7 @@ export const level024 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Search-specific indexing meets the benchmark without loading transactional reads.",
         "downside": "The index is eventually consistent and needs replay, lag alerts and rebuild procedures.",
-        "jimmyExplanation": "We deploy a dedicated search cluster (Elasticsearch or OpenSearch) as a derived read projection. As products are edited, background workers update the search index. The search cluster handles fuzzy queries, faceting, and typo tolerance in 15 milliseconds, keeping PostgreSQL 100% focused on checkout transactions.",
+        "byteExplanation": "We deploy a dedicated search cluster (Elasticsearch or OpenSearch) as a derived read projection. As products are edited, background workers update the search index. The search cluster handles fuzzy queries, faceting, and typo tolerance in 15 milliseconds, keeping PostgreSQL 100% focused on checkout transactions.",
         "effectReasons": {
           "upfrontCost": "$5,500 covers deploying the search cluster, index mapping design, CDC projection pipelines, and fallback routes.",
           "monthlyBurn": "Running managed Elasticsearch/OpenSearch instances and projection workers adds $3,200/month.",
@@ -88,7 +88,7 @@ export const level024 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A valid, cheaper design avoids another datastore.",
         "downside": "The enterprise search feature is reduced; the original faceted benchmark remains unmet.",
-        "jimmyExplanation": "Optimizing PostgreSQL full-text search with strict limit clauses and caching common search phrases provides acceptable search without running a separate Elasticsearch cluster. It saves money, though search lacks fuzzy typo tolerance.",
+        "byteExplanation": "Optimizing PostgreSQL full-text search with strict limit clauses and caching common search phrases provides acceptable search without running a separate Elasticsearch cluster. It saves money, though search lacks fuzzy typo tolerance.",
         "effectReasons": {
           "upfrontCost": "$2,475 covers tuning PostgreSQL GIN indexes, search query limits, and result caching.",
           "monthlyBurn": "Additional PostgreSQL compute and memory headroom add $2,880/month.",
@@ -125,7 +125,7 @@ export const level024 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "One query engine can serve discovery and availability lookups.",
         "downside": "An eventually refreshed search projection cannot enforce transactional stock decrements.",
-        "jimmyExplanation": "Running unindexed LIKE '%keyword%' queries across 8 million rows on the primary database will trigger full table scans on every keystroke. Five concurrent searches will pin PostgreSQL CPU at 100% and knock down checkout.",
+        "byteExplanation": "Running unindexed LIKE '%keyword%' queries across 8 million rows on the primary database will trigger full table scans on every keystroke. Five concurrent searches will pin PostgreSQL CPU at 100% and knock down checkout.",
         "effectReasons": {
           "upfrontCost": "$3,575 is burned mitigating severe database contention from unindexed search scans.",
           "monthlyBurn": "Wasted database capacity trying to absorb full-table scans adds $3,680/month.",

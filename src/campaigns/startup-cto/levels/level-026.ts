@@ -6,7 +6,7 @@ export const level026 = defineStartupLevel({
   "description": "The merchant product editor hangs because the new media service is slow generating thumbnails. Because the monolith waits synchronously without a strict timeout, every web worker process becomes stuck waiting on the media service. Soon, all web workers are occupied, and even core checkout requests start failing with 504 Gateway Timeout.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "A thumbnail preview is an optional convenience. Allowing a slow preview service to consume all our web worker threads and bring down core checkout is an unacceptable cascading failure."
       }
@@ -51,7 +51,7 @@ export const level026 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Media failure no longer consumes all application slots.",
         "downside": "The UI must explain pending previews and recover them; a breaker does not fix the dependency itself.",
-        "jimmyExplanation": "We put thumbnail calls on a strict deadline, set up a circuit breaker, and isolate media calls to a dedicated worker pool. If the media service stalls, the editor shows a 'Processing...' placeholder while checkout keeps humming along.",
+        "byteExplanation": "We put thumbnail calls on a strict deadline, set up a circuit breaker, and isolate media calls to a dedicated worker pool. If the media service stalls, the editor shows a 'Processing...' placeholder while checkout keeps humming along.",
         "effectReasons": {
           "upfrontCost": "$24,000 covers implementing circuit breakers, fallback UI components, and bulkhead concurrency limits.",
           "monthlyBurn": "Circuit breaker telemetry and fallback polling infrastructure add $10,000/month.",
@@ -88,7 +88,7 @@ export const level026 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Eliminates the synchronous dependency with very simple operations.",
         "downside": "A reduced editing experience costs adoption, but correctness and core availability remain intact.",
-        "jimmyExplanation": "Ripping out synchronous previews and making them purely asynchronous completely protects our core request slots. It is slightly worse UX for merchants, but it eliminates an entire class of cascading failure.",
+        "byteExplanation": "Ripping out synchronous previews and making them purely asynchronous completely protects our core request slots. It is slightly worse UX for merchants, but it eliminates an entire class of cascading failure.",
         "effectReasons": {
           "upfrontCost": "$10,800 covers refactoring the product editor to use asynchronous background status polling.",
           "monthlyBurn": "Background job notifications and polling infrastructure add $8,500/month.",
@@ -125,7 +125,7 @@ export const level026 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "A brief isolated fault may be hidden from the merchant.",
         "downside": "Nested retries multiply attempts and hold slots longer during a sustained outage.",
-        "jimmyExplanation": "Retrying three times in the browser, three times in the gateway, and three times in the app multiplies 1 failing request into 27 repeated requests. When a backend dependency slows down, nested retries turn a minor hiccup into a total stampede.",
+        "byteExplanation": "Retrying three times in the browser, three times in the gateway, and three times in the app multiplies 1 failing request into 27 repeated requests. When a backend dependency slows down, nested retries turn a minor hiccup into a total stampede.",
         "effectReasons": {
           "upfrontCost": "$15,600 is spent implementing aggressive retries across all application layers.",
           "monthlyBurn": "Retry storm compute overhead and server capacity add $11,500/month.",
@@ -174,12 +174,12 @@ export const level026 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Your route has no independently owned media service. The editor waits for thumbnail work on the retained processing path, occupying app slots. Bound this wait and inspect existing worker isolation rather than assuming extraction or dedicated capacity."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "A slow preview has occupied nearly every request slot. Give that dependency a budget and decide what the editor can show while it is unavailable."
         }

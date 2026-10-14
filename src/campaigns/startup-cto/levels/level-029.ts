@@ -6,12 +6,12 @@ export const level029 = defineStartupLevel({
   "description": "Server dashboards show CPU and memory are completely green (under 40%), yet merchants are flooding support with complaints that checkout confirmations take 30 seconds. Because each service logs separately without shared IDs, the engineers have no idea which service or queue is causing the delay.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Green CPU graphs are useless when buyers are staring at spinning spinners for five seconds. We need a trace ID that follows a request across HTTP calls, database queries, and async queues to pinpoint where the time is actually spent."
       },
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "normal",
           "text": "This month’s operating plan adds 2 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
       }
@@ -61,7 +61,7 @@ export const level029 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "The team can locate latency and act on customer impact.",
         "downside": "Sampling, retention and cardinality need budgets; telemetry must not contain payment secrets.",
-        "jimmyExplanation": "Propagating trace IDs across HTTP headers and queue messages gives us end-to-end distributed traces. Tracking RED metrics (Rate, Errors, Duration) and queue age lets us page teams based on real merchant impact rather than raw CPU spikes.",
+        "byteExplanation": "Propagating trace IDs across HTTP headers and queue messages gives us end-to-end distributed traces. Tracking RED metrics (Rate, Errors, Duration) and queue age lets us page teams based on real merchant impact rather than raw CPU spikes.",
         "effectReasons": {
           "upfrontCost": "$32,000 covers distributed tracing SDK integration, OpenTelemetry collectors, and error budget alerting.",
           "monthlyBurn": "The monthly change is +$22,000, funding 2 SREs and high-throughput trace storage and indexing.",
@@ -98,7 +98,7 @@ export const level029 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A focused monitor detects the main customer symptom at lower instrumentation cost.",
         "downside": "Localization across fan-out remains slower and less complete than correlated traces.",
-        "jimmyExplanation": "Aggregating application logs into a searchable cluster with queue depth alerts gives us solid debugging visibility with lower overhead than a full distributed tracing platform, even if tracking cross-service handoffs takes extra grepping.",
+        "byteExplanation": "Aggregating application logs into a searchable cluster with queue depth alerts gives us solid debugging visibility with lower overhead than a full distributed tracing platform, even if tracking cross-service handoffs takes extra grepping.",
         "effectReasons": {
           "upfrontCost": "$14,400 covers setting up structured log aggregation and queue depth monitoring alerts.",
           "monthlyBurn": "The monthly change is +$18,700, funding 2 SREs and log storage/search infrastructure.",
@@ -135,7 +135,7 @@ export const level029 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Saturation incidents may become visible early.",
         "downside": "This I/O delay is not CPU saturation; noisy alerts and unbounded retention waste attention and money.",
-        "jimmyExplanation": "Making CPU alerts more sensitive does nothing to detect delays caused by locked queues, third-party network timeouts, or slow database queries. It just floods engineers with alert fatigue while users still suffer.",
+        "byteExplanation": "Making CPU alerts more sensitive does nothing to detect delays caused by locked queues, third-party network timeouts, or slow database queries. It just floods engineers with alert fatigue while users still suffer.",
         "effectReasons": {
           "upfrontCost": "$20,800 is spent on emergency incident response and manual log reviews.",
           "monthlyBurn": "The monthly change is +$25,300, funding 2 SREs plus redundant alerting tooling and on-call paging costs.",

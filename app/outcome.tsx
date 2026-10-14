@@ -10,7 +10,7 @@ import { TopBar } from "@/ui/components/TopBar";
 import { LearnMore } from "@/ui/components/LearnMore";
 import { Button } from "@/ui/components/Button";
 import { Pill } from "@/ui/components/Pill";
-import { characterAssets } from "@/ui/components/JimmyAvatar";
+import { characterAssets } from "@/ui/components/ByteAvatar";
 import { colors } from "@/ui/theme";
 import { formatMoney, signed } from "@/lib/format";
 import { gameFeedback } from "@/game/feedback/GameFeedbackManager";
@@ -48,13 +48,13 @@ export default function OutcomeScreen() {
   const reviewingHistory = typeof levelId === "string";
   const outcome = useGameStore((state) => reviewingHistory ? state.history.find((entry) => entry.levelId === levelId) : state.lastOutcome);
   const reducedMotion = useReducedMotion();
-  const jimmyBob = useSharedValue(0);
+  const byteBob = useSharedValue(0);
   useEffect(() => {
-    if (reducedMotion || outcome?.failureReason) { jimmyBob.value = 0; return; }
-    jimmyBob.value = withRepeat(withSequence(withTiming(-1.5, { duration: 1900 }), withTiming(0, { duration: 1900 })), -1, true);
-    return () => cancelAnimation(jimmyBob);
-  }, [jimmyBob, outcome?.failureReason, reducedMotion]);
-  const jimmyMotion = useAnimatedStyle(() => ({ transform: [{ translateY: jimmyBob.value }] }));
+    if (reducedMotion || outcome?.failureReason) { byteBob.value = 0; return; }
+    byteBob.value = withRepeat(withSequence(withTiming(-1.5, { duration: 1900 }), withTiming(0, { duration: 1900 })), -1, true);
+    return () => cancelAnimation(byteBob);
+  }, [byteBob, outcome?.failureReason, reducedMotion]);
+  const byteMotion = useAnimatedStyle(() => ({ transform: [{ translateY: byteBob.value }] }));
   const activeCampaignId = useGameStore((state) => state.activeCampaignId);
   const progress = useGameStore((state) => state.progress);
   const history = useGameStore((state) => state.history);
@@ -107,7 +107,7 @@ export default function OutcomeScreen() {
           <Text style={[styles.heroTitle, wide && styles.heroTitleWide]}>{outcome.title}</Text>
           <Text style={styles.heroChoice}>{outcome.choiceLabel}</Text>
         </View>
-        <Animated.Image entering={FadeInDown.delay(90).duration(380)} source={character} resizeMode="contain" style={[styles.jimmyImage, wide && styles.jimmyImageWide, jimmyMotion]} accessibilityLabel={`Byte looks ${displayedEmotion}`} />
+        <Animated.Image entering={FadeInDown.delay(90).duration(380)} source={character} resizeMode="contain" style={[styles.byteImage, wide && styles.byteImageWide, byteMotion]} accessibilityLabel={`Byte looks ${displayedEmotion}`} />
         <View pointerEvents="none" style={styles.sceneGround} />
       </View>
     </Animated.View>
@@ -142,7 +142,7 @@ export default function OutcomeScreen() {
       {missedPreferredPath && <Animated.View entering={FadeInDown.delay(130).duration(300)} style={styles.recommendation}>
         <View style={styles.recommendationHeading}><View style={styles.speakerDot} /><Text style={styles.recommendationLabel}>BYTE’S RETROSPECTIVE  ·  A STRONGER FIT</Text></View>
         <Text style={styles.recommendationTitle}>I would have chosen {missedPreferredPath.label}.</Text>
-        <Text style={styles.recommendationText}>{missedPreferredPath.tradeoff.byteExplanation ?? missedPreferredPath.tradeoff.jimmyExplanation}</Text>
+        <Text style={styles.recommendationText}>{missedPreferredPath.tradeoff.byteExplanation}</Text>
       </Animated.View>}
     </LearnMore>
 
@@ -165,8 +165,8 @@ const styles = StyleSheet.create({
   heroTitle: { color: colors.white, fontSize: 26, lineHeight: 31, fontWeight: "900", letterSpacing: -0.75, marginTop: 7, maxWidth: 540 },
   heroTitleWide: { fontSize: 34, lineHeight: 39, letterSpacing: -1.1 },
   heroChoice: { color: "#C3D0DF", fontSize: 11, fontWeight: "700", marginTop: 10 },
-  jimmyImage: { position: "absolute", zIndex: 1, right: 2, bottom: 0, width: 142, height: 205 },
-  jimmyImageWide: { right: 8, width: 176, height: 236 },
+  byteImage: { position: "absolute", zIndex: 1, right: 2, bottom: 0, width: 142, height: 205 },
+  byteImageWide: { right: 8, width: 176, height: 236 },
   sceneGround: { position: "absolute", zIndex: 3, left: 0, right: 0, bottom: 0, height: 18, backgroundColor: "rgba(5, 13, 27, 0.78)", borderTopWidth: 1, borderTopColor: "rgba(168, 191, 213, 0.16)" },
   speakerDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.mint },
   dialogueText: { color: "#DCE6F2", fontSize: 13, lineHeight: 19, fontWeight: "600", marginTop: 7 },

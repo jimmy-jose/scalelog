@@ -6,8 +6,8 @@ export const level003: Level = {
   title: "Too Many Connections", kicker: "CHAPTER 01 · SHARE THE PIPE",
   description: "A traffic bump sends the monolith into a connection storm. PostgreSQL is healthy, but the app keeps opening more connections than the database can serve.",
   dialogue: [
-    { character: "jimmy", emotion: "panic", text: "{name}, PostgreSQL is rejecting connections. The database is not out of CPU; it is out of seats." },
-    { character: "jimmy", emotion: "concerned", text: "Every API process is bringing its own crowd. We need a better way to share the room." },
+    { character: "byte", emotion: "panic", text: "{name}, PostgreSQL is rejecting connections. The database is not out of CPU; it is out of seats." },
+    { character: "byte", emotion: "concerned", text: "Every API process is bringing its own crowd. We need a better way to share the room." },
   ],
   metrics: [{ label: "Connections", value: "498 / 500", severity: "critical" }, { label: "DB CPU", value: "42%", severity: "normal" }, { label: "Timeouts", value: "18%", severity: "critical" }],
   incidentFeedback: { sound: "incidentCritical", haptic: "heavy" },
@@ -28,7 +28,7 @@ export const level003: Level = {
         downsideLabel: "Pool tuning to own",
         upside: "A shared pool reuses a bounded set of database connections, cutting rejections and timeouts.",
         downside: "The pooler is another production component, and a bad pool size can queue requests instead.",
-        jimmyExplanation: "Pooling addresses the exhausted resource directly: six app processes stop opening hundreds of independent database sessions and share a smaller, controlled set. That protects PostgreSQL, but we now need to monitor and tune the pool as traffic changes.",
+        byteExplanation: "Pooling addresses the exhausted resource directly: six app processes stop opening hundreds of independent database sessions and share a smaller, controlled set. That protects PostgreSQL, but we now need to monitor and tune the pool as traffic changes.",
         effectReasons: {
           upfrontCost: "$800 sets up a lightweight pooler and a safe rollout, rather than expanding the database connection ceiling.",
           reliability: "Requests wait for a reusable connection instead of being rejected when PostgreSQL reaches its 500-session limit.",
@@ -51,7 +51,7 @@ export const level003: Level = {
         downsideLabel: "Memory pressure",
         upside: "A higher ceiling can reduce immediate connection rejections during a short-lived burst.",
         downside: "More sessions compete for memory and CPU, so the database can become slower and less stable.",
-        jimmyExplanation: "This moves the limit but does not make app processes share connections. More accepted sessions can all consume memory and contend for work at once, turning a clear rejection into a harder-to-diagnose slowdown. It buys short-term access at the risk of a deeper database outage.",
+        byteExplanation: "This moves the limit but does not make app processes share connections. More accepted sessions can all consume memory and contend for work at once, turning a clear rejection into a harder-to-diagnose slowdown. It buys short-term access at the risk of a deeper database outage.",
         effectReasons: {
           upfrontCost: "$1,000 covers the configuration change and capacity checks, but not a fix for connection ownership.",
           reliability: "Allowing far more concurrent sessions increases memory pressure and contention, making timeouts more likely.",
@@ -71,7 +71,7 @@ export const level003: Level = {
         downsideLabel: "Lag; storm remains",
         upside: "A read replica can add read capacity if read throughput, not connection count, is the bottleneck.",
         downside: "The connection storm still reaches the primary, while replication lag and $700 monthly spend arrive too.",
-        jimmyExplanation: "A replica creates another place to serve reads, but each app process still opens too many connections to the primary. This can help a different bottleneck; for this incident it leaves the cause in place and adds replication behavior to operate.",
+        byteExplanation: "A replica creates another place to serve reads, but each app process still opens too many connections to the primary. This can help a different bottleneck; for this incident it leaves the cause in place and adds replication behavior to operate.",
         effectReasons: {
           upfrontCost: "$7,500 pays for provisioning and routing a second database before the current bottleneck is addressed.",
           monthlyBurn: "The extra database and replication monitoring add $700 to recurring spend.",
@@ -94,7 +94,7 @@ export const level003: Level = {
     id: "unresolved-query-debt", when: { missingAny: ["indexed"] },
     description: "PostgreSQL is rejecting connections before requests can execute. Earlier dashboard query debt remains; pooling fixes admission pressure but does not remove unindexed scans.",
     metrics: [{ label: "Connections", value: "498 / 500", severity: "critical" }, { label: "Query debt", value: "unindexed dashboard", severity: "warning" }, { label: "Timeouts", value: "18%", severity: "critical" }],
-    dialogue: [{ character: "jimmy", emotion: "concerned", text: "We have two separate problems: connection ownership and the old query plan. Share a bounded pool now, then keep the query repair on the rollout checklist." }],
+    dialogue: [{ character: "byte", emotion: "concerned", text: "We have two separate problems: connection ownership and the old query plan. Share a bounded pool now, then keep the query repair on the rollout checklist." }],
   }],
   hints: ["CPU is fine. Look at the resource that is actually exhausted.", "Can many app processes reuse fewer database connections?"], xpReward: 140, unlocks: [], lesson: "Protect scarce resources with a shared boundary before raising their limits.",
 };

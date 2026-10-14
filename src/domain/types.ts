@@ -46,7 +46,7 @@ export interface ArchitectureNode {
 export interface ArchitectureEdge { from: string; to: string; label?: string; dashed?: boolean }
 export interface ArchitectureGraph { nodes: ArchitectureNode[]; edges: ArchitectureEdge[]; capabilities?: string[] }
 export interface IncidentMetric { label: string; value: string; severity: Severity }
-export interface LevelDialogue { character: "jimmy" | "byte"; emotion: CharacterEmotion; text: string }
+export interface LevelDialogue { character: "byte" | "jimmy"; emotion: CharacterEmotion; text: string }
 
 export interface StatEffects {
   engineers?: number;
@@ -74,8 +74,8 @@ export interface ChoiceTradeoff {
   downsideLabel: string;
   upside: string;
   downside: string;
-  jimmyExplanation: string;
-  byteExplanation?: string;
+  byteExplanation: string;
+  jimmyExplanation?: string;
   effectReasons: Partial<Record<ChoiceEffectKey, string>>;
 }
 

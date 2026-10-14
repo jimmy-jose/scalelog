@@ -6,7 +6,7 @@ export const level022 = defineStartupLevel({
   "description": "During a late-night database maintenance task, a junior engineer accidentally runs DELETE FROM orders in production without a WHERE clause. Within 50 milliseconds, our read replicas and failover standbys faithfully execute the exact same command, wiping out orders everywhere. The nightly database backup is 19 hours old, but the business can only afford five minutes of lost data.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Replicas are for hardware failover, NOT backups! A replica is a live mirror: if you shoot yourself in the foot, the replica shoots itself in the foot too. We need Point-In-Time Recovery (PITR) to rewind the database to the exact second before that delete command ran."
       }
@@ -51,7 +51,7 @@ export const level022 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "A tested recovery path can undo logical corruption with explicit data reconciliation.",
         "downside": "A point-in-time restore also omits good writes after the chosen time; recovery is not just flipping a replica.",
-        "jimmyExplanation": "Point-In-Time Recovery (PITR) combines daily base backups with continuous Write-Ahead Log (WAL) archiving to cloud object storage (S3). When a disaster strikes, we spin up an isolated database, replay WAL logs up to 23:14:02 (one second before the accidental delete), verify the recovered data, and restore with under five minutes of data loss.",
+        "byteExplanation": "Point-In-Time Recovery (PITR) combines daily base backups with continuous Write-Ahead Log (WAL) archiving to cloud object storage (S3). When a disaster strikes, we spin up an isolated database, replay WAL logs up to 23:14:02 (one second before the accidental delete), verify the recovered data, and restore with under five minutes of data loss.",
         "effectReasons": {
           "upfrontCost": "$5,200 covers WAL archiving pipelines, S3 storage buckets, automated recovery drills, and PITR restore scripts.",
           "monthlyBurn": "Continuous WAL streaming and encrypted long-term object storage add $3,000/month.",
@@ -88,7 +88,7 @@ export const level022 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Simple snapshots recover data without relying on production replicas.",
         "downside": "An hour between snapshots misses the required five-minute RPO.",
-        "jimmyExplanation": "Taking hourly EBS storage snapshots reduces our data loss window from 19 hours down to 60 minutes. It is much cheaper and easier to automate than continuous WAL archiving, but the business must accept losing up to an hour of orders during a disaster.",
+        "byteExplanation": "Taking hourly EBS storage snapshots reduces our data loss window from 19 hours down to 60 minutes. It is much cheaper and easier to automate than continuous WAL archiving, but the business must accept losing up to an hour of orders during a disaster.",
         "effectReasons": {
           "upfrontCost": "$2,340 covers snapshot automation policies, restore scripting, and snapshot retention rules.",
           "monthlyBurn": "Storing hourly disk volume snapshots adds $2,700/month.",
@@ -125,7 +125,7 @@ export const level022 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Useful for a failed primary when data is healthy.",
         "downside": "The fastest replica has already applied the deletion and cannot restore history.",
-        "jimmyExplanation": "Relying solely on read replicas as your backup strategy is complete negligence. Replicas propagate DROP TABLE and DELETE queries within milliseconds. When a bad query runs, you have zero backup.",
+        "byteExplanation": "Relying solely on read replicas as your backup strategy is complete negligence. Replicas propagate DROP TABLE and DELETE queries within milliseconds. When a bad query runs, you have zero backup.",
         "effectReasons": {
           "upfrontCost": "$3,380 is burned during emergency data recovery and forensic analysis.",
           "monthlyBurn": "Manual data patch tools and external audit consultants add $3,450/month.",
@@ -174,12 +174,12 @@ export const level022 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "A maintenance delete removes valid order history. Your current availability tier cannot reconstruct earlier data, whether it uses an asynchronous standby or only a primary. The backup is 19 hours old."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "A current copy cannot undo a logical delete. We need an independent point in history, and a plan for the good orders written afterward."
         }

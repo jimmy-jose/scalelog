@@ -6,7 +6,7 @@ export const level035 = defineStartupLevel({
   "description": "During a regional recovery drill, a flash sale promotion launches simultaneously. Traffic spikes to 5,000 requests per second, overwhelming our tested origin capacity of 3,200 RPS. Core checkout transactions are competing with live merchant analytics, personalized product recommendations, and bulk product imports.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "When a ship takes on water, you jettison the cargo, not the passengers. Core checkout must survive at all costs. Everything else (recommendations, live analytics, bulk imports) must be shed or served from stale cache."
       }
@@ -51,7 +51,7 @@ export const level035 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Accepted critical work stays within the measured latency envelope.",
         "downside": "Some features and requests are deliberately unavailable; deferred work needs a bounded drain plan.",
-        "jimmyExplanation": "We implement priority-based load shedding: web servers prioritize checkout transactions, pause background analytics workers, serve cached product pages with stale-while-revalidate headers, and reject non-critical traffic with friendly 429 Retry-After headers.",
+        "byteExplanation": "We implement priority-based load shedding: web servers prioritize checkout transactions, pause background analytics workers, serve cached product pages with stale-while-revalidate headers, and reject non-critical traffic with friendly 429 Retry-After headers.",
         "effectReasons": {
           "upfrontCost": "$50,000 covers priority admission control middleware, stale cache policies, and graceful degradation UI states.",
           "monthlyBurn": "Edge traffic management rules and priority rate-limiting infrastructure cost $20,000/month.",
@@ -88,7 +88,7 @@ export const level035 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A simpler envelope prevents collapse without elaborate priorities.",
         "downside": "Checkout and optional work compete for the same quota; more valuable sales are rejected.",
-        "jimmyExplanation": "Buffering all incoming requests in reverse-proxy queues without shedding non-critical load keeps all features running, but queues quickly fill up, causing request timeouts and 504 Gateway errors for everyone, including buyers trying to check out.",
+        "byteExplanation": "Buffering all incoming requests in reverse-proxy queues without shedding non-critical load keeps all features running, but queues quickly fill up, causing request timeouts and 504 Gateway errors for everyone, including buyers trying to check out.",
         "effectReasons": {
           "upfrontCost": "$22,500 covers configuring reverse-proxy buffer pools and connection queue timeouts.",
           "monthlyBurn": "Reverse-proxy memory and edge server capacity cost $17,000/month.",
@@ -125,7 +125,7 @@ export const level035 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Short bursts can be smoothed when capacity catches up.",
         "downside": "Unbounded backlog violates deadlines and storage budgets; a queue cannot create sustained throughput.",
-        "jimmyExplanation": "Spinning up 200 new web servers without admission control simply forwards the 5,000 RPS tidal wave directly into our database, exhausting database connection pools and bringing down the entire cluster.",
+        "byteExplanation": "Spinning up 200 new web servers without admission control simply forwards the 5,000 RPS tidal wave directly into our database, exhausting database connection pools and bringing down the entire cluster.",
         "effectReasons": {
           "upfrontCost": "$32,500 is burned on runaway auto-scaling compute bills and emergency database recovery.",
           "monthlyBurn": "Unconstrained auto-scaling compute and database emergency tiers cost $23,000/month.",
@@ -174,12 +174,12 @@ export const level035 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Your route has no warm recovery region. A constrained-capacity restore/load rehearsal receives more work than the rebuilt deployment can serve. Protect checkout within the longer recovery tier you actually own."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "We have more offered work than tested capacity. Choose which promises to keep first, and reject excess work before it traps the system in a backlog."
         }

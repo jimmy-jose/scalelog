@@ -23,7 +23,7 @@ export function generateStaticParams() {
   return allLevels.map((level) => ({ levelId: level.id }));
 }
 
-const jimmyExplaining = require("../../assets/characters/jimmy_explain.png");
+const byteExplaining = require("../../assets/characters/jimmy_explain.png");
 
 export default function GameplayScreen() {
   const { levelId } = useLocalSearchParams<{ levelId: string }>();
@@ -106,13 +106,13 @@ export default function GameplayScreen() {
           <Text style={styles.hintArrow}>↗</Text>
         </Pressable>
       ) : (
-        <Animated.View key={`${level.id}-${hintIndex}`} entering={FadeInDown.duration(280)} exiting={FadeOutUp.duration(160)} style={styles.jimmyHint}>
-          <View style={styles.jimmyPortrait}>
-            <Animated.Image entering={FadeInLeft.delay(70).duration(360)} source={jimmyExplaining} resizeMode="contain" style={styles.jimmyImage} accessibilityLabel="Byte explaining a system design hint" />
+        <Animated.View key={`${level.id}-${hintIndex}`} entering={FadeInDown.duration(280)} exiting={FadeOutUp.duration(160)} style={styles.byteHint}>
+          <View style={styles.bytePortrait}>
+            <Animated.Image entering={FadeInLeft.delay(70).duration(360)} source={byteExplaining} resizeMode="contain" style={styles.byteImage} accessibilityLabel="Byte explaining a system design hint" />
           </View>
-          <View style={styles.jimmyMessage}>
-            <View style={styles.jimmyHeader}>
-              <View style={styles.jimmyIdentity}><View style={styles.jimmyOnline} /><Text style={styles.jimmyName}>BYTE</Text><Text style={styles.jimmyRole}>AI ASSISTANT</Text></View>
+          <View style={styles.byteMessage}>
+            <View style={styles.byteHeader}>
+              <View style={styles.byteIdentity}><View style={styles.byteOnline} /><Text style={styles.byteName}>BYTE</Text><Text style={styles.byteRole}>AI ASSISTANT</Text></View>
               <Pressable accessibilityRole="button" accessibilityLabel="Close hint" hitSlop={8} onPress={() => { gameFeedback.trigger("uiTap"); setHintIndex(-1); }} style={styles.hintClose}><Text style={styles.hintCloseText}>×</Text></Pressable>
             </View>
             <Text style={styles.hintEyebrow}>A THING TO CONSIDER  ·  {String(hintIndex + 1).padStart(2, "0")}/{String(level.hints.length).padStart(2, "0")}</Text>
@@ -150,15 +150,15 @@ const styles = StyleSheet.create({
   hintCopy: { flex: 1, paddingHorizontal: 11 },
   hintTitle: { color: "#E2EAF4", fontSize: 12, fontWeight: "800" },
   hintArrow: { color: colors.blue, fontSize: 17, fontWeight: "700" },
-  jimmyHint: { minHeight: 174, flexDirection: "row", overflow: "hidden", borderRadius: 15, backgroundColor: "#101D30", borderWidth: 1, borderColor: "#344B68", marginTop: 3 },
-  jimmyPortrait: { width: 116, alignSelf: "stretch", overflow: "hidden", backgroundColor: "#14243B", borderRightWidth: 1, borderRightColor: "#283D57" },
-  jimmyImage: { position: "absolute", width: 154, height: 184, left: -19, bottom: -7 },
-  jimmyMessage: { flex: 1, minWidth: 0, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 13 },
-  jimmyHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  jimmyIdentity: { flexDirection: "row", alignItems: "center", gap: 6 },
-  jimmyOnline: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.mint },
-  jimmyName: { color: colors.mint, fontSize: 10, fontWeight: "900", letterSpacing: 1.3 },
-  jimmyRole: { color: "#8394A9", fontSize: 7, fontWeight: "900", letterSpacing: 1 },
+  byteHint: { minHeight: 174, flexDirection: "row", overflow: "hidden", borderRadius: 15, backgroundColor: "#101D30", borderWidth: 1, borderColor: "#344B68", marginTop: 3 },
+  bytePortrait: { width: 116, alignSelf: "stretch", overflow: "hidden", backgroundColor: "#14243B", borderRightWidth: 1, borderRightColor: "#283D57" },
+  byteImage: { position: "absolute", width: 154, height: 184, left: -19, bottom: -7 },
+  byteMessage: { flex: 1, minWidth: 0, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 13 },
+  byteHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  byteIdentity: { flexDirection: "row", alignItems: "center", gap: 6 },
+  byteOnline: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.mint },
+  byteName: { color: colors.mint, fontSize: 10, fontWeight: "900", letterSpacing: 1.3 },
+  byteRole: { color: "#8394A9", fontSize: 7, fontWeight: "900", letterSpacing: 1 },
   hintClose: { width: 24, height: 24, alignItems: "center", justifyContent: "center", borderRadius: 7, backgroundColor: "#1A2A40" },
   hintCloseText: { color: "#A9B8C9", fontSize: 20, lineHeight: 22 },
   hintEyebrow: { color: "#8293A8", fontSize: 7, fontWeight: "900", letterSpacing: 0.8, marginTop: 11 },

@@ -9,7 +9,7 @@ import type { Choice, ChoiceEffectKey } from "@/domain/types";
 import { colors, spacing } from "@/ui/theme";
 import { gameFeedback } from "@/game/feedback/GameFeedbackManager";
 
-const jimmyExplaining = require("../../../assets/characters/jimmy_explain.png");
+const byteExplaining = require("../../../assets/characters/jimmy_explain.png");
 
 type Impact = { key: Exclude<ChoiceEffectKey, "upfrontCost">; label: string; value: string; reason: string };
 
@@ -20,10 +20,10 @@ function signed(value: number) {
 function getImpacts(choice: Choice): Impact[] {
   const effects = choice.effects;
   return [
-    effects.monthlyBurn ? { key: "monthlyBurn", label: "MONTHLY BURN", value: `${signed(effects.monthlyBurn)}/mo`, reason: choice.tradeoff.effectReasons.monthlyBurn ?? choice.tradeoff.byteExplanation ?? choice.tradeoff.jimmyExplanation } : undefined,
-    effects.reliability ? { key: "reliability", label: "RELIABILITY", value: signed(effects.reliability), reason: choice.tradeoff.effectReasons.reliability ?? choice.tradeoff.byteExplanation ?? choice.tradeoff.jimmyExplanation } : undefined,
-    effects.customerTrust ? { key: "customerTrust", label: "CUSTOMER TRUST", value: signed(effects.customerTrust), reason: choice.tradeoff.effectReasons.customerTrust ?? choice.tradeoff.byteExplanation ?? choice.tradeoff.jimmyExplanation } : undefined,
-    effects.complexity ? { key: "complexity", label: "OPS LOAD", value: signed(effects.complexity), reason: choice.tradeoff.effectReasons.complexity ?? choice.tradeoff.byteExplanation ?? choice.tradeoff.jimmyExplanation } : undefined,
+    effects.monthlyBurn ? { key: "monthlyBurn", label: "MONTHLY BURN", value: `${signed(effects.monthlyBurn)}/mo`, reason: choice.tradeoff.effectReasons.monthlyBurn ?? choice.tradeoff.byteExplanation } : undefined,
+    effects.reliability ? { key: "reliability", label: "RELIABILITY", value: signed(effects.reliability), reason: choice.tradeoff.effectReasons.reliability ?? choice.tradeoff.byteExplanation } : undefined,
+    effects.customerTrust ? { key: "customerTrust", label: "CUSTOMER TRUST", value: signed(effects.customerTrust), reason: choice.tradeoff.effectReasons.customerTrust ?? choice.tradeoff.byteExplanation } : undefined,
+    effects.complexity ? { key: "complexity", label: "OPS LOAD", value: signed(effects.complexity), reason: choice.tradeoff.effectReasons.complexity ?? choice.tradeoff.byteExplanation } : undefined,
   ].filter((impact): impact is Impact => Boolean(impact));
 }
 
@@ -47,7 +47,7 @@ export function ChoiceCard({ choice, xpReward, onPress, disabled, disabledLabel,
   const [explanation, setExplanation] = useState<{ label: string; text: string } | null>(null);
   const showExplanation = (label: string, key: ChoiceEffectKey) => {
     gameFeedback.trigger("uiTap");
-    const text = choice.tradeoff.effectReasons[key] ?? choice.tradeoff.byteExplanation ?? choice.tradeoff.jimmyExplanation;
+    const text = choice.tradeoff.effectReasons[key] ?? choice.tradeoff.byteExplanation;
     setExplanation((current) => current?.label === label ? null : { label, text });
   };
 
@@ -93,15 +93,15 @@ export function ChoiceCard({ choice, xpReward, onPress, disabled, disabledLabel,
         CTO confidence {signed(rewards.confidence)} · XP {signed(rewards.xp)} (minimum 0 total XP)
       </Text>
         <Text style={styles.description}>Cash forecast includes the upfront cost and one operating month. New revenue starts next month.</Text>
-        <Text style={styles.tradeoffText}>{choice.tradeoff.byteExplanation ?? choice.tradeoff.jimmyExplanation}</Text>
+        <Text style={styles.tradeoffText}>{choice.tradeoff.byteExplanation}</Text>
       </LearnMore>
 
-      {explanation?.label === "UPFRONT COST" && <Animated.View entering={FadeInDown.duration(220)} style={styles.jimmyExplanation}>
-        <Image source={jimmyExplaining} resizeMode="contain" style={styles.jimmyImage} accessibilityLabel="Byte explaining the choice" />
+      {explanation?.label === "UPFRONT COST" && <Animated.View entering={FadeInDown.duration(220)} style={styles.byteExplanation}>
+        <Image source={byteExplaining} resizeMode="contain" style={styles.byteImage} accessibilityLabel="Byte explaining the choice" />
         <View style={styles.explanationCopy}>
-          <View style={styles.explanationHeading}><View style={styles.jimmyOnline} /><Text style={styles.explanationLabel}>BYTE EXPLAINS · {explanation.label}</Text></View>
+          <View style={styles.explanationHeading}><View style={styles.byteOnline} /><Text style={styles.explanationLabel}>BYTE EXPLAINS · {explanation.label}</Text></View>
           <Text style={styles.explanationText}>{explanation.text}</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Close explanation" onPress={() => setExplanation(null)} style={styles.askJimmy}><Text style={styles.askJimmyText}>Hide explanation</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Close explanation" onPress={() => setExplanation(null)} style={styles.askByte}><Text style={styles.askByteText}>Hide explanation</Text></Pressable>
         </View>
       </Animated.View>}
 
@@ -149,14 +149,14 @@ const styles = StyleSheet.create({
   costLabel: { color: "#E5BC77" },
   tradeoffTitle: { color: "#E4EBF3", fontSize: 13, lineHeight: 18, fontWeight: "800", marginTop: 5 },
   tradeoffText: { color: "#ACBACB", fontSize: 12, lineHeight: 19, marginTop: 5 },
-  jimmyExplanation: { flexDirection: "row", alignItems: "center", gap: 8, padding: 9, marginTop: 10, borderWidth: 1, borderColor: "#31516C", borderRadius: 10, backgroundColor: "#12243A" },
-  jimmyImage: { width: 48, height: 66, flexShrink: 0 },
+  byteExplanation: { flexDirection: "row", alignItems: "center", gap: 8, padding: 9, marginTop: 10, borderWidth: 1, borderColor: "#31516C", borderRadius: 10, backgroundColor: "#12243A" },
+  byteImage: { width: 48, height: 66, flexShrink: 0 },
   explanationCopy: { flex: 1, minWidth: 0 },
   explanationHeading: { flexDirection: "row", alignItems: "center", gap: 6 },
-  jimmyOnline: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.mint },
+  byteOnline: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.mint },
   explanationLabel: { color: colors.mint, fontSize: 7, fontWeight: "900", letterSpacing: 0.6 },
   explanationText: { color: "#D7E1ED", fontSize: 10, lineHeight: 15, fontWeight: "600", marginTop: 4 },
   actions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 11, paddingTop: 9, borderTopWidth: 1, borderTopColor: "#22354B" },
-  askJimmy: { flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 9, paddingVertical: 8, borderRadius: 8 },
-  askJimmyText: { color: colors.blue, fontSize: 8, fontWeight: "900", letterSpacing: 0.65 },
+  askByte: { flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 9, paddingVertical: 8, borderRadius: 8 },
+  askByteText: { color: colors.blue, fontSize: 8, fontWeight: "900", letterSpacing: 0.65 },
 });

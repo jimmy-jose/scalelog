@@ -79,12 +79,12 @@ function CampaignHubCard({ campaign, index }: { campaign: (typeof campaigns)[num
           <View style={styles.activeLabel}><View style={[styles.activeDot, { backgroundColor: campaign.accent }]} /><Text style={styles.activeText}>{campaign.id === activeCampaignId ? "ACTIVE RUN" : `CAMPAIGN ${String(index + 1).padStart(2, "0")}`}</Text></View>
           <CampaignResetButton campaignId={campaign.id} campaignTitle={campaign.title} />
         </View>
-        <Image source={require("../assets/characters/jimmy_thinking.png")} resizeMode="contain" style={styles.jimmy} accessibilityLabel="Byte, your AI assistant" />
+        <Image source={require("../assets/characters/jimmy_thinking.png")} resizeMode="contain" style={styles.byte} accessibilityLabel="Byte, your AI assistant" />
         <View style={styles.featureCopy}>
           <Text style={styles.featureEyebrow}>{campaign.title.toUpperCase()}</Text>
           <Text style={styles.featureTitle}>{campaign.subtitle}</Text>
           <Text style={styles.featureDescription}>{campaign.description}</Text>
-          <View style={styles.jimmyByline}><View style={styles.jimmyStatus} /><Text style={styles.jimmyBylineText}>BYTE  ·  YOUR AI ASSISTANT</Text></View>
+          <View style={styles.byteByline}><View style={styles.byteStatus} /><Text style={styles.byteBylineText}>BYTE  ·  YOUR AI ASSISTANT</Text></View>
           <Button style={{ alignSelf: "flex-start", marginTop: 16 }} onPress={enterBrief}>{campaignAction} →</Button>
         </View>
       </ImageBackground>
@@ -158,14 +158,14 @@ const styles = StyleSheet.create({
   activeLabel: { flexDirection: "row", alignItems: "center", gap: 7 },
   activeDot: { width: 6, height: 6, borderRadius: 3 },
   activeText: { color: "#DBE5F1", fontSize: 8, fontWeight: "900", letterSpacing: 1 },
-  jimmy: { position: "absolute", right: -15, bottom: 0, width: 190, height: 245, zIndex: 1 },
+  byte: { position: "absolute", right: -15, bottom: 0, width: 190, height: 245, zIndex: 1 },
   featureCopy: { width: "83%", maxWidth: 400, zIndex: 2, paddingBottom: 2 },
   featureEyebrow: { color: colors.mint, fontSize: 8, fontWeight: "900", letterSpacing: 1.2 },
   featureTitle: { color: colors.white, fontSize: 25, lineHeight: 29, fontWeight: "800", letterSpacing: -0.65, marginTop: 6 },
   featureDescription: { color: "#D0D9E4", fontSize: 11, lineHeight: 16, marginTop: 7, maxWidth: 340 },
-  jimmyByline: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 11 },
-  jimmyStatus: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.mint },
-  jimmyBylineText: { color: "#D3DFE9", fontSize: 7, fontWeight: "900", letterSpacing: 0.7 },
+  byteByline: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 11 },
+  byteStatus: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.mint },
+  byteBylineText: { color: "#D3DFE9", fontSize: 7, fontWeight: "900", letterSpacing: 0.7 },
   progressBlock: { paddingHorizontal: 16, paddingVertical: 13, borderTopWidth: 1, borderTopColor: "#26394F", backgroundColor: "#0A1523" },
   progressTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   progressLabel: { color: "#8E9DB0", fontSize: 7, fontWeight: "900", letterSpacing: 1 },

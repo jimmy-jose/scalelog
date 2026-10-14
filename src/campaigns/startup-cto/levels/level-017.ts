@@ -6,7 +6,7 @@ export const level017 = defineStartupLevel({
   "description": "During a software deployment, a server is gracefully shut down. In that exact millisecond, an order API request commits a $500 order into PostgreSQL, but the server is terminated before it can execute queue.push('order.created'). The merchant was paid, but the shipping notification and receipt were never queued. You cannot atomically write to a database and a message queue in one step.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "This is the dreaded 'Dual-Write Problem.' PostgreSQL and your message broker are two completely separate distributed systems. You cannot wrap a SQL COMMIT and a queue PUBLISH in a single transaction. If the server dies between the two lines of code, you get silent data loss."
       }
@@ -51,7 +51,7 @@ export const level017 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Committed orders always have a durable delivery intent.",
         "downside": "The relay may publish duplicates; consumers still need idempotency and retained event IDs.",
-        "jimmyExplanation": "The Transactional Outbox pattern is the industry standard solution: when an order is created, we insert an outbox record into PostgreSQL inside the exact same SQL transaction as the orders row. If the transaction commits, both are saved 100% atomically. A separate lightweight outbox relay process reads new outbox rows, publishes them to the queue, and marks them as sent.",
+        "byteExplanation": "The Transactional Outbox pattern is the industry standard solution: when an order is created, we insert an outbox record into PostgreSQL inside the exact same SQL transaction as the orders row. If the transaction commits, both are saved 100% atomically. A separate lightweight outbox relay process reads new outbox rows, publishes them to the queue, and marks them as sent.",
         "effectReasons": {
           "upfrontCost": "$3,200 covers creating the outbox schema, transaction integration, outbox relay worker deployment, and reconciliation drills.",
           "monthlyBurn": "Running the outbox relay process and monitoring outbox table lag adds $1,700/month.",
@@ -88,7 +88,7 @@ export const level017 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A durable, simpler recovery loop can work without a separate broker.",
         "downside": "Higher polling load and bounded delay weaken the enterprise five-second delivery target.",
-        "jimmyExplanation": "A periodic reconciliation cron job that queries PostgreSQL for orders with missing notifications every 10 minutes catches missed events after the fact. It works as a safety net, but notifications can be delayed by up to 10 minutes.",
+        "byteExplanation": "A periodic reconciliation cron job that queries PostgreSQL for orders with missing notifications every 10 minutes catches missed events after the fact. It works as a safety net, but notifications can be delayed by up to 10 minutes.",
         "effectReasons": {
           "upfrontCost": "$1,440 covers building the database reconciliation scanner and backfill dispatcher.",
           "monthlyBurn": "Running scheduled database reconciliation sweeps adds $1,530/month.",
@@ -125,7 +125,7 @@ export const level017 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "No committed order waits for a later publish call in the normal path.",
         "downside": "A rolled-back transaction can leave a phantom order event; the inconsistency changed direction.",
-        "jimmyExplanation": "Publishing to the message queue BEFORE committing the database transaction just flips the disaster around. If the queue publish succeeds, but the database commit fails due to a constraint violation or lock timeout, your workers will process an order that does not actually exist in the database!",
+        "byteExplanation": "Publishing to the message queue BEFORE committing the database transaction just flips the disaster around. If the queue publish succeeds, but the database commit fails due to a constraint violation or lock timeout, your workers will process an order that does not actually exist in the database!",
         "effectReasons": {
           "upfrontCost": "$2,080 is spent implementing publish-before-commit logic.",
           "monthlyBurn": "Handling phantom order investigations and data fixes adds $1,955/month.",
@@ -174,12 +174,12 @@ export const level017 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Your receipt path has no broker. An audit finds a crash boundary between committing orders and recording delivery work. Make delivery intent transactional, then choose broker publication or direct polling with a weaker delay contract."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "A process can die between committing an order and recording delivery work. The order and its immutable delivery intent need a shared commit boundary."
         }

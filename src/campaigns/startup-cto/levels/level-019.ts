@@ -6,7 +6,7 @@ export const level019 = defineStartupLevel({
   "description": "Merchants open their analytics dashboards every morning to view custom revenue charts and filtered sales reports. Because each merchant filters different date ranges, these heavy aggregation queries cannot be cached in Redis. Database CPU on our primary writer hits 92%, causing checkout transactions to queue up. The reports can easily tolerate a few seconds of data delay, but checkout cannot.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Our primary database is sweating bullets running heavy reporting queries while shoppers are trying to check out. Analytics can tolerate 5 seconds of delay; checkout cannot. Let's offload those analytical reads to an asynchronous read replica."
       }
@@ -56,7 +56,7 @@ export const level019 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Offloads read CPU while retaining one authoritative write path.",
         "downside": "Replica capacity, lag-aware routing and bounded primary fallback add operational cost.",
-        "jimmyExplanation": "Provisioning a dedicated read replica with asynchronous WAL replication routes heavy merchant analytics off the primary database. The primary writer's CPU drops back to 30%, keeping checkout instantaneous. If replica replication lag spikes during heavy writes, we monitor it closely and alert on it.",
+        "byteExplanation": "Provisioning a dedicated read replica with asynchronous WAL replication routes heavy merchant analytics off the primary database. The primary writer's CPU drops back to 30%, keeping checkout instantaneous. If replica replication lag spikes during heavy writes, we monitor it closely and alert on it.",
         "effectReasons": {
           "upfrontCost": "$4,000 covers provisioning the read replica, configuring replication lag monitoring, and updating database connection routers.",
           "monthlyBurn": "Running a high-memory managed read replica adds $2,200/month.",
@@ -93,7 +93,7 @@ export const level019 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "No read-consistency routing is needed today.",
         "downside": "An expensive single machine has finite CPU; maintenance shares the write failure domain.",
-        "jimmyExplanation": "Restricting dashboard queries to pre-computed hourly summary tables keeps all reads on the primary database without adding a replica. It is cheaper and avoids replication lag, but merchants lose the ability to query real-time ad-hoc date ranges.",
+        "byteExplanation": "Restricting dashboard queries to pre-computed hourly summary tables keeps all reads on the primary database without adding a replica. It is cheaper and avoids replication lag, but merchants lose the ability to query real-time ad-hoc date ranges.",
         "effectReasons": {
           "upfrontCost": "$1,800 covers building aggregation summary tables, scheduled rollup jobs, and query rewrites.",
           "monthlyBurn": "Database maintenance and rollup query execution add $1,980/month.",
@@ -130,7 +130,7 @@ export const level019 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Multiple independent writers could scale writes in a different database design.",
         "downside": "Physical hot standbys are read-only; promoting independent writers does not synchronize concurrent updates.",
-        "jimmyExplanation": "Routing write traffic to a read replica is impossible: physical read replicas in PostgreSQL reject all SQL writes! And routing checkout reads to a lagging replica means customers will buy products that were already purchased a second ago.",
+        "byteExplanation": "Routing write traffic to a read replica is impossible: physical read replicas in PostgreSQL reject all SQL writes! And routing checkout reads to a lagging replica means customers will buy products that were already purchased a second ago.",
         "effectReasons": {
           "upfrontCost": "$2,600 is burned attempting improper read-replica write routing.",
           "monthlyBurn": "Replica infrastructure spend adds $2,530/month while causing critical errors.",

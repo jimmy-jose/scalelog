@@ -4,7 +4,7 @@ import Animated, { FadeIn, useReducedMotion } from "react-native-reanimated";
 import { Button } from "./Button";
 import { LearnMore } from "./LearnMore";
 import { Level } from "@/domain/types";
-import { characterAssets } from "@/ui/components/JimmyAvatar";
+import { characterAssets } from "@/ui/components/ByteAvatar";
 import { useGameStore } from "@/store/gameStore";
 import { colors } from "@/ui/theme";
 

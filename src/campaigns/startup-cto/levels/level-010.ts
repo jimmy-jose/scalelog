@@ -6,12 +6,12 @@ export const level010 = defineStartupLevel({
   "description": "A single merchant’s automated inventory script sends hundreds of unthrottled API requests every second. Its requests monopolize 85% of our web server worker processes, causing normal shoppers and other merchants to experience 504 Gateway Timeouts. We are also recruiting an integration engineer this month.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "One aggressive merchant script is hammering our import endpoint without any backoff. Because all our web workers are busy answering that one script, every other customer is getting locked out."
       },
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "normal",
           "text": "We are adding an integration engineer this month to help build and enforce proper developer API contracts. Their salary is included in our monthly burn."
       }
@@ -61,7 +61,7 @@ export const level010 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "A noisy tenant cannot monopolize all app slots.",
         "downside": "Limits need contractual tiers and monitoring so legitimate imports can adapt.",
-        "jimmyExplanation": "Enforcing per-tenant rate limits using a Token Bucket or Leaky Bucket algorithm in Redis ensures fair access. When this merchant exceeds their tier limit (e.g., 50 requests/sec), our API returns HTTP 429 (Too Many Requests) with a Retry-After header, protecting our servers while allowing healthy customers to proceed uninterrupted.",
+        "byteExplanation": "Enforcing per-tenant rate limits using a Token Bucket or Leaky Bucket algorithm in Redis ensures fair access. When this merchant exceeds their tier limit (e.g., 50 requests/sec), our API returns HTTP 429 (Too Many Requests) with a Retry-After header, protecting our servers while allowing healthy customers to proceed uninterrupted.",
         "effectReasons": {
           "upfrontCost": "$2,600 covers building Redis-backed rate limiting middleware, HTTP 429 response formatting, and quota metrics.",
           "monthlyBurn": "Includes our new integration engineer ($5,000/mo) plus Redis token bucket capacity, totaling $6,800/month.",
@@ -98,7 +98,7 @@ export const level010 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A cooperative customer can restore service quickly with little infrastructure.",
         "downside": "Protection depends on every client honoring the agreement; new callers can repeat the incident.",
-        "jimmyExplanation": "Reaching out to the merchant's development team to negotiate a client-side throttle solves the immediate outage without code changes today. It buys breathing room, but it relies on developer goodwill rather than architectural enforcement.",
+        "byteExplanation": "Reaching out to the merchant's development team to negotiate a client-side throttle solves the immediate outage without code changes today. It buys breathing room, but it relies on developer goodwill rather than architectural enforcement.",
         "effectReasons": {
           "upfrontCost": "$1,170 covers developer outreach, manual traffic monitoring, and engineering coordination.",
           "monthlyBurn": "Includes our integration engineer ($5,000/mo) plus ongoing manual API traffic oversight, totaling $5,780/month.",
@@ -135,7 +135,7 @@ export const level010 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "The immediate traffic source is cheap to block.",
         "downside": "Merchants behind the same NAT lose service, and rotating IPs evade the policy.",
-        "jimmyExplanation": "Blocking the IP address range is a crude blunt instrument. Many businesses and developers share corporate proxy IP addresses or cloud ranges. Blocking the IP locks out innocent users, and the script author will simply rotate to a new IP in 10 minutes anyway.",
+        "byteExplanation": "Blocking the IP address range is a crude blunt instrument. Many businesses and developers share corporate proxy IP addresses or cloud ranges. Blocking the IP locks out innocent users, and the script author will simply rotate to a new IP in 10 minutes anyway.",
         "effectReasons": {
           "upfrontCost": "$1,690 covers firewall rule configuration and emergency IP routing changes.",
           "monthlyBurn": "Includes our integration engineer ($5,000/mo) plus firewall administration costs, totaling $7,820/month.",

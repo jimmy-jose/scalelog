@@ -6,7 +6,7 @@ export const level014 = defineStartupLevel({
   "description": "Customers complain they are receiving duplicate invoice emails for the exact same order. Logs show that our receipt worker sent the email, but crashed right before acknowledging the message back to the queue. The queue broker assumed the job failed and redelivered it to another worker, who sent the email a second time.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Message queues guarantee 'at-least-once' delivery, never 'exactly-once.' If a worker crashes after calling the email provider but before telling the queue it finished, that job will be redelivered. Your worker must be idempotent."
       }
@@ -51,7 +51,7 @@ export const level014 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Repeated attempts return the same logical invoice without duplicating the supported provider action.",
         "downside": "Keys need retention and parameter validation; arbitrary email providers cannot promise exactly-once delivery.",
-        "jimmyExplanation": "We pass a deterministic idempotency key (like receipt-order-12345) to the email and invoice provider, and record the completed delivery in our database before acknowledging the queue. If the job is redelivered, our worker checks the database or provider, sees the key was already processed, and cleanly acknowledges without sending a duplicate.",
+        "byteExplanation": "We pass a deterministic idempotency key (like receipt-order-12345) to the email and invoice provider, and record the completed delivery in our database before acknowledging the queue. If the job is redelivered, our worker checks the database or provider, sees the key was already processed, and cleanly acknowledges without sending a duplicate.",
         "effectReasons": {
           "upfrontCost": "$2,200 covers idempotency token generation, provider key integration, and receipt ledger tables.",
           "monthlyBurn": "Recording delivery keys and monitoring idempotency conflicts adds $1,200/month.",
@@ -88,7 +88,7 @@ export const level014 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Avoids blind duplication even without provider idempotency.",
         "downside": "Manual review delays receipts and raises support cost.",
-        "jimmyExplanation": "Recording delivery intents in a local database table and delaying queue retries by 30 seconds catches most duplicate deliveries. It handles our current volume well, though it doesn't utilize provider-level idempotency APIs.",
+        "byteExplanation": "Recording delivery intents in a local database table and delaying queue retries by 30 seconds catches most duplicate deliveries. It handles our current volume well, though it doesn't utilize provider-level idempotency APIs.",
         "effectReasons": {
           "upfrontCost": "$990 covers building the local deduplication table and retry delay middleware.",
           "monthlyBurn": "Database deduplication query load adds $1,080/month.",
@@ -125,7 +125,7 @@ export const level014 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "A crash after acknowledgement will not trigger redelivery.",
         "downside": "A crash before the effect now loses work permanently; duplicates became omissions.",
-        "jimmyExplanation": "Acknowledging the queue message BEFORE executing the work is the worst thing you can do. If the worker marks the job as done and then immediately crashes or hits an exception, that receipt is completely lost with zero retries. You traded duplicates for silent data loss!",
+        "byteExplanation": "Acknowledging the queue message BEFORE executing the work is the worst thing you can do. If the worker marks the job as done and then immediately crashes or hits an exception, that receipt is completely lost with zero retries. You traded duplicates for silent data loss!",
         "effectReasons": {
           "upfrontCost": "$1,430 is wasted on an unsafe early-acknowledgement queue pattern.",
           "monthlyBurn": "Queue telemetry and lost-message investigation add $1,380/month.",
@@ -174,12 +174,12 @@ export const level014 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Without a durable broker, an audit compares committed orders and provider receipts. Some calls timed out after provider acceptance, and volatile work may be missing entirely. Reconciliation can duplicate an action; establish durable attempt records before retrying rather than assuming a recovery task already exists."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "The provider did its job; our worker never acknowledged it. Redelivery is doing exactly what we asked. Repeating the attempt must preserve the same intent."
         }

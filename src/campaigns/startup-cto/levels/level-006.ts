@@ -6,12 +6,12 @@ export const level006 = defineStartupLevel({
   "description": "Merchants upload product images successfully, but customers see broken image icons (404s). The database saved the image path, but the actual image file was written to Server A's local hard drive. When a customer's request hits Server B or a server is replaced, the image file simply isn't there.",
   "dialogue": [
     {
-      "character": "jimmy",
+      "character": "byte",
       "emotion": "thinking",
       "text": "The database knows the photo exists, but the web server trying to serve the image has an empty folder. You can't store customer uploads on disposable server disks."
     },
     {
-      "character": "jimmy",
+      "character": "byte",
       "emotion": "normal",
       "text": "This month’s operating plan adds 1 engineer. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
     }
@@ -56,7 +56,7 @@ export const level006 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Durable bytes outlive any application instance.",
         "downside": "Migration verification, access policies and storage/egress bills need an owner.",
-        "jimmyExplanation": "Cloud object storage (like AWS S3 or Google Cloud Storage) is designed for this exact purpose: virtually unlimited storage, 99.999999999% durability, and direct signed URLs so users can upload and download without bogging down our web servers. It completely decouples file storage from server lifecycles.",
+        "byteExplanation": "Cloud object storage (like AWS S3 or Google Cloud Storage) is designed for this exact purpose: virtually unlimited storage, 99.999999999% durability, and direct signed URLs so users can upload and download without bogging down our web servers. It completely decouples file storage from server lifecycles.",
         "effectReasons": {
           "upfrontCost": "$1,200 pays for the S3 integration, signed upload URL generation, data migration, and verification.",
           "monthlyBurn": "Adding our 3rd engineer ($5,000/mo) plus cloud storage and egress fees brings the monthly increase to $5,500.",
@@ -93,7 +93,7 @@ export const level006 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "POSIX access minimizes application changes and works across hosts.",
         "downside": "Filesystem throughput and mounts need monitoring; public delivery still passes through an origin.",
-        "jimmyExplanation": "Mounting a managed network filesystem (like NFS or EFS) lets our servers read and write files using standard folder paths without changing application code. It's an easy transition, but shared network mounts can become I/O bottlenecks and still tie our app servers to a shared filesystem.",
+        "byteExplanation": "Mounting a managed network filesystem (like NFS or EFS) lets our servers read and write files using standard folder paths without changing application code. It's an easy transition, but shared network mounts can become I/O bottlenecks and still tie our app servers to a shared filesystem.",
         "effectReasons": {
           "upfrontCost": "$540 funds configuring network file mounts, mounting scripts, and file synchronization.",
           "monthlyBurn": "Includes our 3rd engineer ($5,000/mo) plus managed NFS mount fees, offset by internal efficiency.",
@@ -130,7 +130,7 @@ export const level006 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Reuses the existing upload code and storage layout.",
         "downside": "New files are absent until copying completes; deletions and concurrent writes can diverge.",
-        "jimmyExplanation": "Running an rsync cron script to copy uploads between servers every five minutes is an operational nightmare. Any image uploaded at 2:01 PM will 404 until the 2:05 PM cron job runs. And if two servers write at the same time or a server crashes, files diverge and get lost.",
+        "byteExplanation": "Running an rsync cron script to copy uploads between servers every five minutes is an operational nightmare. Any image uploaded at 2:01 PM will 404 until the 2:05 PM cron job runs. And if two servers write at the same time or a server crashes, files diverge and get lost.",
         "effectReasons": {
           "upfrontCost": "$780 covers writing and debugging custom rsync scripts and SSH key distribution across hosts.",
           "monthlyBurn": "Includes our 3rd engineer ($5,000/mo) plus wasted disk space across multiple instances.",
@@ -174,17 +174,17 @@ export const level006 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "We spun up a replacement host during the rehearsal, and every recently uploaded photo vanished into thin air. The database still points to the file paths, but the disk they were on was destroyed. We need storage that outlives the server."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "The database knows the photo exists. The host serving this request does not have its bytes. A durable reference needs durable storage behind it."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "normal",
           "text": "This month’s operating plan adds 1 engineer. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
         }

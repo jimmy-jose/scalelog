@@ -6,7 +6,7 @@ export const level007 = defineStartupLevel({
   "description": "A franchise merchant chain launches identical public catalogues across dozens of stores. Database CPU reaches 88% from hundreds of shoppers repeatedly querying the exact same product rows, while checkout writes remain low. Browsing can tolerate slight delays, but checkout must always be 100% accurate.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "92% of our database load is shoppers repeatedly reading the exact same product catalogues. This is the classic scenario where caching pays for itself. But we must keep a strict boundary: cache public browse data, never checkout or stock validation."
       }
@@ -56,7 +56,7 @@ export const level007 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "High reuse removes repeated DB work without moving transactional truth.",
         "downside": "Expiry, cache outages and invalidation now need explicit behavior.",
-        "jimmyExplanation": "Cache-aside for public catalogues is a textbook win: check Redis first; if it is there, return it in 2 milliseconds; if not, query PostgreSQL and populate Redis for 60 seconds. Crucially, checkout price and stock checks still bypass Redis and query PostgreSQL directly, preventing overselling.",
+        "byteExplanation": "Cache-aside for public catalogues is a textbook win: check Redis first; if it is there, return it in 2 milliseconds; if not, query PostgreSQL and populate Redis for 60 seconds. Crucially, checkout price and stock checks still bypass Redis and query PostgreSQL directly, preventing overselling.",
         "effectReasons": {
           "upfrontCost": "$1,800 covers provisioning a dedicated Redis cluster, building cache-aside middleware, and adding cache hit/miss instrumentation.",
           "monthlyBurn": "Running a dedicated managed Redis cluster adds $1,500/month to our infrastructure spend.",
@@ -93,7 +93,7 @@ export const level007 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "No new data freshness model; a valid short-term capacity choice.",
         "downside": "A higher recurring bill buys limited headroom for a strongly repetitive workload.",
-        "jimmyExplanation": "Upgrading PostgreSQL buys raw CPU and memory to power through the read volume without adding Redis. It avoids managing cache staleness, but paying for a larger database just to repeatedly scan identical rows is expensive and inefficient.",
+        "byteExplanation": "Upgrading PostgreSQL buys raw CPU and memory to power through the read volume without adding Redis. It avoids managing cache staleness, but paying for a larger database just to repeatedly scan identical rows is expensive and inefficient.",
         "effectReasons": {
           "upfrontCost": "$810 covers the database migration window, benchmarking, and read connection pooling.",
           "monthlyBurn": "Upgrading to a higher-tier database instance raises monthly recurring burn by $2,100.",
@@ -130,7 +130,7 @@ export const level007 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Most reads become very fast while the cache is warm.",
         "downside": "Stale price and stock can be accepted; a faster incorrect sale damages trust.",
-        "jimmyExplanation": "Caching the entire checkout response is a disaster waiting to happen. If you cache checkout totals for 10 minutes without checking the primary database, two customers will buy the very last item in stock, or shoppers will check out at an expired discount price.",
+        "byteExplanation": "Caching the entire checkout response is a disaster waiting to happen. If you cache checkout totals for 10 minutes without checking the primary database, two customers will buy the very last item in stock, or shoppers will check out at an expired discount price.",
         "effectReasons": {
           "upfrontCost": "$1,170 is spent building an unsafe checkout caching layer that ignores transactional validation.",
           "monthlyBurn": "Running the caching layer adds $1,725/month while introducing serious business correctness risks.",

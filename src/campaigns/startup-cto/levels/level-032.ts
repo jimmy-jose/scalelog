@@ -6,12 +6,12 @@ export const level032 = defineStartupLevel({
   "description": "Large merchant catalogue feeds now run alongside checkout. Even after query batching, index pruning, and upgrading to the largest affordable cloud database instance, primary writer CPU is pinned at 94% and disk I/O is saturated. Because order transactions are strictly isolated to individual merchants and no transaction ever spans multiple merchants, we can split data across separate databases.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "We have exhausted vertical scaling on our primary database. Because merchants never share transactions, sharding by merchant ID gives us multiple independent database writers. But sharding is a permanent architectural commitment."
       },
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "normal",
           "text": "This month’s operating plan adds 3 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
       }
@@ -61,7 +61,7 @@ export const level032 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Independent writers distribute aggregate work while keeping transactional invariants local.",
         "downside": "Cross-tenant reporting uses projections; backups, migrations and capacity must be managed per shard.",
-        "jimmyExplanation": "Splitting our data across eight database writer groups using a tenant routing directory distributes write throughput evenly. Because all checkout transactions stay within a single merchant, we avoid complex distributed cross-database transactions.",
+        "byteExplanation": "Splitting our data across eight database writer groups using a tenant routing directory distributes write throughput evenly. Because all checkout transactions stay within a single merchant, we avoid complex distributed cross-database transactions.",
         "effectReasons": {
           "upfrontCost": "$65,000 covers CDC tenant migration pipelines, shard routing directory services, and cross-shard integrity checks.",
           "monthlyBurn": "The monthly change is +$41,000, funding 3 data engineers and running eight independent database clusters.",
@@ -98,7 +98,7 @@ export const level032 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A valid low-complexity operating envelope protects checkout.",
         "downside": "Revenue growth slows because the new simultaneous-feed contract is not met.",
-        "jimmyExplanation": "Keeping a single primary database and aggressively throttling catalogue write feeds protects checkout CPU, but enterprise merchants with huge inventories will face multi-hour delays updating product prices and stock.",
+        "byteExplanation": "Keeping a single primary database and aggressively throttling catalogue write feeds protects checkout CPU, but enterprise merchants with huge inventories will face multi-hour delays updating product prices and stock.",
         "effectReasons": {
           "upfrontCost": "$29,250 covers building feed rate limiters and background ingestion queues.",
           "monthlyBurn": "The monthly change is +$34,850, funding 3 data engineers and feed queue infrastructure.",
@@ -135,7 +135,7 @@ export const level032 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Lag-tolerant read capacity increases.",
         "downside": "The saturated writer still performs every mutation; readers do not add write throughput.",
-        "jimmyExplanation": "Hashing by order ID scatters a single merchant's orders, products, and inventory across eight different databases! A simple inventory reservation or cart checkout now requires a distributed two-phase commit transaction across multiple databases.",
+        "byteExplanation": "Hashing by order ID scatters a single merchant's orders, products, and inventory across eight different databases! A simple inventory reservation or cart checkout now requires a distributed two-phase commit transaction across multiple databases.",
         "effectReasons": {
           "upfrontCost": "$42,250 is burned on a disastrous hash-sharding migration and emergency rollback.",
           "monthlyBurn": "The monthly change is +$47,150, funding 3 engineers and fragmented multi-database infrastructure.",
@@ -189,17 +189,17 @@ export const level032 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Your retained history layout is not time-partitioned; it may use an archive split or random placement. A representative feed benchmark now exceeds the optimized primary’s write budget even with retention jobs paused. This is a writer-capacity incident independent of the history layout."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "We have measured the writer after fixing avoidable work. Tenant-local transactions give us a possible shard boundary. Plan the migration and recovery before moving data."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "normal",
           "text": "This month’s operating plan adds 3 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
         }

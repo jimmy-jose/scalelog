@@ -6,7 +6,7 @@ export const level021 = defineStartupLevel({
   "description": "A power failure knocks out an entire cloud Availability Zone (data center), abruptly killing our primary database server. Enterprise merchants require zero lost orders for single-zone failures (Recovery Point Objective RPO = 0) and recovery within two minutes (RTO < 2 min). With standard asynchronous replication, completed orders that were in-flight over the network when the data center died are lost forever.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "If you promise 'zero lost data' (RPO = 0), asynchronous replication is not enough! With async replication, the primary tells the user 'Success!' before the standby server in Zone B has written the data. If Zone A dies, those orders vanish into thin air. We need synchronous quorum replication across zones."
       }
@@ -51,7 +51,7 @@ export const level021 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "The specified single-zone failure can meet RPO 0 and the measured two-minute RTO.",
         "downside": "Synchronous acknowledgement adds intra-region latency and may sacrifice write availability when quorum is unavailable.",
-        "jimmyExplanation": "We deploy a primary and two synchronous standby replicas across three independent Availability Zones using synchronous commit (synchronous_commit = on). A transaction is only confirmed to the shopper once at least one standby in another zone confirms receipt. Automated fenced failover promotes the standby within 60 seconds if the primary dies, achieving true RPO 0.",
+        "byteExplanation": "We deploy a primary and two synchronous standby replicas across three independent Availability Zones using synchronous commit (synchronous_commit = on). A transaction is only confirmed to the shopper once at least one standby in another zone confirms receipt. Automated fenced failover promotes the standby within 60 seconds if the primary dies, achieving true RPO 0.",
         "effectReasons": {
           "upfrontCost": "$6,000 covers 3-AZ synchronous replica provisioning, fencing agent configuration, and automated failover drills.",
           "monthlyBurn": "Running two multi-zone synchronous database standbys with cross-AZ traffic adds $3,600/month.",
@@ -88,7 +88,7 @@ export const level021 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Lower commit latency and cost are viable when the customer accepts possible loss.",
         "downside": "A lag alarm alone cannot guarantee a loss bound during isolation. Blocking promotion can miss the recovery-time target; this tier does not satisfy the RPO-zero contract.",
-        "jimmyExplanation": "Maintaining an asynchronous standby with automated failover recovers the database in two minutes (RTO < 2 min), but accepts up to 30 seconds of data loss (RPO = 30s) during a sudden catastrophe. It avoids synchronous write latency and saves money, but enterprise merchants must accept the risk of slight data loss.",
+        "byteExplanation": "Maintaining an asynchronous standby with automated failover recovers the database in two minutes (RTO < 2 min), but accepts up to 30 seconds of data loss (RPO = 30s) during a sudden catastrophe. It avoids synchronous write latency and saves money, but enterprise merchants must accept the risk of slight data loss.",
         "effectReasons": {
           "upfrontCost": "$2,700 covers asynchronous standby setup, automated failover scripting, and recovery documentation.",
           "monthlyBurn": "Operating a single cross-zone asynchronous standby adds $3,240/month.",
@@ -125,7 +125,7 @@ export const level021 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Promotion is fast during a simple host failure.",
         "downside": "A network partition can leave two writers without fencing, violating order consistency.",
-        "jimmyExplanation": "Promoting a standby blindly without fencing or checking replication lag guarantees a split-brain disaster or severe data loss. If the old primary comes back online while the new one is accepting writes, you end up with two divergent databases with conflicting order IDs and corrupted inventory!",
+        "byteExplanation": "Promoting a standby blindly without fencing or checking replication lag guarantees a split-brain disaster or severe data loss. If the old primary comes back online while the new one is accepting writes, you end up with two divergent databases with conflicting order IDs and corrupted inventory!",
         "effectReasons": {
           "upfrontCost": "$3,900 is burned recovering from an unfenced split-brain failover.",
           "monthlyBurn": "Emergency database repair and data reconciliation tools add $4,140/month.",

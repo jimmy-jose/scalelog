@@ -6,7 +6,7 @@ export const level005 = defineStartupLevel({
   "description": "Merchants complain that they log in, click a link, and immediately get kicked back to the login screen. Now that we have multiple web servers, Request #1 creates a session file on Server A's local disk, but Request #2 lands on Server B, which has never seen that session.",
   "dialogue": [
     {
-      "character": "jimmy",
+      "character": "byte",
       "emotion": "thinking",
       "text": "Server A authenticated the merchant, but their next request landed on Server B. Server B looked on its local disk, found no session file, and said 'Who are you?' We need authentication state to live in a shared place that all servers can reach."
     }
@@ -51,7 +51,7 @@ export const level005 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Requests can move between instances without losing authentication.",
         "downside": "Session availability now depends on the shared store; budget memory and replication.",
-        "jimmyExplanation": "Moving sessions to a small managed Redis instance is the industry standard for stateless web tiers. Redis is blazing fast, and every app server can look up the merchant's session ID in sub-millisecond time. The only catch is that Redis is now on the critical login path, so we have to monitor its memory and uptime.",
+        "byteExplanation": "Moving sessions to a small managed Redis instance is the industry standard for stateless web tiers. Redis is blazing fast, and every app server can look up the merchant's session ID in sub-millisecond time. The only catch is that Redis is now on the critical login path, so we have to monitor its memory and uptime.",
         "effectReasons": {
           "upfrontCost": "$800 covers provisioning managed Redis, updating session middleware, and migrating existing active tokens.",
           "monthlyBurn": "Running a managed Redis instance with automatic backups adds $400/month.",
@@ -88,7 +88,7 @@ export const level005 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "No session-store round trip is required.",
         "downside": "Immediate per-session revocation needs extra state; short expiry bounds but does not eliminate that risk.",
-        "jimmyExplanation": "Signed session cookies keep session claims encrypted right in the user's browser. It avoids running a Redis cluster entirely, which saves money. The downside: if an account is compromised or an employee is fired, you can't instantly revoke that cookie on the server until its timer expires.",
+        "byteExplanation": "Signed session cookies keep session claims encrypted right in the user's browser. It avoids running a Redis cluster entirely, which saves money. The downside: if an account is compromised or an employee is fired, you can't instantly revoke that cookie on the server until its timer expires.",
         "effectReasons": {
           "upfrontCost": "$360 covers implementing signed cookie middleware, key rotation routines, and security auditing.",
           "monthlyBurn": "Bandwidth and security monitoring add a modest $340/month without needing dedicated cache hardware.",
@@ -125,7 +125,7 @@ export const level005 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Affinity reduces cross-instance logouts while hosts remain healthy.",
         "downside": "Deployments and host loss still invalidate sessions; sticky routing is a bridge, not durable state.",
-        "jimmyExplanation": "Sticky sessions tell the load balancer to send the same user to the same server every time. It's a quick hack that avoids changing session storage, but it breaks during deployments, causes uneven traffic distribution if one merchant gets huge, and logs everyone out whenever a server restarts.",
+        "byteExplanation": "Sticky sessions tell the load balancer to send the same user to the same server every time. It's a quick hack that avoids changing session storage, but it breaks during deployments, causes uneven traffic distribution if one merchant gets huge, and logs everyone out whenever a server restarts.",
         "effectReasons": {
           "upfrontCost": "$520 pays to configure sticky cookies on the load balancer and test session affinity.",
           "monthlyBurn": "Load balancer affinity tracking and skewed instance headroom add $460/month.",
@@ -174,12 +174,12 @@ export const level005 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "We simulated replacing our app host, and every logged-in merchant was instantly kicked out because their session files only existed on the old server's ephemeral disk."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Even on a single server, whenever we deploy new code or replace a dying host, local session files vanish. Let's decide where authentication state lives so users stay logged in across deployments."
         }

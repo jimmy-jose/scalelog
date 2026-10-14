@@ -5,8 +5,8 @@ export const level002: Level = {
   title: "The Dashboard Is Slow", kicker: "CHAPTER 01 · FIND THE BOTTLENECK",
   description: "Customers are staring at a loading spinner for four seconds. Your trace points to an orders query scanning hundreds of thousands of rows.",
   dialogue: [
-    { character: "jimmy", emotion: "concerned", text: "{name}, the dashboard is slow enough for users to question their life choices." },
-    { character: "jimmy", emotion: "thinking", text: "PostgreSQL is doing a full table scan for every orders view. We need a precise fix, not a shiny one." },
+    { character: "byte", emotion: "concerned", text: "{name}, the dashboard is slow enough for users to question their life choices." },
+    { character: "byte", emotion: "thinking", text: "PostgreSQL is doing a full table scan for every orders view. We need a precise fix, not a shiny one." },
   ],
   metrics: [{ label: "DB CPU", value: "94%", severity: "critical" }, { label: "p95", value: "3.8s", severity: "warning" }, { label: "Errors", value: "11%", severity: "critical" }],
   incidentFeedback: { sound: "incidentCritical", haptic: "heavy" },
@@ -27,7 +27,7 @@ export const level002: Level = {
         downsideLabel: "Write & storage overhead",
         upside: "A targeted index turns the expensive full scan into a fast lookup for the orders view.",
         downside: "The index uses storage and adds a little work to writes; it must match the real query pattern.",
-        jimmyExplanation: "This is a precise fix because the trace identified the columns the query filters and sorts by. Reads stop scanning every row, so the incident pressure falls. The trade is a small amount of index storage and write overhead, not a new service to keep warm.",
+        byteExplanation: "This is a precise fix because the trace identified the columns the query filters and sorts by. Reads stop scanning every row, so the incident pressure falls. The trade is a small amount of index storage and write overhead, not a new service to keep warm.",
         effectReasons: {
           upfrontCost: "$200 covers a focused schema change and rollout, far less than buying a larger database tier.",
           reliability: "Fewer rows scanned means less CPU contention and fewer slow requests and timeouts on this hot path.",
@@ -47,7 +47,7 @@ export const level002: Level = {
         downsideLabel: "Stale data & cache misses",
         upside: "Repeated dashboard reads can return quickly while the cached response is still warm.",
         downside: "Cache misses still hit the slow query; stale data, invalidation, and $150 monthly spend become new concerns.",
-        jimmyExplanation: "Redis can make popular dashboards feel faster, but it sits in front of the cause rather than removing it. A miss or expired entry sends the same full scan to PostgreSQL. You gain a fast common path and accept cache correctness plus another service to operate.",
+        byteExplanation: "Redis can make popular dashboards feel faster, but it sits in front of the cause rather than removing it. A miss or expired entry sends the same full scan to PostgreSQL. You gain a fast common path and accept cache correctness plus another service to operate.",
         effectReasons: {
           upfrontCost: "$500 starts a separate cache path before we have measured how much repeated traffic it will absorb.",
           monthlyBurn: "The Redis instance and monitoring add $150 to the monthly bill, even when its cache is not helping.",
@@ -72,7 +72,7 @@ export const level002: Level = {
         downsideLabel: "Higher bill, same scan",
         upside: "More CPU and memory can reduce saturation immediately and buy time for a measured fix.",
         downside: "The same query still scans every row, while the larger instance costs $900 more each month.",
-        jimmyExplanation: "More headroom can help when the database is short on capacity. Here, the trace shows an inefficient query plan, so a larger machine mainly delays the next saturation point. You buy breathing room, not a durable fix.",
+        byteExplanation: "More headroom can help when the database is short on capacity. Here, the trace shows an inefficient query plan, so a larger machine mainly delays the next saturation point. You buy breathing room, not a durable fix.",
         effectReasons: {
           upfrontCost: "$9,000 is the one-time migration and provisioning effort for the larger database tier.",
           monthlyBurn: "The larger managed instance raises recurring infrastructure spend by $900 per month.",

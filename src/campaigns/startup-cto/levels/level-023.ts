@@ -6,7 +6,7 @@ export const level023 = defineStartupLevel({
   "description": "An enterprise merchant feature requires adding a tax_region column to our 600-million-row orders table. A migration runs ALTER TABLE orders ADD COLUMN tax_region VARCHAR NOT NULL DEFAULT 'US'. PostgreSQL takes an exclusive table lock to rewrite all 600 million rows. All incoming checkout transactions freeze waiting for the lock, connection pools saturate, and the site crashes.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "You cannot run a locking table rewrite on a table with 600 million rows! An exclusive table lock stops all reads and writes dead in their tracks. We must use the Expand and Contract pattern across multiple backward-compatible deployments."
       }
@@ -56,7 +56,7 @@ export const level023 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Short controlled steps preserve mixed-version operation and allow rollback.",
         "downside": "The migration spans releases; concurrent index builds still consume I/O and need validation.",
-        "jimmyExplanation": "The Expand/Contract pattern achieves zero downtime: 1) Deploy code that can read old or new schemas; 2) Add the column as nullable without a default (instant metadata-only change in PostgreSQL); 3) Dual-write new rows with the new column; 4) Backfill historical rows in small batches of 5,000 rows with pauses; 5) Switch reads to the new column; 6) Remove old code.",
+        "byteExplanation": "The Expand/Contract pattern achieves zero downtime: 1) Deploy code that can read old or new schemas; 2) Add the column as nullable without a default (instant metadata-only change in PostgreSQL); 3) Dual-write new rows with the new column; 4) Backfill historical rows in small batches of 5,000 rows with pauses; 5) Switch reads to the new column; 6) Remove old code.",
         "effectReasons": {
           "upfrontCost": "$4,800 covers phased migration pipelines, batched backfill workers, and schema compatibility checks.",
           "monthlyBurn": "Background backfill worker capacity and migration observability add $2,600/month.",
@@ -93,7 +93,7 @@ export const level023 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A declared downtime window can simplify a rare incompatible change.",
         "downside": "The enterprise availability commitment and global merchant schedules make the window expensive.",
-        "jimmyExplanation": "Scheduling a planned 30-minute maintenance window at 2:00 AM on Sunday to run the migration with a strict lock timeout avoids building a phased backfill worker. It causes brief scheduled downtime, but gets the schema updated in one shot.",
+        "byteExplanation": "Scheduling a planned 30-minute maintenance window at 2:00 AM on Sunday to run the migration with a strict lock timeout avoids building a phased backfill worker. It causes brief scheduled downtime, but gets the schema updated in one shot.",
         "effectReasons": {
           "upfrontCost": "$2,160 covers maintenance dry-runs, merchant notification banners, and rollback scripts.",
           "monthlyBurn": "Maintenance tooling and off-hours engineer on-call compensation add $2,340/month.",
@@ -130,7 +130,7 @@ export const level023 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "One transaction offers a simple rollback boundary.",
         "downside": "Locks and WAL remain unbounded for the user journey and mixed-version clients still break.",
-        "jimmyExplanation": "Running a blocking ALTER TABLE with a DEFAULT value and a synchronous full-table UPDATE during normal operating hours will lock the table for 25 minutes. Every web worker will hang waiting for the table lock, and the entire platform will crash.",
+        "byteExplanation": "Running a blocking ALTER TABLE with a DEFAULT value and a synchronous full-table UPDATE during normal operating hours will lock the table for 25 minutes. Every web worker will hang waiting for the table lock, and the entire platform will crash.",
         "effectReasons": {
           "upfrontCost": "$3,120 is burned recovering from the migration-induced production outage.",
           "monthlyBurn": "Incident debriefs and emergency rollback support add $2,990/month.",

@@ -6,12 +6,12 @@ export const level025 = defineStartupLevel({
   "description": "Media transforms (resizing product photos, transcoding promotional clips) consume 72% of shared worker CPU and demand six releases a week, while core orders release only once a week. Cartline has a clean media boundary and can fund a dedicated four-person team.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Media has completely different resource needs and deploys six times as often as core checkout. That's a textbook reason to extract a dedicated service. But remember: every network boundary turns local function calls into distributed failure modes."
       },
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "normal",
           "text": "This month’s operating plan adds 3 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
       }
@@ -56,7 +56,7 @@ export const level025 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Media scales and deploys independently while orders stay in the modular core.",
         "downside": "Service contracts, on-call ownership and independent capacity now have a recurring cost.",
-        "jimmyExplanation": "Giving media its own deploy and job queue frees our order workers from heavy image crunching. But running an independent service means managing API contracts, network retries, and dedicated on-call rotations.",
+        "byteExplanation": "Giving media its own deploy and job queue frees our order workers from heavy image crunching. But running an independent service means managing API contracts, network retries, and dedicated on-call rotations.",
         "effectReasons": {
           "upfrontCost": "$28,000 covers provisioning independent media services, deployment pipelines, and scoped storage access.",
           "monthlyBurn": "The monthly change is +$26,000, which includes 3 new engineers and independent service infrastructure.",
@@ -93,7 +93,7 @@ export const level025 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Resource isolation works with fewer distributed contracts.",
         "downside": "Release coordination remains; some media changes still wait for core releases.",
-        "jimmyExplanation": "Keeping the code in the monolith while dedicating worker pools gives us CPU isolation without the overhead of maintaining separate microservice infrastructure. The downside is the media team still has to coordinate deployments with the core team.",
+        "byteExplanation": "Keeping the code in the monolith while dedicating worker pools gives us CPU isolation without the overhead of maintaining separate microservice infrastructure. The downside is the media team still has to coordinate deployments with the core team.",
         "effectReasons": {
           "upfrontCost": "$12,600 covers configuring dedicated worker queues and segregating compute pools.",
           "monthlyBurn": "The monthly change is +$22,100, including 3 new engineers and dedicated worker instances.",
@@ -130,7 +130,7 @@ export const level025 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Many domains could eventually scale independently.",
         "downside": "Unproven boundaries and shared-database access create coordination and on-call load faster than the team can absorb.",
-        "jimmyExplanation": "Splitting users, orders, billing, catalogue, and media into five separate microservices all at once is organizational suicide. We would spend all our time debugging distributed transactions and network timeouts instead of shipping features.",
+        "byteExplanation": "Splitting users, orders, billing, catalogue, and media into five separate microservices all at once is organizational suicide. We would spend all our time debugging distributed transactions and network timeouts instead of shipping features.",
         "effectReasons": {
           "upfrontCost": "$18,200 is spent attempting a rushed multi-service migration across multiple domains.",
           "monthlyBurn": "The monthly change is +$29,900, funding 3 engineers plus multi-service overhead and network costs.",

@@ -6,7 +6,7 @@ export const level015 = defineStartupLevel({
   "description": "Our third-party webhook notification service experiences a brief outage and responds with HTTP 429 (Too Many Requests). Our worker fleet immediately retries every failed webhook every 100 milliseconds in a tight loop. Instead of recovering, the provider is overwhelmed by thousands of aggressive retries, extending the outage for hours.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "We are DDOSing our own webhook provider! When a service says 'I am busy, stop hitting me,' retrying 1,000 times a second just keeps their servers in the dirt. We need exponential backoff and randomized jitter."
       }
@@ -51,7 +51,7 @@ export const level015 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "The provider can recover without another synchronized storm.",
         "downside": "Some callbacks arrive later; expiry and oldest-job age need visibility.",
-        "jimmyExplanation": "Exponential backoff increases the wait time after each failure (1s, 2s, 4s, 8s, 16s) up to a bounded maximum ceiling. Adding randomized 'jitter' (e.g. 4s ± random 500ms) prevents all workers from retrying at the exact same millisecond, smoothing out the request curve and allowing the provider to recover gracefully.",
+        "byteExplanation": "Exponential backoff increases the wait time after each failure (1s, 2s, 4s, 8s, 16s) up to a bounded maximum ceiling. Adding randomized 'jitter' (e.g. 4s ± random 500ms) prevents all workers from retrying at the exact same millisecond, smoothing out the request curve and allowing the provider to recover gracefully.",
         "effectReasons": {
           "upfrontCost": "$2,000 covers implementing exponential backoff with full jitter, retry budgets, and webhook telemetry.",
           "monthlyBurn": "Monitoring webhook backoff queues and provider latency adds $1,100/month.",
@@ -88,7 +88,7 @@ export const level015 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "An operator can restore a small incident predictably.",
         "downside": "Manual intervention does not scale across many destinations and recovery can be slow.",
-        "jimmyExplanation": "Capping retry attempts to three fixed tries spaced 30 seconds apart avoids an infinite loop and reduces provider load. It is a simple, predictable policy, though without randomized jitter, workers can still retry in small synchronized pulses.",
+        "byteExplanation": "Capping retry attempts to three fixed tries spaced 30 seconds apart avoids an infinite loop and reduces provider load. It is a simple, predictable policy, though without randomized jitter, workers can still retry in small synchronized pulses.",
         "effectReasons": {
           "upfrontCost": "$900 covers setting up fixed 3-attempt retry rules and delay queues.",
           "monthlyBurn": "Basic retry queue monitoring and delay tracking add $990/month.",
@@ -125,7 +125,7 @@ export const level015 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "More workers can help when worker CPU is truly saturated.",
         "downside": "Here they send more attempts into the same provider quota and increase backlog.",
-        "jimmyExplanation": "Retrying immediately in an infinite loop guarantees that any brief 30-second glitch will turn into an all-day outage. Thousands of workers spinning on failed HTTP calls will burn our CPU, exhaust connection pools, and get our API key permanently blacklisted by the provider.",
+        "byteExplanation": "Retrying immediately in an infinite loop guarantees that any brief 30-second glitch will turn into an all-day outage. Thousands of workers spinning on failed HTTP calls will burn our CPU, exhaust connection pools, and get our API key permanently blacklisted by the provider.",
         "effectReasons": {
           "upfrontCost": "$1,300 is wasted implementing aggressive infinite-retry loops.",
           "monthlyBurn": "Massive CPU burn from constant spinning retries adds $1,265/month.",

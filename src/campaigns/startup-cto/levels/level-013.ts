@@ -6,7 +6,7 @@ export const level013 = defineStartupLevel({
   "description": "When a customer taps 'Pay Now,' their browser spinner spins for 3.5 seconds. Performance traces show that saving the order to PostgreSQL only takes 40 milliseconds, but the web request then synchronously renders a PDF invoice and waits for an external SendGrid email API call before returning an HTTP 200 to the shopper.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Why is a paying customer sitting there waiting for SendGrid to send an email? Commit the order to the database, hand off the PDF generation and email sending to a background job queue, and return a fast 'Order Confirmed' screen immediately."
       }
@@ -51,7 +51,7 @@ export const level013 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Checkout no longer waits for PDF or mail work; workers scale separately.",
         "downside": "A commit/publish gap remains under reconciliation, and workers need retry and duplicate handling.",
-        "jimmyExplanation": "Moving receipt generation and email delivery to a persistent message queue (like Redis BullMQ or RabbitMQ) decouples checkout latency from external network calls. The customer gets an instant confirmation in 50ms, while background worker processes handle PDF generation and email dispatch asynchronously.",
+        "byteExplanation": "Moving receipt generation and email delivery to a persistent message queue (like Redis BullMQ or RabbitMQ) decouples checkout latency from external network calls. The customer gets an instant confirmation in 50ms, while background worker processes handle PDF generation and email dispatch asynchronously.",
         "effectReasons": {
           "upfrontCost": "$2,800 covers message queue infrastructure setup, worker process deployment, and durable job serialization.",
           "monthlyBurn": "Running background worker instances and queue storage adds $1,800/month.",
@@ -88,7 +88,7 @@ export const level013 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Less infrastructure and bounded request time can work at modest volume.",
         "downside": "App slots still wait on I/O; the deadline does not make slow work finish faster.",
-        "jimmyExplanation": "Setting an aggressive 800ms timeout on the email API call and generating a lightweight plain-text receipt keeps the work synchronous while reducing the worst-case delay. It avoids running a message queue today, but if SendGrid is down, customers won't get their receipts.",
+        "byteExplanation": "Setting an aggressive 800ms timeout on the email API call and generating a lightweight plain-text receipt keeps the work synchronous while reducing the worst-case delay. It avoids running a message queue today, but if SendGrid is down, customers won't get their receipts.",
         "effectReasons": {
           "upfrontCost": "$1,260 funds optimizing the synchronous receipt code and configuring strict HTTP timeouts.",
           "monthlyBurn": "Lightweight receipt generation and API timeout monitoring add $1,620/month.",
@@ -125,7 +125,7 @@ export const level013 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "The buyer sees a quick response with minimal implementation.",
         "downside": "Host termination or deploys can lose receipts; response success does not establish durable handoff.",
-        "jimmyExplanation": "Spawning an unmonitored in-memory background thread or async process inside the web server is a recipe for data loss. If the web server restarts or crashes for a deployment 10 seconds later, that in-memory thread is killed, and the customer's receipt is lost forever.",
+        "byteExplanation": "Spawning an unmonitored in-memory background thread or async process inside the web server is a recipe for data loss. If the web server restarts or crashes for a deployment 10 seconds later, that in-memory thread is killed, and the customer's receipt is lost forever.",
         "effectReasons": {
           "upfrontCost": "$1,820 is burned writing fragile in-memory background threading logic.",
           "monthlyBurn": "Server memory pressure from unmanaged in-memory threads adds $2,070/month.",

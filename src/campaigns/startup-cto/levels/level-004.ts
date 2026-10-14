@@ -6,7 +6,7 @@ export const level004 = defineStartupLevel({
   "description": "A viral promotion sends 180 requests/second to our single application host, pushing app CPU to 96% and latency past two seconds. Profiling shows 78% of request time is spent rendering templates and JSON, while the database is healthy. We need a repeatable way to scale app compute before the next flash sale.",
   "dialogue": [
     {
-      "character": "jimmy",
+      "character": "byte",
       "emotion": "thinking",
       "text": "The app CPU is pegged rendering views, but database queries are flying back in 18 milliseconds. We need more app instances behind a load balancer, not a database upgrade. Just remember to keep the total database connection budget capped."
     }
@@ -56,7 +56,7 @@ export const level004 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Measured parallel rendering capacity and a repeatable rollout.",
         "downside": "Three hosts cost more; local sessions and files still need attention.",
-        "jimmyExplanation": "Adding two app instances behind a load balancer directly addresses the bottleneck: 78% of our time was CPU rendering, not database queries. Spreading traffic across three instances gives us parallel headroom immediately. Just be warned: as soon as requests bounce between different servers, anything stored on a local hard drive (like user sessions or uploaded images) will start glitching.",
+        "byteExplanation": "Adding two app instances behind a load balancer directly addresses the bottleneck: 78% of our time was CPU rendering, not database queries. Spreading traffic across three instances gives us parallel headroom immediately. Just be warned: as soon as requests bounce between different servers, anything stored on a local hard drive (like user sessions or uploaded images) will start glitching.",
         "effectReasons": {
           "upfrontCost": "$1,200 covers provisioning the load balancer, deploying two new app instances, and configuring health check draining.",
           "monthlyBurn": "Running two additional cloud app instances adds $600/month to our infrastructure bill.",
@@ -93,7 +93,7 @@ export const level004 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A cheaper implementation buys measured headroom now.",
         "downside": "One failure domain remains, and the next resize requires a maintenance window.",
-        "jimmyExplanation": "Scaling vertically to a beefier server is the simplest move right now. It buys us CPU headroom without the operational overhead of a load balancer. But remember: a single server is still a single point of failure, and you can only upgrade a box so many times before you hit a hard hardware ceiling.",
+        "byteExplanation": "Scaling vertically to a beefier server is the simplest move right now. It buys us CPU headroom without the operational overhead of a load balancer. But remember: a single server is still a single point of failure, and you can only upgrade a box so many times before you hit a hard hardware ceiling.",
         "effectReasons": {
           "upfrontCost": "$540 pays for the scheduled instance resize, load testing, and brief maintenance window.",
           "monthlyBurn": "Pausing contracted roadmap work saves $3,000/month while absorbing the modest cost of the larger server.",
@@ -130,7 +130,7 @@ export const level004 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Separate ownership could become useful with independent teams.",
         "downside": "The same CPU quota remains saturated, and two engineers gain network failure paths.",
-        "jimmyExplanation": "Splitting rendering into three separate services on the exact same server doesn't create new CPU capacity: they're all still fighting for the same CPU cores! Worse, you've just turned internal function calls into HTTP network calls, adding latency, serialization overhead, and new ways for requests to fail.",
+        "byteExplanation": "Splitting rendering into three separate services on the exact same server doesn't create new CPU capacity: they're all still fighting for the same CPU cores! Worse, you've just turned internal function calls into HTTP network calls, adding latency, serialization overhead, and new ways for requests to fail.",
         "effectReasons": {
           "upfrontCost": "$780 is burned carving up code boundaries without adding any new compute resources.",
           "monthlyBurn": "Running multiple service runtimes and service-level logging adds $690/month in overhead.",

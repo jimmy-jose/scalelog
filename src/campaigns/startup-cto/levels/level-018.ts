@@ -6,12 +6,12 @@ export const level018 = defineStartupLevel({
   "description": "An enterprise merchant uploads a bulk catalog import of 100,000 product images. All 100,000 image resizing jobs are dumped into the exact same background worker queue used for customer receipts. Because the queue is processed in FIFO order, lightweight, critical customer purchase receipts are stuck waiting behind 100,000 slow, 10-second image resizing tasks. We are also adding two engineers this month.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Bulk image processing and customer purchase receipts are sharing the same worker pool. Receipts take 50 milliseconds, but they are stuck in traffic behind 100,000 heavy image downloads that take 10 seconds each."
       },
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "normal",
           "text": "We are hiring two engineers this month to own integrations and operational infrastructure. Their salaries are factored into our recurring monthly burn."
       }
@@ -56,7 +56,7 @@ export const level018 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Latency-sensitive jobs retain capacity during bulk imports.",
         "downside": "Separate queues need scheduling and operational ownership; more concurrency must respect DB and provider limits.",
-        "jimmyExplanation": "Queue isolation and class-of-service separation solve head-of-line blocking: we create two separate queues: high-priority-receipts and bulk-imports, each with dedicated worker pools. Even if a merchant queues 500,000 images, the receipt workers are on their own reserved pool and continue processing customer receipts in under 100 milliseconds.",
+        "byteExplanation": "Queue isolation and class-of-service separation solve head-of-line blocking: we create two separate queues: high-priority-receipts and bulk-imports, each with dedicated worker pools. Even if a merchant queues 500,000 images, the receipt workers are on their own reserved pool and continue processing customer receipts in under 100 milliseconds.",
         "effectReasons": {
           "upfrontCost": "$3,600 covers configuring multi-queue topologies, dedicated worker pool routing, and backpressure metrics.",
           "monthlyBurn": "Includes our two new engineering hires ($10,000/mo) plus dedicated worker instance pools, totaling $12,500/month.",
@@ -93,7 +93,7 @@ export const level018 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A simple schedule meets receipt latency without many queues.",
         "downside": "International merchants lack a universal night; imports have a longer turnaround contract.",
-        "jimmyExplanation": "Rate-limiting the bulk import pipeline to 20 jobs per second and running imports during off-peak hours gives receipts breathing room without adding extra worker pools today. It protects receipts, though big imports take longer to finish.",
+        "byteExplanation": "Rate-limiting the bulk import pipeline to 20 jobs per second and running imports during off-peak hours gives receipts breathing room without adding extra worker pools today. It protects receipts, though big imports take longer to finish.",
         "effectReasons": {
           "upfrontCost": "$1,620 covers import rate limiting, scheduling windows, and worker thread balancing.",
           "monthlyBurn": "Includes our two new hires ($10,000/mo) plus baseline worker capacity, totaling $10,625/month.",
@@ -130,7 +130,7 @@ export const level018 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "A homogeneous CPU-bound queue could drain faster this way.",
         "downside": "Slow jobs hide in the count and workers can overwhelm database/provider budgets.",
-        "jimmyExplanation": "Simply scaling the single worker pool to 100 workers to power through the combined queue is an expensive disaster. The 100 workers will grab 100 images, flood the database with connection requests, saturate network bandwidth, and run up a huge cloud bill without guaranteeing that receipts won't still get delayed.",
+        "byteExplanation": "Simply scaling the single worker pool to 100 workers to power through the combined queue is an expensive disaster. The 100 workers will grab 100 images, flood the database with connection requests, saturate network bandwidth, and run up a huge cloud bill without guaranteeing that receipts won't still get delayed.",
         "effectReasons": {
           "upfrontCost": "$2,340 is burned provisioning large uncapped worker pools.",
           "monthlyBurn": "Includes our two new hires ($10,000/mo) plus massive worker instance spend, totaling $14,375/month.",
@@ -179,17 +179,17 @@ export const level018 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Imports and receipts contend in the local delivery loop. The five-second enterprise target requires reserved receipt capacity; the queue-based response includes an explicit durable job rollout."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "A queue preserves work; it does not decide what matters first. Count the oldest receipt, not just how many messages are waiting."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "normal",
           "text": "This month’s operating plan adds 2 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
         }

@@ -6,12 +6,12 @@ export const level031 = defineStartupLevel({
   "description": "The orders and audit table has grown to 4 terabytes. Running historical data cleanup jobs (like DELETE FROM orders WHERE created_at < NOW() - INTERVAL '1 year') takes 9 hours, locks tables, and spikes disk I/O, causing checkout queries to stall. Queries for today's orders slow down because the index tree has grown massive.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Deleting old records row-by-row is choking the database. If we partition orders by creation month, querying today's orders prunes 90% of the data instantly, and expiring last year's history becomes an instantaneous table drop."
       },
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "normal",
           "text": "This month’s operating plan adds 2 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
       }
@@ -61,7 +61,7 @@ export const level031 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Pruning and partition retirement reduce scanned and deleted data.",
         "downside": "Unique constraints on partitioned tables must include partition keys or use a separate invariant; one writer remains.",
-        "jimmyExplanation": "Partitioning the orders table into monthly chunks lets PostgreSQL prune older partitions during active queries. Purging expired records becomes an instantaneous table drop instead of a 9-hour locking DELETE sweep.",
+        "byteExplanation": "Partitioning the orders table into monthly chunks lets PostgreSQL prune older partitions during active queries. Purging expired records becomes an instantaneous table drop instead of a 9-hour locking DELETE sweep.",
         "effectReasons": {
           "upfrontCost": "$38,000 covers data backfilling, partition creation, and automated monthly table maintenance scripts.",
           "monthlyBurn": "The monthly change is +$26,000, funding 2 engineers and partition management automation.",
@@ -98,7 +98,7 @@ export const level031 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A simple hot/cold split reduces active-table size.",
         "downside": "Recurring moves and archive queries need care; monthly retention remains more manual.",
-        "jimmyExplanation": "Running low-priority background workers to delete expired rows in batches of 1,000 avoids table partitioning, but the single massive table continues to bloat and database indexes remain huge.",
+        "byteExplanation": "Running low-priority background workers to delete expired rows in batches of 1,000 avoids table partitioning, but the single massive table continues to bloat and database indexes remain huge.",
         "effectReasons": {
           "upfrontCost": "$17,100 covers writing throttled background deletion scripts and table vacuum schedules.",
           "monthlyBurn": "The monthly change is +$22,100, funding 2 engineers and background deletion compute cycles.",
@@ -135,7 +135,7 @@ export const level031 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Independent writers could add future aggregate write capacity.",
         "downside": "Date queries scatter and retention remains costly; the measured problem is lifecycle maintenance, not writer saturation.",
-        "jimmyExplanation": "Firing off a massive multi-million-row DELETE statement at 2 AM locks the orders table, bloats the transaction log, and crashes checkouts for shoppers in different time zones.",
+        "byteExplanation": "Firing off a massive multi-million-row DELETE statement at 2 AM locks the orders table, bloats the transaction log, and crashes checkouts for shoppers in different time zones.",
         "effectReasons": {
           "upfrontCost": "$24,700 is burned in emergency downtime recovery and transaction log cleanup.",
           "monthlyBurn": "The monthly change is +$29,900, funding 2 engineers and high-capacity storage for bloated transaction logs.",

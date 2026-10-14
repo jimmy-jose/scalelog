@@ -6,7 +6,7 @@ export const level030 = defineStartupLevel({
   "description": "When charging a credit card, our call to the payment gateway times out after 10 seconds. We mark the order as 'Failed' and tell the customer to try again. But 5 seconds later, the gateway actually processes the charge! The customer is billed twice and stock inventory is corrupted.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "A network timeout never means the charge failed; it means we don't know what happened. Retrying blindly with a fresh charge request is how customers get double-billed and merchant accounts get banned."
       }
@@ -56,7 +56,7 @@ export const level030 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Ambiguous authorization cannot trigger duplicate charges or false fulfillment.",
         "downside": "Pending is visible to customers; a late success after reservation expiry needs refund or reallocation handling.",
-        "jimmyExplanation": "We pass a deterministic idempotency key to the payment gateway and mark timed-out orders as 'Pending'. Background workers reconcile the final state using gateway webhooks or status lookups before releasing inventory or notifying the buyer.",
+        "byteExplanation": "We pass a deterministic idempotency key to the payment gateway and mark timed-out orders as 'Pending'. Background workers reconcile the final state using gateway webhooks or status lookups before releasing inventory or notifying the buyer.",
         "effectReasons": {
           "upfrontCost": "$30,000 covers idempotency key generation, pending order state machines, and webhook reconciliation workers.",
           "monthlyBurn": "Webhook ingress endpoints, reconciliation polling jobs, and payment monitoring cost $14,000/month.",
@@ -93,7 +93,7 @@ export const level030 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Simpler containment protects correctness and provider capacity.",
         "downside": "Sales stop temporarily even when some authorizations could succeed.",
-        "jimmyExplanation": "Stopping automatic customer retries and routing timed-out orders into a manual support queue prevents duplicate billing, but creates an operational burden for the merchant support team.",
+        "byteExplanation": "Stopping automatic customer retries and routing timed-out orders into a manual support queue prevents duplicate billing, but creates an operational burden for the merchant support team.",
         "effectReasons": {
           "upfrontCost": "$13,500 covers manual review admin tools and automated support queue triage rules.",
           "monthlyBurn": "Manual review tools and support escalation staffing cost $11,900/month.",
@@ -130,7 +130,7 @@ export const level030 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "A second attempt may respond quickly.",
         "downside": "The first attempt may already have charged; new IDs bypass deduplication and can double-charge buyers.",
-        "jimmyExplanation": "Immediately retrying timed-out payment requests without idempotency keys creates duplicate authorization holds on customer credit cards, triggering bank fraud flags and merchant chargeback fees.",
+        "byteExplanation": "Immediately retrying timed-out payment requests without idempotency keys creates duplicate authorization holds on customer credit cards, triggering bank fraud flags and merchant chargeback fees.",
         "effectReasons": {
           "upfrontCost": "$19,500 is lost to payment processor dispute fees, chargeback penalties, and emergency hotfixes.",
           "monthlyBurn": "Dispute management overhead and payment processing penalties cost $16,100/month.",
@@ -184,12 +184,12 @@ export const level030 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "You did not deploy full distributed tracing. A focused synthetic probe and a temporary provider-span sample isolate the long tail in payment authorization; use that evidence rather than assuming CPU is the problem."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "A timeout tells us we do not know the result. It does not tell us the charge failed. Keep the payment identity while we find out."
         }

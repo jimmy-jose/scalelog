@@ -6,7 +6,7 @@ export const level020 = defineStartupLevel({
   "description": "A shopper completes checkout, pays $120, and is immediately redirected to the order confirmation page. The page displays an error: 'Order Not Found!' In a panic, the shopper clicks 'Pay Now' again, getting billed twice. Tracing reveals the order was committed to the primary database, but the confirmation page queried our read replica, which was 600 milliseconds behind.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "This is the classic 'Read-Your-Own-Writes' consistency bug! The customer created an order on the primary writer, but their browser was routed to a read replica that was half a second behind. To the replica, the order literally did not exist yet!"
       }
@@ -51,7 +51,7 @@ export const level020 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Read-after-write works without forcing every report to be synchronous.",
         "downside": "Primary fallback requires a budget; routing rules must follow the user journey.",
-        "jimmyExplanation": "We establish a session-aware read policy: for 5 seconds after a user performs a write (like placing an order or editing inventory), their subsequent read requests are pinned to the primary database. After 5 seconds, once replication lag is safely passed, their reads return to the read replica.",
+        "byteExplanation": "We establish a session-aware read policy: for 5 seconds after a user performs a write (like placing an order or editing inventory), their subsequent read requests are pinned to the primary database. After 5 seconds, once replication lag is safely passed, their reads return to the read replica.",
         "effectReasons": {
           "upfrontCost": "$4,500 covers session-aware database routing, replication watermark tracking, and checkout flow tests.",
           "monthlyBurn": "Primary database connection capacity and routing telemetry add $2,400/month.",
@@ -88,7 +88,7 @@ export const level020 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A single read source gives straightforward visibility semantics.",
         "downside": "Reports again consume write-tier headroom and raise infrastructure spend.",
-        "jimmyExplanation": "Passing the newly created order details directly in the checkout response or encrypted client state renders the confirmation page without querying the replica at all. It avoids database routing logic, though it only protects the immediate confirmation screen.",
+        "byteExplanation": "Passing the newly created order details directly in the checkout response or encrypted client state renders the confirmation page without querying the replica at all. It avoids database routing logic, though it only protects the immediate confirmation screen.",
         "effectReasons": {
           "upfrontCost": "$2,025 covers updating checkout response payloads and client-side confirmation rendering.",
           "monthlyBurn": "Payload serialization and client state validation add $2,160/month.",
@@ -125,7 +125,7 @@ export const level020 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "A delay can hide some short replication gaps.",
         "downside": "Observed lag exceeds one second, so elapsed time is not a consistency guarantee.",
-        "jimmyExplanation": "Adding a 1-second sleep delay before loading the confirmation page is a horrific anti-pattern. If replication lag spikes to 1.5 seconds during a busy sale, the bug still happens. And in the meantime, you have deliberately forced every single paying customer to stare at a blank screen for a second!",
+        "byteExplanation": "Adding a 1-second sleep delay before loading the confirmation page is a horrific anti-pattern. If replication lag spikes to 1.5 seconds during a busy sale, the bug still happens. And in the meantime, you have deliberately forced every single paying customer to stare at a blank screen for a second!",
         "effectReasons": {
           "upfrontCost": "$2,925 is wasted on artificial sleep delays and hacky frontend timers.",
           "monthlyBurn": "Tied-up worker threads waiting on sleep timers inflate monthly spend by $2,760.",
@@ -174,12 +174,12 @@ export const level020 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "You kept reports on the primary. The mobile team proposes a replica route; its prelaunch test shows a newly created order missing for up to 4.2 seconds. Keep production reads consistent while deciding whether to enable that route."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "The order is there. We asked a reader that has not seen it yet. A one-second sleep is not proof that replication has caught up."
         }

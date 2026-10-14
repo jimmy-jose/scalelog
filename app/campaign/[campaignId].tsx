@@ -13,8 +13,8 @@ import { colors, radii, spacing } from "@/ui/theme";
 import { formatCompact, formatMoney } from "@/lib/format";
 import { gameFeedback } from "@/game/feedback/GameFeedbackManager";
 
-const jimmyWelcome = require("../../assets/characters/jimmy_welcome.png");
-const jimmyExplaining = require("../../assets/characters/jimmy_explain.png");
+const byteWelcome = require("../../assets/characters/jimmy_welcome.png");
+const byteExplaining = require("../../assets/characters/jimmy_explain.png");
 const emptyLevels: string[] = [];
 
 type CampaignStep = "welcome" | "brief";
@@ -103,7 +103,7 @@ export default function CampaignOnboardingScreen() {
     const name = nameDraft.trim();
     let age: number | null = null;
     if (!name) {
-      setError("Tell Jimmy what to call you.");
+      setError("Tell Byte what to call you.");
       return;
     }
     if (!ageSkipped) {
@@ -153,9 +153,9 @@ export default function CampaignOnboardingScreen() {
 
     {step === "welcome" ? <Animated.View entering={FadeInDown.duration(300)} style={[styles.welcomeCard, wide && styles.welcomeWide]}>
       <View style={styles.portraitColumn}>
-        <View style={styles.portraitFrame}><Image source={jimmyWelcome} resizeMode="contain" style={styles.welcomePortrait} accessibilityLabel="Byte welcoming the player" /></View>
-        <Text style={styles.jimmyName}>BYTE</Text>
-        <Text style={styles.jimmyRole}>YOUR AI ASSISTANT</Text>
+        <View style={styles.portraitFrame}><Image source={byteWelcome} resizeMode="contain" style={styles.welcomePortrait} accessibilityLabel="Byte welcoming the player" /></View>
+        <Text style={styles.byteName}>BYTE</Text>
+        <Text style={styles.byteRole}>YOUR AI ASSISTANT</Text>
       </View>
       <View style={styles.welcomeCopy}>
         <Text style={styles.eyebrow}>BEFORE THE FIRST INCIDENT</Text>
@@ -189,9 +189,9 @@ export default function CampaignOnboardingScreen() {
           <Text style={styles.briefTitle}>Welcome to {campaign.story.companyName}{profile.name ? `, ${profile.name}` : ""}.</Text>
           <Text style={styles.briefProduct}>{campaign.story.product}</Text>
           <View style={styles.assistantLine}><View style={styles.onlineDot} /><Text style={styles.assistantText}>BYTE  ·  YOUR AI ASSISTANT</Text></View>
-          <Text style={styles.jimmyQuote}>“I’ve got you. Let’s start with the system you have, not the one somebody says you should have.”</Text>
+          <Text style={styles.byteQuote}>“I’ve got you. Let’s start with the system you have, not the one somebody says you should have.”</Text>
         </View>
-        <View style={styles.explainPortraitFrame}><Image source={jimmyExplaining} resizeMode="contain" style={styles.explainPortrait} accessibilityLabel="Byte explaining the campaign" /></View>
+        <View style={styles.explainPortraitFrame}><Image source={byteExplaining} resizeMode="contain" style={styles.explainPortrait} accessibilityLabel="Byte explaining the campaign" /></View>
       </View>
 
       <View style={[styles.briefGrid, wide && styles.briefGridWide]}>
@@ -243,10 +243,10 @@ const styles = StyleSheet.create({
   screen: { paddingBottom: 44 }, loading: { flex: 1, minHeight: 280, alignItems: "center", justifyContent: "center" }, loadingText: { color: colors.muted, fontSize: 13, fontWeight: "700" },
   progressRow: { flexDirection: "row", alignItems: "center", alignSelf: "center", marginTop: 3, marginBottom: 17 }, progressStep: { flexDirection: "row", alignItems: "center", gap: 7, opacity: 0.52 }, progressStepActive: { opacity: 1 }, progressNumber: { color: colors.muted, fontSize: 9, fontWeight: "900" }, progressNumberActive: { color: colors.mint }, progressLabel: { color: colors.muted, fontSize: 8, fontWeight: "900", letterSpacing: 0.9 }, progressLabelActive: { color: colors.white }, progressConnector: { width: 44, height: 1, backgroundColor: colors.border, marginHorizontal: 12 },
   welcomeCard: { maxWidth: 780, width: "100%", alignSelf: "center", flexDirection: "column", overflow: "hidden", backgroundColor: "#0C1A2B", borderWidth: 1, borderColor: colors.border, borderRadius: radii.lg }, welcomeWide: { flexDirection: "row", minHeight: 380 }, portraitColumn: { minHeight: 232, alignItems: "center", justifyContent: "flex-end", backgroundColor: "#132844", borderBottomWidth: 1, borderBottomColor: colors.border, paddingTop: 16 },
-  portraitFrame: { width: 146, height: 188, overflow: "hidden", alignItems: "center", justifyContent: "flex-end" }, welcomePortrait: { width: 141, height: 188 }, jimmyName: { color: colors.mint, fontSize: 10, fontWeight: "900", letterSpacing: 1.5, marginTop: 1 }, jimmyRole: { color: colors.muted, fontSize: 7, fontWeight: "900", letterSpacing: 1.1, marginTop: 3, marginBottom: 15 },
+  portraitFrame: { width: 146, height: 188, overflow: "hidden", alignItems: "center", justifyContent: "flex-end" }, welcomePortrait: { width: 141, height: 188 }, byteName: { color: colors.mint, fontSize: 10, fontWeight: "900", letterSpacing: 1.5, marginTop: 1 }, byteRole: { color: colors.muted, fontSize: 7, fontWeight: "900", letterSpacing: 1.1, marginTop: 3, marginBottom: 15 },
   welcomeCopy: { flex: 1, minWidth: 0, padding: spacing.lg }, eyebrow: { color: colors.mint, fontSize: 8, fontWeight: "900", letterSpacing: 1.3 }, heading: { color: colors.white, fontSize: 25, lineHeight: 31, fontWeight: "900", letterSpacing: -0.7, marginTop: 8 }, body: { color: "#AAB9CB", fontSize: 12, lineHeight: 19, marginTop: 9 }, form: { gap: 11, marginTop: 18 }, field: { gap: 6, flex: 1 }, fieldLabel: { color: "#8597AE", fontSize: 8, fontWeight: "900", letterSpacing: 0.8 }, input: { height: 44, paddingHorizontal: 12, borderWidth: 1, borderColor: "#344862", borderRadius: 10, backgroundColor: "#081525", color: colors.white, fontSize: 13, outlineStyle: "none" } as object, ageLabelRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, skipAge: { color: colors.blue, fontSize: 8, fontWeight: "900", letterSpacing: 0.55 }, error: { color: colors.red, fontSize: 10, lineHeight: 15 }, privacy: { color: colors.dim, fontSize: 9, lineHeight: 14, marginTop: -1 },
   profileSummary: { gap: 12, marginTop: 18 }, profileBadge: { alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 9, backgroundColor: "#102821", borderWidth: 1, borderColor: "#285648" }, profileBadgeText: { color: colors.mint, fontSize: 8, fontWeight: "900", letterSpacing: 0.7 }, bodySmall: { color: "#AAB9CB", fontSize: 11, lineHeight: 17 },
-  briefPage: { width: "100%", maxWidth: 940, alignSelf: "center", gap: 12 }, briefHero: { minHeight: 205, flexDirection: "row", overflow: "hidden", borderRadius: radii.lg, borderWidth: 1, borderColor: "#31506B", backgroundColor: "#10243B", paddingHorizontal: spacing.lg, paddingTop: spacing.md }, briefHeroWide: { minHeight: 228 }, briefCopy: { flex: 1, minWidth: 0, paddingVertical: spacing.md, paddingBottom: spacing.lg }, briefTitle: { color: colors.white, fontSize: 24, lineHeight: 30, fontWeight: "900", letterSpacing: -0.7, marginTop: 9 }, briefProduct: { maxWidth: 520, color: "#BDCBDA", fontSize: 12, lineHeight: 18, marginTop: 7 }, assistantLine: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 13 }, onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.mint }, assistantText: { color: colors.mint, fontSize: 8, fontWeight: "900", letterSpacing: 0.8 }, jimmyQuote: { color: "#DEE7F1", fontSize: 11, lineHeight: 17, fontWeight: "600", marginTop: 8, maxWidth: 510 }, explainPortraitFrame: { width: 190, alignSelf: "stretch", overflow: "hidden", justifyContent: "flex-end", marginLeft: 8 }, explainPortrait: { width: 169, height: 206, alignSelf: "center", marginBottom: -12 },
+  briefPage: { width: "100%", maxWidth: 940, alignSelf: "center", gap: 12 }, briefHero: { minHeight: 205, flexDirection: "row", overflow: "hidden", borderRadius: radii.lg, borderWidth: 1, borderColor: "#31506B", backgroundColor: "#10243B", paddingHorizontal: spacing.lg, paddingTop: spacing.md }, briefHeroWide: { minHeight: 228 }, briefCopy: { flex: 1, minWidth: 0, paddingVertical: spacing.md, paddingBottom: spacing.lg }, briefTitle: { color: colors.white, fontSize: 24, lineHeight: 30, fontWeight: "900", letterSpacing: -0.7, marginTop: 9 }, briefProduct: { maxWidth: 520, color: "#BDCBDA", fontSize: 12, lineHeight: 18, marginTop: 7 }, assistantLine: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 13 }, onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.mint }, assistantText: { color: colors.mint, fontSize: 8, fontWeight: "900", letterSpacing: 0.8 }, byteQuote: { color: "#DEE7F1", fontSize: 11, lineHeight: 17, fontWeight: "600", marginTop: 8, maxWidth: 510 }, explainPortraitFrame: { width: 190, alignSelf: "stretch", overflow: "hidden", justifyContent: "flex-end", marginLeft: 8 }, explainPortrait: { width: 169, height: 206, alignSelf: "center", marginBottom: -12 },
   briefGrid: { flexDirection: "column", gap: 10 }, briefGridWide: { flexDirection: "row" }, briefPanel: { minWidth: 0, padding: spacing.md, borderRadius: radii.md, backgroundColor: "#0D1B2D", borderWidth: 1, borderColor: "#263B54" }, briefPanelWide: { flex: 1 }, objectivePanel: { backgroundColor: "#111D31" }, panelHeading: { flexDirection: "row", alignItems: "center", gap: 8 }, panelEyebrow: { color: "#8FA1B7", fontSize: 8, fontWeight: "900", letterSpacing: 0.9 }, panelTitle: { color: colors.white, fontSize: 14, fontWeight: "900", letterSpacing: -0.2, marginTop: 8 }, panelBody: { color: "#AAB9CB", fontSize: 11, lineHeight: 17, marginTop: 7 }, stackBlock: { paddingTop: 12, marginTop: 14, borderTopWidth: 1, borderTopColor: "#283B52" }, stackLabel: { color: colors.dim, fontSize: 7, fontWeight: "900", letterSpacing: 0.8 }, stackValue: { color: colors.blue, fontSize: 10, fontWeight: "800", lineHeight: 15, marginTop: 6 }, objectiveFoot: { color: colors.yellow, fontSize: 9, fontWeight: "800", lineHeight: 14, marginTop: 11 },
   metricsPanel: { padding: spacing.md, borderRadius: radii.md, backgroundColor: "#0D1A2A", borderWidth: 1, borderColor: "#263B54" }, metricsHeading: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 11 }, liveLabel: { color: colors.mint, fontSize: 7, fontWeight: "900", letterSpacing: 0.8 }, metricsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 7 }, metricCard: { flexGrow: 1, flexBasis: "30%", minWidth: 102, paddingHorizontal: 10, paddingVertical: 10, borderRadius: 9, backgroundColor: "#101F33", borderWidth: 1, borderColor: "#24374F" }, metricLabel: { color: colors.dim, fontSize: 7, fontWeight: "900", letterSpacing: 0.55 }, metricValue: { fontSize: 16, fontWeight: "900", marginTop: 5 }, metricSuffix: { color: "#9AABC0", fontSize: 8, fontWeight: "800" },
   briefFooter: { gap: 10, paddingTop: 3 }, briefFooterWide: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, footerNote: { color: colors.dim, fontSize: 9, lineHeight: 14 }, footerActions: { flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 14 }, mapLink: { paddingVertical: 10, paddingHorizontal: 4 }, mapLinkText: { color: colors.blue, fontSize: 8, fontWeight: "900", letterSpacing: 0.75 },

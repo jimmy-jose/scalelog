@@ -6,7 +6,7 @@ export const level033 = defineStartupLevel({
   "description": "We split our database into 8 shards using tenant ID hashing. Shards 1 through 7 are sitting at 31% CPU. But Shard 8 is constantly crashing at 97% CPU because our biggest enterprise merchant (who generates 42% of all company sales) was assigned there. Re-hashing just moves the fire to another shard, starving smaller merchants sharing that database.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "No hashing algorithm can shrink an elephant. Our biggest merchant generates nearly half of all writes across the platform. We have to isolate them onto a dedicated database instance before they drown all their neighbors."
       }
@@ -51,7 +51,7 @@ export const level033 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Tenant-local invariants remain intact and neighbors regain headroom.",
         "downside": "The whale still has a finite single-writer ceiling; admission control limits its import throughput.",
-        "jimmyExplanation": "Moving our whale merchant to a dedicated high-capacity database cluster completely insulates our other merchants from their traffic spikes. Enforcing ingestion rate limits ensures the whale doesn't even overwhelm their own dedicated writer.",
+        "byteExplanation": "Moving our whale merchant to a dedicated high-capacity database cluster completely insulates our other merchants from their traffic spikes. Enforcing ingestion rate limits ensures the whale doesn't even overwhelm their own dedicated writer.",
         "effectReasons": {
           "upfrontCost": "$55,000 covers live tenant migration to dedicated infrastructure, rate-limiting gateways, and routing directory updates.",
           "monthlyBurn": "Dedicated high-performance database instance and custom monitoring cost $18,000/month.",
@@ -88,7 +88,7 @@ export const level033 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "No migration and minimal operational cost can protect availability.",
         "downside": "The merchant loses real-time feed throughput and may reject the reduced service tier.",
-        "jimmyExplanation": "Splitting the whale's catalogue tables across two shards while keeping checkout local reduces feed write pressure, but introduces complex custom routing logic for a single merchant.",
+        "byteExplanation": "Splitting the whale's catalogue tables across two shards while keeping checkout local reduces feed write pressure, but introduces complex custom routing logic for a single merchant.",
         "effectReasons": {
           "upfrontCost": "$24,750 covers custom table partitioning and routing logic for the whale merchant.",
           "monthlyBurn": "Custom monitoring and multi-table routing overhead cost $15,300/month.",
@@ -125,7 +125,7 @@ export const level033 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "More machines could share a large tenant’s raw traffic.",
         "downside": "Stock/order invariants now cross shards; changing placement alone does not supply distributed atomicity.",
-        "jimmyExplanation": "Doubling shard count from 8 to 16 changes nothing: the whale's 42% write volume still lands on one shard! Now 15 shards are idling at 10% CPU while 1 shard continues to crash at 100%.",
+        "byteExplanation": "Doubling shard count from 8 to 16 changes nothing: the whale's 42% write volume still lands on one shard! Now 15 shards are idling at 10% CPU while 1 shard continues to crash at 100%.",
         "effectReasons": {
           "upfrontCost": "$35,750 is wasted on an unnecessary 16-shard migration.",
           "monthlyBurn": "Running 16 database clusters doubles cloud infrastructure spend to $20,700/month with zero relief.",
@@ -174,12 +174,12 @@ export const level033 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "You retained one writer and constrained imports. A whale tenant now consumes 42% of the write budget, hurting neighboring merchants. A dedicated whale writer can isolate it without requiring a full eight-shard rollout."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Hashing a merchant ID again still sends that merchant to one place. Protect the neighbors and keep the stock transaction local."
         }

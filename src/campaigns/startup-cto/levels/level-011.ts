@@ -6,7 +6,7 @@ export const level011 = defineStartupLevel({
   "description": "Flash sales and marketing promotions start at predictable times (e.g., 9:00 AM sharp). When traffic surges, CPU hits 100% and requests queue up for four minutes before new autoscaled cloud instances finish booting, initializing Docker containers, and passing health checks.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Autoscaling is reactive: it sees CPU spike at 9:00 AM, requests new instances from the cloud provider, and waits 4 minutes for them to boot and warm up. By the time the new servers join the load balancer, half the shoppers have already abandoned their carts. We need scheduled pre-warming."
       }
@@ -56,7 +56,7 @@ export const level011 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Capacity is ready before the known ramp and remains bounded by downstream limits.",
         "downside": "Warm headroom costs money while idle; load tests must be kept current.",
-        "jimmyExplanation": "Scheduled pre-warming spins up extra app instances 15 minutes before scheduled promotions begin. The instances are warm, registered with the load balancer, and ready the moment traffic hits. Crucially, we enforce a strict maximum fleet cap so a massive spike cannot spin up 500 instances and crash our database connection limits.",
+        "byteExplanation": "Scheduled pre-warming spins up extra app instances 15 minutes before scheduled promotions begin. The instances are warm, registered with the load balancer, and ready the moment traffic hits. Crucially, we enforce a strict maximum fleet cap so a massive spike cannot spin up 500 instances and crash our database connection limits.",
         "effectReasons": {
           "upfrontCost": "$2,000 covers promotion scheduling tools, load-testing benchmarks, and autoscaling schedule automation.",
           "monthlyBurn": "Running targeted pre-warmed instances during promotional windows adds $1,400/month.",
@@ -93,7 +93,7 @@ export const level011 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Simple operations and immediate capacity are technically sound.",
         "downside": "Most of the monthly capacity sits idle; cash funds predictable peaks inefficiently.",
-        "jimmyExplanation": "Keeping a large fleet of servers running 24/7 guarantees we never suffer cold-boot delays, even during unexpected surges. It is simple and reliable, but paying for peak capacity at 3:00 AM when traffic is dead burns through company runway unnecessarily.",
+        "byteExplanation": "Keeping a large fleet of servers running 24/7 guarantees we never suffer cold-boot delays, even during unexpected surges. It is simple and reliable, but paying for peak capacity at 3:00 AM when traffic is dead burns through company runway unnecessarily.",
         "effectReasons": {
           "upfrontCost": "$900 covers instance provisioning, load balancer routing, and static capacity checks.",
           "monthlyBurn": "Running fixed peak capacity around the clock increases monthly recurring spend by $3,200.",
@@ -130,7 +130,7 @@ export const level011 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Scaling follows observed application utilization.",
         "downside": "Boot delay misses the burst and the enlarged fleet can overwhelm downstream resources.",
-        "jimmyExplanation": "Setting autoscaling to trigger purely on CPU with no upper bound is a classic cloud trap. If an unindexed query or DDoS attack spikes CPU, the autoscaler will spin up hundreds of new instances, running up a $50,000 cloud bill in hours and crushing our database with thousands of new connections.",
+        "byteExplanation": "Setting autoscaling to trigger purely on CPU with no upper bound is a classic cloud trap. If an unindexed query or DDoS attack spikes CPU, the autoscaler will spin up hundreds of new instances, running up a $50,000 cloud bill in hours and crushing our database with thousands of new connections.",
         "effectReasons": {
           "upfrontCost": "$1,300 is spent enabling unbounded cloud autoscaling policies.",
           "monthlyBurn": "Uncontrolled instance scaling and peak cloud usage inflate monthly burn by $2,875.",

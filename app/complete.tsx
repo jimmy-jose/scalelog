@@ -18,7 +18,7 @@ import { Screen } from "@/ui/components/Screen";
 import { TopBar } from "@/ui/components/TopBar";
 import { Button } from "@/ui/components/Button";
 import { Pill } from "@/ui/components/Pill";
-import { characterAssets } from "@/ui/components/JimmyAvatar";
+import { characterAssets } from "@/ui/components/ByteAvatar";
 import { colors, radii } from "@/ui/theme";
 import { gameFeedback } from "@/game/feedback/GameFeedbackManager";
 
@@ -81,7 +81,7 @@ export default function LevelCompleteScreen() {
           <View><Text style={styles.rewardLabel}>CTO EXPERIENCE</Text><RewardCount key={`${outcome.levelId}-${outcome.choiceId}`} value={outcome.xpEarned} style={[styles.rewardValue, outcome.xpEarned < 0 && { color: colors.orange }]} /></View>
         </Animated.View>
       </View>
-      <Image source={failed ? characterAssets.defeated : setback ? characterAssets.disappointed : characterAssets.celebrating} resizeMode="contain" style={[styles.jimmyImage, wide && styles.jimmyImageWide]} accessibilityLabel={failed ? "Byte reacts to the failed run" : setback ? "Byte reflects on the setback" : "Byte celebrates the decision"} />
+      <Image source={failed ? characterAssets.defeated : setback ? characterAssets.disappointed : characterAssets.celebrating} resizeMode="contain" style={[styles.byteImage, wide && styles.byteImageWide]} accessibilityLabel={failed ? "Byte reacts to the failed run" : setback ? "Byte reflects on the setback" : "Byte celebrates the decision"} />
     </Animated.View>
 
     <RunProgress />
@@ -130,8 +130,8 @@ const styles = StyleSheet.create({
   rewardStar: { color: colors.yellow, fontSize: 19 },
   rewardLabel: { color: "#B69C66", fontSize: 7, fontWeight: "900", letterSpacing: 0.8 },
   rewardValue: { color: colors.white, fontSize: 13, fontWeight: "900", marginTop: 2 },
-  jimmyImage: { position: "absolute", right: 4, bottom: -4, zIndex: 1, width: 148, height: 238 },
-  jimmyImageWide: { right: 12, width: 214, height: 314 },
+  byteImage: { position: "absolute", right: 4, bottom: -4, zIndex: 1, width: 148, height: 238 },
+  byteImageWide: { right: 12, width: 214, height: 314 },
   nextCard: { marginTop: 15, padding: 17, borderRadius: 14, backgroundColor: "#0D1B2D", borderWidth: 1, borderColor: "#293F59" },
   nextTopline: { flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 6 },
   nextKicker: { color: colors.blue, fontSize: 8, fontWeight: "900", letterSpacing: 1 },

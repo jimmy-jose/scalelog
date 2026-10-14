@@ -6,12 +6,12 @@ export const level034 = defineStartupLevel({
   "description": "A major cloud provider outage takes down an entire geographic region (US-East). Enterprise merchants demand regional disaster recovery. However, multi-region active-active writing is notorious for impossible data conflicts and network latency. The business agrees that losing up to 60 seconds of data during an extreme regional disaster (RPO 60s) is acceptable if the site can be back up within 15 minutes (RTO 15 min).",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Active-active multi-region databases sound wonderful in vendor pitch decks, but cross-region latency and data conflict resolution will bury us. A warm standby region with a 60-second RPO and 15-minute failover is achievable, affordable, and tested."
       },
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "normal",
           "text": "This month’s operating plan adds 3 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
       }
@@ -56,7 +56,7 @@ export const level034 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Warm recovery meets the rehearsed regional contract without concurrent cross-region writers.",
         "downside": "Stale lag samples cannot prove a hard loss bound. If evidence is insufficient, wait or explicitly renegotiate the loss/recovery contract; reconcile payments and event gaps after promotion and rehearse failback.",
-        "jimmyExplanation": "Asynchronously replicating all database shards and object storage to a secondary region gives us a proven warm standby. In a disaster, automated fencing prevents split-brain writes, and DNS traffic shifts restore checkout within 15 minutes.",
+        "byteExplanation": "Asynchronously replicating all database shards and object storage to a secondary region gives us a proven warm standby. In a disaster, automated fencing prevents split-brain writes, and DNS traffic shifts restore checkout within 15 minutes.",
         "effectReasons": {
           "upfrontCost": "$85,000 covers secondary region VPC setup, cross-region replication pipelines, and automated failover runbooks.",
           "monthlyBurn": "The monthly change is +$52,000, funding 3 engineers and standing cross-region secondary database clusters.",
@@ -93,7 +93,7 @@ export const level034 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Lower steady-state cost is legitimate for customers who accept the recovery delay.",
         "downside": "It cannot meet the premium 15-minute promise, so enterprise expansion is limited.",
-        "jimmyExplanation": "Storing daily encrypted backups in a secondary region and spinning up infrastructure from Terraform scripts during a disaster saves money, but restoring 6 terabytes of data from cold storage will take over 4 hours instead of 15 minutes.",
+        "byteExplanation": "Storing daily encrypted backups in a secondary region and spinning up infrastructure from Terraform scripts during a disaster saves money, but restoring 6 terabytes of data from cold storage will take over 4 hours instead of 15 minutes.",
         "effectReasons": {
           "upfrontCost": "$38,250 covers infrastructure-as-code automation and off-site backup storage pipelines.",
           "monthlyBurn": "The monthly change is +$44,200, funding 3 engineers and cross-region backup storage.",
@@ -130,7 +130,7 @@ export const level034 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Local write latency remains low in both regions.",
         "downside": "Without conflict and inventory semantics, concurrent writes can oversell stock; asynchronous replication alone does not resolve them.",
-        "jimmyExplanation": "Running synchronous cross-region database transactions introduces a mandatory 170-millisecond speed-of-light network roundtrip on every single checkout click, making the site feel agonizingly slow worldwide.",
+        "byteExplanation": "Running synchronous cross-region database transactions introduces a mandatory 170-millisecond speed-of-light network roundtrip on every single checkout click, making the site feel agonizingly slow worldwide.",
         "effectReasons": {
           "upfrontCost": "$55,250 is wasted attempting multi-region synchronous write clusters.",
           "monthlyBurn": "The monthly change is +$59,800, funding 3 engineers plus extreme cross-region network egress and database clustering costs.",

@@ -6,7 +6,7 @@ export const level028 = defineStartupLevel({
   "description": "A producer replaces amount_cents (an integer, e.g. 1500) with amount (a decimal float, e.g. 15.00) in order events. Old consumer services still receive the JSON payload, but interpret 15.00 as 15 cents instead of 15 dollars! Furthermore, when engineers try to replay historical events from last month, consumer services crash.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Both payloads are valid JSON, but 1500 cents and 15.00 dollars mean wildly different things to downstream billing. Schema evolution isn't just about syntax; it's about semantic contracts and replaying historical data."
       }
@@ -51,7 +51,7 @@ export const level028 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Old and new consumers coexist and retained events remain interpretable.",
         "downside": "Compatibility windows cost storage and engineering effort; versions do not fix meaning automatically.",
-        "jimmyExplanation": "Keep amount_cents unchanged, add the new currency fields alongside it, and run automated consumer schema checks. Downstream services can migrate on their own timeline without breaking historical replays.",
+        "byteExplanation": "Keep amount_cents unchanged, add the new currency fields alongside it, and run automated consumer schema checks. Downstream services can migrate on their own timeline without breaking historical replays.",
         "effectReasons": {
           "upfrontCost": "$26,000 covers schema registry setup, contract test suites, and additive field migration tooling.",
           "monthlyBurn": "Schema registry hosting, compatibility validation, and contract testing cost $10,000/month.",
@@ -88,7 +88,7 @@ export const level028 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A tightly coordinated small system can make one deliberate incompatible cutover.",
         "downside": "All teams share a release window and downtime; independent delivery is temporarily lost.",
-        "jimmyExplanation": "A coordinated 'big bang' maintenance window upgrades all services at once. It avoids supporting dual schemas, but requires scheduling downtime and makes replaying older historical events impossible without custom translation scripts.",
+        "byteExplanation": "A coordinated 'big bang' maintenance window upgrades all services at once. It avoids supporting dual schemas, but requires scheduling downtime and makes replaying older historical events impossible without custom translation scripts.",
         "effectReasons": {
           "upfrontCost": "$11,700 covers coordinated deployment planning, downtime scheduling, and manual verification scripts.",
           "monthlyBurn": "Cross-team deployment coordination and sync overhead cost $8,500/month.",
@@ -125,7 +125,7 @@ export const level028 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Producer work can ship quickly without a migration window.",
         "downside": "Ignoring fields does not protect consumers from changed units or removed required data.",
-        "jimmyExplanation": "Yanking the old field and forcing everyone to scramble creates production calculation errors across analytics and billing. Fixing bugs live in production while corrupted events circulate is a nightmare.",
+        "byteExplanation": "Yanking the old field and forcing everyone to scramble creates production calculation errors across analytics and billing. Fixing bugs live in production while corrupted events circulate is a nightmare.",
         "effectReasons": {
           "upfrontCost": "$16,900 is burned dealing with emergency production outages and customer financial discrepancies.",
           "monthlyBurn": "Emergency operational cleanup and ongoing bug investigations add $11,500/month.",
@@ -174,12 +174,12 @@ export const level028 = defineStartupLevel({
       ],
       "dialogue": [
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Subscriber delivery is still incomplete after the prior queue decision. A producer rollout now changes money units as well. The compatible-contract response includes repairing fan-out before claiming independent consumers are healthy."
         },
         {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Both payloads are valid JSON. They mean different amounts of money. Compatibility tests need to care about units and last month’s retained events."
         }

@@ -6,7 +6,7 @@ export const level009 = defineStartupLevel({
   "description": "International merchants and overseas shoppers report that Cartline storefronts take four seconds to load. Performance tracing reveals that 80% of the delay is the physical time required to transfer multi-megabyte product images, CSS stylesheets, and JavaScript bundles across oceans from our single origin data center.",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "The speed of light is real: transmitting megabytes of JavaScript and high-res images from Virginia to Tokyo takes round trips across the globe. A CDN brings those static files right to the user's doorstep."
       }
@@ -51,7 +51,7 @@ export const level009 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Nearby delivery removes repeat long-distance asset transfers.",
         "downside": "Cache keys, invalidation and egress budgets must be monitored.",
-        "jimmyExplanation": "Deploying a Content Delivery Network (CDN) like Cloudflare or Fastly caches our versioned JavaScript, CSS, and product images on edge servers around the world. International users download assets from a server in their home city, dropping initial page load times from 4 seconds to under 800 milliseconds.",
+        "byteExplanation": "Deploying a Content Delivery Network (CDN) like Cloudflare or Fastly caches our versioned JavaScript, CSS, and product images on edge servers around the world. International users download assets from a server in their home city, dropping initial page load times from 4 seconds to under 800 milliseconds.",
         "effectReasons": {
           "upfrontCost": "$1,600 covers CDN DNS configuration, asset cache-header tuning, asset versioning/hashing, and SSL setup.",
           "monthlyBurn": "CDN edge bandwidth and global routing fees add $1,100/month.",
@@ -88,7 +88,7 @@ export const level009 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A regional copy improves RTT for the new market.",
         "downside": "Fewer edge locations and manual replication/routing cost more operational effort.",
-        "jimmyExplanation": "Setting up a regional asset mirror in Europe or Asia provides local asset downloads without a commercial CDN contract. It is cheaper and keeps file hosting within our own control, though it covers fewer global regions.",
+        "byteExplanation": "Setting up a regional asset mirror in Europe or Asia provides local asset downloads without a commercial CDN contract. It is cheaper and keeps file hosting within our own control, though it covers fewer global regions.",
         "effectReasons": {
           "upfrontCost": "$720 funds spinning up a regional storage mirror and configuring geographic DNS routing.",
           "monthlyBurn": "Running the regional storage mirror and cross-region replication adds $880/month.",
@@ -125,7 +125,7 @@ export const level009 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "A broad hit rate reduces requests to the origin.",
         "downside": "Ignoring tenant and authorization context can expose private responses; public and private paths need distinct policies.",
-        "jimmyExplanation": "Caching every HTTP response by URL at the edge is a critical security and privacy hazard. If the CDN caches an API URL like /api/cart or /api/account, Customer B in London will be served Customer A's private address and credit card details.",
+        "byteExplanation": "Caching every HTTP response by URL at the edge is a critical security and privacy hazard. If the CDN caches an API URL like /api/cart or /api/account, Customer B in London will be served Customer A's private address and credit card details.",
         "effectReasons": {
           "upfrontCost": "$1,040 is burned configuring aggressive whole-URL edge caching rules.",
           "monthlyBurn": "Edge caching network overhead adds $1,265/month.",

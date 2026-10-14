@@ -14,8 +14,8 @@ export const level001: Level = {
   title: "Your First Day", kicker: "CHAPTER 01 · KEEP IT BORING",
   description: "The founder wants to know if Cartline’s Laravel/PHP MVP should be rebuilt before the company grows. You have 250 users, two engineers, and no measured runtime bottleneck yet.",
   dialogue: [
-    { character: "jimmy", emotion: "normal", text: "Welcome aboard, {name}. The whole product fits in one repo and deploys before lunch." },
-    { character: "jimmy", emotion: "thinking", text: "The founder is asking about microservices already. What do you want to optimize for today, {name}?" },
+    { character: "byte", emotion: "normal", text: "Welcome aboard, {name}. The whole product fits in one repo and deploys before lunch." },
+    { character: "byte", emotion: "thinking", text: "The founder is asking about microservices already. What do you want to optimize for today, {name}?" },
   ],
   metrics: [{ label: "Users", value: "250", severity: "normal" }, { label: "Engineers", value: "2", severity: "normal" }, { label: "Deploy time", value: "4 min", severity: "normal" }],
   architectureBefore: baseArchitecture,
@@ -29,7 +29,7 @@ export const level001: Level = {
         downsideLabel: "Shared blast radius",
         upside: "One codebase and one deploy keep a two-engineer team fast; clear modules reduce accidental coupling.",
         downside: "Every module still ships together. A bad release can affect the whole product, and traffic spikes compete for the same app capacity.",
-        jimmyExplanation: "A modular Laravel monolith lets two engineers keep shipping without new network boundaries. But modules are not isolated deployments: one faulty release can take down the whole app, and busy features still contend for shared capacity. We'd need discipline and monitoring as traffic grows.",
+        byteExplanation: "A modular Laravel monolith lets two engineers keep shipping without new network boundaries. But modules are not isolated deployments: one faulty release can take down the whole app, and busy features still contend for shared capacity. We'd need discipline and monitoring as traffic grows.",
         effectReasons: {
           upfrontCost: "No infrastructure purchase keeps cash available; the trade is engineering time spent making the module boundaries real.",
           reliability: "A clearer boundary makes unrelated feature changes less likely to break each other, while preserving one simple deploy path.",
@@ -49,7 +49,7 @@ export const level001: Level = {
         downsideLabel: "More failure paths",
         upside: "Orders and billing could deploy and scale independently, so a future traffic spike need not scale every part of the app.",
         downside: "Two engineers inherit service boundaries, network failures, extra on-call work, and $1,800 in monthly spend now.",
-        jimmyExplanation: "There is a real upside: orders and billing could have their own deploy cadence and capacity, and a billing-only release would not redeploy the storefront. But with only two engineers, those services add network calls, coordination, and more things that can fail before the current app needs that flexibility.",
+        byteExplanation: "There is a real upside: orders and billing could have their own deploy cadence and capacity, and a billing-only release would not redeploy the storefront. But with only two engineers, those services add network calls, coordination, and more things that can fail before the current app needs that flexibility.",
         effectReasons: {
           upfrontCost: "$12,000 goes to splitting and deploying services before the current monolith has hit a proven scaling limit.",
           monthlyBurn: "Each service needs runtime capacity, monitoring, and deployment infrastructure, adding $1,800 every month.",
@@ -82,7 +82,7 @@ export const level001: Level = {
         downsideLabel: "Migration & feature freeze",
         upside: "Go’s goroutines can make concurrent network and I/O work easier to structure if that becomes a measured bottleneck.",
         downside: "The $18,000 rewrite freezes feature work, risks migration regressions, and does not fix a slow PostgreSQL query.",
-        jimmyExplanation: "Cartline runs Laravel on PHP today. Go's lightweight goroutines could help a future high-concurrency API or worker workload. But we have 250 users and no evidence that PHP is the bottleneck. A rewrite replaces working behavior and tests, runs two stacks during migration, and cannot make a bad SQL plan fast.",
+        byteExplanation: "Cartline runs Laravel on PHP today. Go's lightweight goroutines could help a future high-concurrency API or worker workload. But we have 250 users and no evidence that PHP is the bottleneck. A rewrite replaces working behavior and tests, runs two stacks during migration, and cannot make a bad SQL plan fast.",
         effectReasons: {
           upfrontCost: "$18,000 pays to rebuild the Laravel/PHP API in Go, migrate behavior, and retest it before customers benefit.",
           monthlyBurn: "Running the replacement alongside migration work adds $1,200 a month until the old path can be retired.",

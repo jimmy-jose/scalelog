@@ -9,19 +9,19 @@ export const level027 = defineStartupLevel({
       { label: "Prototype delivery per subscriber", value: "about 1/3", severity: "critical" },
       { label: "Durable source record", value: "verify intent and handoff", severity: "normal" },
     ],
-    dialogue: [{ character: "jimmy", emotion: "thinking", text: "Your current transport can keep doing its job. But three distinct projections each need a copy; distributing one copy among them is the wrong relationship." }],
+    dialogue: [{ character: "byte", emotion: "thinking", text: "Your current transport can keep doing its job. But three distinct projections each need a copy; distributing one copy among them is the wrong relationship." }],
   }],
   "levelNumber": 27,
   "title": "One Event, Three Different Jobs",
   "description": "When an order is placed, three things need to happen: send a receipt email, update the search index, and log merchant analytics. The team put all three workers on the same queue. Now, Worker A grabs the order and sends an email, but the search index and analytics workers never see the message because each message in a queue is only delivered to one worker!",
   "dialogue": [
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "thinking",
           "text": "Search, receipts, and analytics are three completely different consumers. Having them pull from one shared worker queue means each event is only seen by one of them. We need a publish/subscribe topic that fans out a copy to each subscriber."
       },
       {
-          "character": "jimmy",
+          "character": "byte",
           "emotion": "normal",
           "text": "This month’s operating plan adds 2 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
       }
@@ -66,7 +66,7 @@ export const level027 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Each projection sees each event and can fail or scale independently.",
         "downside": "Fan-out multiplies stored work; global ordering is not promised and per-order versions need handling.",
-        "jimmyExplanation": "Publishing orders to a topic that fans out into dedicated queues for receipts, search, and analytics ensures every service receives every event. If analytics falls behind, its queue buffers messages without slowing down receipts or checkout.",
+        "byteExplanation": "Publishing orders to a topic that fans out into dedicated queues for receipts, search, and analytics ensures every service receives every event. If analytics falls behind, its queue buffers messages without slowing down receipts or checkout.",
         "effectReasons": {
           "upfrontCost": "$28,000 covers provisioning the pub/sub topic, setting up dedicated subscriber queues, and configuring DLQs.",
           "monthlyBurn": "The monthly change is +$23,000, funding 2 engineers and managed message topic infrastructure.",
@@ -103,7 +103,7 @@ export const level027 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A database-backed dispatcher can supply the same logical fan-out at moderate volume.",
         "downside": "More polling and custom dispatch logic burden the core team; it needs the same duplicate and retry discipline.",
-        "jimmyExplanation": "Writing specific delivery code for receipts and search without a generic pub/sub topic works for now, but adding new consumers in the future will require editing the core order service every single time.",
+        "byteExplanation": "Writing specific delivery code for receipts and search without a generic pub/sub topic works for now, but adding new consumers in the future will require editing the core order service every single time.",
         "effectReasons": {
           "upfrontCost": "$12,600 covers setting up two separate point-to-point queues directly from the order service.",
           "monthlyBurn": "The monthly change is +$19,550, funding 2 engineers and worker queue infrastructure.",
@@ -140,7 +140,7 @@ export const level027 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "More consumers increase throughput for interchangeable workers.",
         "downside": "They divide work further instead of ensuring all distinct subscribers receive it.",
-        "jimmyExplanation": "Having a worker read an event, check if it's for them, and toss it back into the queue if it's not creates a furious message loop that burns CPU, wastes broker bandwidth, and scrambles event ordering.",
+        "byteExplanation": "Having a worker read an event, check if it's for them, and toss it back into the queue if it's not creates a furious message loop that burns CPU, wastes broker bandwidth, and scrambles event ordering.",
         "effectReasons": {
           "upfrontCost": "$18,200 is wasted implementing worker re-queuing hacks.",
           "monthlyBurn": "The monthly change is +$26,450, funding 2 engineers plus excessive queue broker bandwidth and CPU thrashing.",
