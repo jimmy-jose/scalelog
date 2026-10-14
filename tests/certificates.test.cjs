@@ -154,7 +154,7 @@ test('native export creates a high-resolution PNG and passes it to the share she
   await exportNative('<svg/>', 'SL-TEST', {
     toDataURL: (callback, options) => { size = options; callback('PNG_BASE64'); },
   });
-  assert.deepEqual(size, { width: 2400, height: 1800 });
+  assert.deepEqual(size, { width: 2400, height: 1696 });
   assert.deepEqual(writes[0], ['file:///cache/ScaleLog-Startup-CTO-SL-TEST.png', 'PNG_BASE64', { encoding: 'base64' }]);
   assert.equal(shares[0][0], writes[0][0]);
   assert.equal(shares[0][1].mimeType, 'image/png');
@@ -176,7 +176,7 @@ test('web export rasterizes the vector master, downloads a PNG, and reports rend
   let drawn = false;
   const anchor = { remove() {}, click() { downloaded = true; } };
   const canvas = {
-    getContext: () => ({ drawImage: (_image, x, y, width, height) => { assert.deepEqual([x, y, width, height], [0, 0, 2400, 1800]); drawn = true; } }),
+    getContext: () => ({ drawImage: (_image, x, y, width, height) => { assert.deepEqual([x, y, width, height], [0, 0, 2400, 1696]); drawn = true; } }),
     toBlob: (callback, type) => { assert.equal(type, 'image/png'); callback(new Blob(['PNG'], { type })); },
   };
   global.Image = class { set src(_url) { queueMicrotask(() => failImage ? this.onerror() : this.onload()); } };
@@ -188,7 +188,7 @@ test('web export rasterizes the vector master, downloads a PNG, and reports rend
     await exportCertificate('<svg/>', 'SL-WEB', null);
     assert.ok(drawn && downloaded);
     assert.equal(canvas.width, 2400);
-    assert.equal(canvas.height, 1800);
+    assert.equal(canvas.height, 1696);
     assert.equal(objects[0].type, 'image/svg+xml;charset=utf-8');
     assert.equal(objects[1].type, 'image/png');
     assert.equal(anchor.download, 'ScaleLog-Startup-CTO-SL-WEB.png');

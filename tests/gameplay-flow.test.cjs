@@ -70,6 +70,7 @@ Module._load = function (id, parent, main) {
   if (id === 'react-native-svg') return { __esModule: true, default: View, SvgXml: () => null, Circle: () => null, Path: () => null, Rect: () => null };
   if (id === 'expo-clipboard') return { setStringAsync: async () => true };
   if (id === '@/lib/certificateExport') return { exportCertificate: async () => {}, getCertificateSiteUrl: () => 'https://scalelog.example' };
+  if (id === '@/lib/certificateRegistry') return { mintCertificateOnServer: async () => ({ success: true }), fetchVerifiedCertificate: async () => ({ verified: true }) };
   if (id === '@/game/feedback/GameFeedbackManager') return { gameFeedback: { trigger: () => {}, configure: () => {}, connectAudioLifecycle: () => () => {} } };
   if (id === '@/store/gameStore' && storeModule) {
     const useGameStore = (selector) => selector(storeModule.useGameStore.getState());

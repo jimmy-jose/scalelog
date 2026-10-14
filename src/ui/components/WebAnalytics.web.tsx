@@ -1,5 +1,10 @@
-import { Analytics } from "@vercel/analytics/react";
+import { useEffect } from "react";
+import { inject } from "@vercel/analytics";
 
 export function WebAnalytics() {
-  return <Analytics />;
+  useEffect(() => {
+    inject();
+  }, []);
+  return null;
 }
+

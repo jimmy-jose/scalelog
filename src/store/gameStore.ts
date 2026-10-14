@@ -7,7 +7,7 @@ import { getChoiceBlockReason, getFailureReason, getProgressionFailure, resolveD
 import { resolveLevel } from "@/domain/levelVariants";
 import { applyArchitectureChanges } from "@/domain/architecture";
 import { defaultAudioSettings, type AudioSettings } from "@/game/feedback/feedbackTypes";
-import { canEarnCertificate, createCampaignCertificate, normalizeCertificateName, CERTIFICATE_NAME_LIMIT, type CampaignCertificate } from "@/domain/certificates";
+import { canEarnCertificate, createCampaignCertificate, normalizeCertificateName, normalizeCertificateEmail, CERTIFICATE_NAME_LIMIT, type CampaignCertificate } from "@/domain/certificates";
 
 interface PlayerState {
   ctoXp: number;
@@ -52,7 +52,8 @@ interface GameState extends CampaignSave {
   profile: PlayerProfile;
   audioSettings: AudioSettings;
   certificates: Record<string, CampaignCertificate>;
-  personalizeCertificate: (campaignId: string, name: string) => boolean;
+  personalizeCertificate: (campaignId: string, name: string, email?: string) => boolean;
+  markCertificateMinted: (campaignId: string, mintedAt?: string) => void;
   selectCampaign: (campaignId: string) => void;
   resetCampaign: (campaignId: string) => void;
   setProfile: (profile: PlayerProfile) => void;
@@ -232,7 +233,7 @@ const initialSave = makeFreshCampaignSave(initialCampaignId);
 // Keep storage lifecycle outside the persisted store: reporting a read failure
 // must not write a fresh campaign over the save that could not be loaded.
 export const useSaveStatus = create<{ status: "loading" | "ready" | "error" }>(() => ({ status: "loading" }));
-const initialState: Omit<GameState, "selectCampaign" | "resetCampaign" | "setProfile" | "markCampaignBriefSeen" | "chooseChoice" | "setCurrentLevel" | "updateAudioSettings" | "personalizeCertificate"> = {
+const initialState: Omit<GameState, "selectCampaign" | "resetCampaign" | "setProfile" | "markCampaignBriefSeen" | "chooseChoice" | "setCurrentLevel" | "updateAudioSettings" | "personalizeCertificate" | "markCertificateMinted"> = {
   ...initialSave,
   activeCampaignId: initialCampaignId,
   campaignSaves: { [initialCampaignId]: initialSave },
@@ -295,12 +296,36 @@ export const useGameStore = create<GameState>()(
         return state.activeCampaignId === campaignId ? { ...freshSave, campaignSaves } : { campaignSaves };
       }),
       setProfile: (profile) => set({ profile: { name: profile.name.trim(), age: profile.age } }),
-      personalizeCertificate: (campaignId, name) => {
+      personalizeCertificate: (campaignId, name, email) => {
         const recipientName = normalizeCertificateName(name);
         const certificate = get().certificates[campaignId];
         if (!certificate || !recipientName || recipientName.length > CERTIFICATE_NAME_LIMIT) return false;
-        set((state) => ({ certificates: { ...state.certificates, [campaignId]: { ...certificate, recipientName } } }));
+        const recipientEmail = typeof email === "string" ? normalizeCertificateEmail(email) : certificate.recipientEmail;
+        set((state) => ({
+          certificates: {
+            ...state.certificates,
+            [campaignId]: {
+              ...certificate,
+              recipientName,
+              recipientEmail,
+            },
+          },
+        }));
         return true;
+      },
+      markCertificateMinted: (campaignId, mintedAt = new Date().toISOString()) => {
+        const certificate = get().certificates[campaignId];
+        if (!certificate) return;
+        set((state) => ({
+          certificates: {
+            ...state.certificates,
+            [campaignId]: {
+              ...certificate,
+              isMinted: true,
+              mintedAt,
+            },
+          },
+        }));
       },
       updateAudioSettings: (updates) => set((state) => ({
         audioSettings: {
