@@ -1,13 +1,28 @@
 # ScaleLog
 
+[![OpenRepos](https://img.shields.io/endpoint?url=https://openrepos.org/status/scalelog.openrepos.org.json&style=flat-square)](https://scalelog.openrepos.org/)
+
 ScaleLog is a mobile-first system design strategy game built with Expo, React Native, TypeScript, Expo Router, Zustand, Reanimated, react-native-svg, Zod, and AsyncStorage.
 
+Play the CTO of Cartline through 36 incidents across six eras. Choose architectures, manage cash and reliability, and see how each tradeoff changes your company's future. Progress is saved on your device.
+
+[Contributing](CONTRIBUTING.md) · [Code of conduct](CODE_OF_CONDUCT.md) · [Security](SECURITY.md) · [Support](SUPPORT.md) · [MIT license](LICENSE)
+
 ## Running and testing the game
+
+Use Node.js 22 (see [.nvmrc](.nvmrc)) and npm. Clone the repository and install the locked dependency versions:
+
+```bash
+git clone https://github.com/jimmy-jose/scalelog.git
+cd scalelog
+npm ci
+```
+
+The local game does not require API keys. Optional public URL and server certificate registry settings are described in [.env.example](.env.example); copy it to `.env` only if you need those settings. Keep `BLOB_READ_WRITE_TOKEN` on the server and never expose it through an `EXPO_PUBLIC_` variable.
 
 ### 1. In your web browser (fastest)
 
 ```bash
-npm install
 npm run web
 # or: npx expo start --web
 ```
@@ -44,7 +59,7 @@ npm run typecheck
 
 ## Audio feedback & sound test walkthrough
 
-Background music uses the licensed ambient tracks in `assets/audio/music/`. The three-track playlist starts at a varied track, advances through the set, and loops. The `MUSIC ON` / `MUSIC OFF` button stays in the navigation and gameplay headers; the Background Music switch and volume setting are also available in Sound & haptics.
+Background music uses the ambient tracks in `assets/audio/music/`; their redistribution terms still need to be recorded in [the asset notices](THIRD_PARTY_NOTICES.md). The three-track playlist starts at a varied track, advances through the set, and loops. The `MUSIC ON` / `MUSIC OFF` button stays in the navigation and gameplay headers; the Background Music switch and volume setting are also available in Sound & haptics.
 
 ScaleLog includes 17 original effects in `assets/audio/designed/`, registered in `src/game/feedback/soundRegistry.ts`. The earlier MP3 assets are preserved but are no longer bundled. Rebuild the replacements with `python3 scripts/build-sounds.py` (standard library only).
 
@@ -111,3 +126,15 @@ Run `npm test` for the original 27 opening combinations, complete routes, 120 de
 ## Adding levels
 
 See [Adding campaign levels](docs/adding-levels.md). Append each level to the ordered manifest; progression links are generated automatically. Choice validation enforces penalties and growth tradeoffs. Existing saves can continue into newly added content without resetting their company. Shared cash, failure, summary, and history rules apply to every registered level.
+
+## Contributing and community
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, validation, and the pull request workflow. Bug reports, accessibility improvements, documentation fixes, and new scenarios are welcome. Please follow the [code of conduct](CODE_OF_CONDUCT.md).
+
+GitHub Actions runs typechecking, lint, tests, campaign validation, and the web build for pull requests and pushes to `main`. Usage questions go through [support](SUPPORT.md); vulnerabilities should be [reported privately](SECURITY.md).
+
+## License
+
+ScaleLog's original source code and documentation are available under the [MIT license](LICENSE), copyright © 2026 Jimmy Jose. Third-party dependencies and media retain their own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for asset provenance and outstanding redistribution checks.
+
+Maintainers preparing the first public release can use [the release checklist](docs/open-source-release.md).

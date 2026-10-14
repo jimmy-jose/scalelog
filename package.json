@@ -2,6 +2,16 @@
   "name": "scalelog",
   "version": "1.0.0",
   "private": true,
+  "description": "A mobile-first system design strategy game built with Expo and React Native.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jimmy-jose/scalelog.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jimmy-jose/scalelog/issues"
+  },
+  "homepage": "https://github.com/jimmy-jose/scalelog#readme",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
