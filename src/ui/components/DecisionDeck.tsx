@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import Animated, { FadeInDown, useReducedMotion } from "react-native-reanimated";
 import type { CampaignCompanyState, Choice } from "@/domain/types";
 import { formatMoney } from "@/lib/format";
 import { ChoiceCard } from "@/ui/components/ChoiceCard";
 import { colors } from "@/ui/theme";
 import { gameFeedback } from "@/game/feedback/GameFeedbackManager";
+import { getChoiceBlockReason } from "@/domain/simulation";
 
 function shuffleChoices(choices: Choice[]) {
   const shuffled = [...choices];
@@ -26,14 +27,17 @@ interface DecisionDeckProps {
 }
 
 export function DecisionDeck({ choices, xpReward, company, playerName, completed, onChoose }: DecisionDeckProps) {
+  const { width } = useWindowDimensions();
+  const reducedMotion = useReducedMotion();
   const [orderedChoices, setOrderedChoices] = useState<Choice[] | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   useEffect(() => {
     setOrderedChoices(shuffleChoices(choices));
     setSelectedIndex(0);
   }, [choices]);
-  const selected = orderedChoices?.[selectedIndex] ?? orderedChoices?.[0];
+  const selected = orderedChoices?.[selectedIndex];
   if (!orderedChoices || !selected) return null;
+  const blockedReason = getChoiceBlockReason(company, selected);
   const cashAfterMonth = company.cash - selected.cost + company.monthlyRevenue - (company.monthlyBurn + (selected.effects.monthlyBurn ?? 0));
 
   return (
@@ -42,12 +46,12 @@ export function DecisionDeck({ choices, xpReward, company, playerName, completed
         <View style={styles.headingCopy}>
           <Text style={styles.kicker}>YOUR DECISION</Text>
           <Text style={styles.heading}>{playerName.trim() ? `Your call, ${playerName.trim()}` : "Your call, CTO"}</Text>
-          <Text style={styles.subheading}>Inspect each response, then choose one.</Text>
+          <Text style={styles.subheading}>Pick an option to preview before committing.</Text>
         </View>
         <Text style={styles.count}>{String(selectedIndex + 1).padStart(2, "0")} / {String(choices.length).padStart(2, "0")}</Text>
       </View>
 
-      <View style={styles.hand} accessibilityRole="tablist">
+      <View style={[styles.hand, width < 480 && styles.handStack]} accessibilityRole="tablist">
         {orderedChoices.map((choice, index) => {
           const active = index === selectedIndex;
           return (
@@ -55,37 +59,36 @@ export function DecisionDeck({ choices, xpReward, company, playerName, completed
               key={choice.id}
               accessibilityRole="tab"
               accessibilityLabel={`Option ${index + 1}: ${choice.label}`}
-              accessibilityHint="Show this option's details without choosing it"
+              accessibilityHint="Show this option’s details without committing"
               accessibilityState={{ selected: active }}
               onPress={() => {
                 if (!active) gameFeedback.trigger("tabSelect");
                 setSelectedIndex(index);
               }}
-              style={({ pressed }) => [styles.handCard, active && styles.handCardActive, pressed && styles.handCardPressed]}
+              style={({ pressed }) => [styles.handCard, width < 480 && styles.handCardCompact, active && styles.handCardActive, pressed && styles.handCardPressed]}
             >
-              <Text style={[styles.handNumber, active && styles.handNumberActive]}>{String(index + 1).padStart(2, "0")}</Text>
-              <Text numberOfLines={2} style={[styles.handTitle, active && styles.handTitleActive]}>{choice.label}</Text>
-              <Text style={styles.handCost}>{choice.cost === 0 ? "NO UPFRONT COST" : `$${choice.cost.toLocaleString()} UPFRONT`}</Text>
+              <Text style={[styles.handNumber, active && styles.handNumberActive]}>{active ? "◆" : String(index + 1).padStart(2, "0")}</Text>
+              <Text style={[styles.handTitle, width < 480 && styles.compactTitle, active && styles.handTitleActive]}>{choice.label}</Text>
+              <Text style={[styles.handCost, company.cash < choice.cost && styles.unaffordable]}>{company.cash < choice.cost ? "OVER BUDGET" : choice.cost === 0 ? "NO COST" : `${formatMoney(choice.cost)}`}</Text>
             </Pressable>
           );
         })}
       </View>
 
-      <Animated.View key={selected.id} entering={FadeInDown.duration(190)} style={styles.focusedCard}>
+      <Animated.View key={selected.id} entering={reducedMotion ? undefined : FadeInDown.duration(190)} style={styles.focusedCard}>
         <ChoiceCard
           choice={selected}
           xpReward={xpReward}
           index={selectedIndex}
-          disabled={completed || company.cash < selected.cost}
-          disabledLabel={completed ? "DECISION ALREADY LOGGED" : undefined}
+          forecast={`Cash after this month: ${formatMoney(Math.max(0, cashAfterMonth))}.${cashAfterMonth <= 0 ? " This will end your run." : ""}`}
+          cashExhausted={cashAfterMonth <= 0}
+          disabled={completed || Boolean(blockedReason)}
+          disabledLabel={completed ? "DECISION ALREADY LOGGED" : blockedReason}
           onPress={() => onChoose(selected)}
         />
       </Animated.View>
-      <Text style={[styles.forecast, cashAfterMonth <= 0 && { color: colors.red }]}>
-        After upfront cost and one operating month: {formatMoney(Math.max(0, cashAfterMonth))} cash.
-        {cashAfterMonth <= 0 ? " This choice will exhaust your cash and end the run." : " New revenue starts next month."}
-      </Text>
-      <Text style={styles.footer}>SELECTING A CARD ONLY SHOWS ITS DETAILS</Text>
+      {completed && <Text style={styles.footer}>DECISION ALREADY LOGGED · EXPLORE ANY OPTION</Text>}
+
     </View>
   );
 }
@@ -99,15 +102,18 @@ const styles = StyleSheet.create({
   subheading: { color: "#92A4BA", fontSize: 10, lineHeight: 14, marginTop: 4 },
   count: { color: "#A1B3C9", fontSize: 10, fontWeight: "900", letterSpacing: 1, marginTop: 3 },
   hand: { flexDirection: "row", gap: 7, alignItems: "stretch" },
-  handCard: { flex: 1, minWidth: 0, minHeight: 100, paddingHorizontal: 9, paddingVertical: 9, borderRadius: 11, borderWidth: 1, borderColor: "#2B3E57", backgroundColor: "#111E30", justifyContent: "space-between" },
-  handCardActive: { borderColor: "#70B9BA", backgroundColor: "#153039", transform: [{ translateY: -3 }] },
+  handStack: { flexDirection: "column" },
+  handCardCompact: { flexDirection: "row", alignItems: "center", minHeight: 60, flex: 0, gap: 10 },
+  compactTitle: { flex: 1 },
+  unaffordable: { color: colors.orange },
+  handCard: { flex: 1, minWidth: 0, minHeight: 100, gap: 7, paddingHorizontal: 9, paddingVertical: 10, borderRadius: 11, borderWidth: 1, borderColor: "#2B3E57", backgroundColor: "#111E30", justifyContent: "space-between" },
+  handCardActive: { borderColor: colors.mint, backgroundColor: "#153039" },
+  handNumberActive: { color: colors.mint },
+  handTitleActive: { color: colors.white },
   handCardPressed: { opacity: 0.75 },
   handNumber: { color: "#657B95", fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
-  handNumberActive: { color: colors.mint },
-  handTitle: { color: "#BCC8D8", fontSize: 10, lineHeight: 13, fontWeight: "800" },
-  handTitleActive: { color: colors.white },
-  handCost: { color: "#7F93AA", fontSize: 7, lineHeight: 10, fontWeight: "800", letterSpacing: 0.2 },
+  handTitle: { color: "#BCC8D8", fontSize: 12, lineHeight: 17, fontWeight: "800" },
+  handCost: { color: "#9BAFC7", fontSize: 9, lineHeight: 13, fontWeight: "800", letterSpacing: 0.2 },
   focusedCard: { marginTop: 13 },
   footer: { color: "#657B95", fontSize: 7, fontWeight: "800", letterSpacing: 0.65, textAlign: "center", marginTop: 2 },
-  forecast: { color: colors.muted, fontSize: 11, lineHeight: 17, marginVertical: 10 },
 });

@@ -8,6 +8,8 @@ import { CampaignResetButton } from "@/ui/components/CampaignResetButton";
 import { SettingsButton } from "@/ui/components/SettingsButton";
 import { Screen } from "@/ui/components/Screen";
 import { TopBar } from "@/ui/components/TopBar";
+import { Button } from "@/ui/components/Button";
+import { ProgressMeter } from "@/ui/components/ProgressMeter";
 import { Pill } from "@/ui/components/Pill";
 import { useGameStore } from "@/store/gameStore";
 import { colors, radii, spacing } from "@/ui/theme";
@@ -37,15 +39,18 @@ function CampaignHubCard({ campaign, index }: { campaign: (typeof campaigns)[num
   const completedLevels = useGameStore((state) => state.activeCampaignId === campaign.id ? state.progress.completedLevels : state.campaignSaves[campaign.id]?.progress.completedLevels ?? noCompletedLevels);
   const unlockedLevels = useGameStore((state) => state.activeCampaignId === campaign.id ? state.player.unlockedLevels : state.campaignSaves[campaign.id]?.player.unlockedLevels ?? noUnlockedLevels);
   const briefSeen = useGameStore((state) => state.campaignSaves[campaign.id]?.briefSeen ?? (state.activeCampaignId === campaign.id && state.briefSeen));
-  const profileReady = useGameStore((state) => Boolean(state.profile.name.trim()) && state.profile.age !== null);
+  const profileReady = useGameStore((state) => Boolean(state.profile.name.trim()));
   const selectCampaign = useGameStore((state) => state.selectCampaign);
   const levels = allLevels.filter((level) => level.campaignId === campaign.id);
-  const completedCount = completedLevels.length;
-  const progress = levels.length ? Math.min(completedCount / levels.length, 1) : 0;
-  const nextLevel = levels.find((level) => unlockedLevels.includes(level.id) && !completedLevels.includes(level.id));
+  const failureReason = useGameStore((state) => state.activeCampaignId === campaign.id ? state.failureReason : state.campaignSaves[campaign.id]?.failureReason);
+  const completedCount = levels.filter((level) => completedLevels.includes(level.id)).length;
+  const nextLevel = failureReason ? undefined : levels.find((level) => unlockedLevels.includes(level.id) && !completedLevels.includes(level.id));
+
+  const nextIndex = nextLevel ? levels.indexOf(nextLevel) : Math.max(0, completedCount - 1);
+  const previewStart = Math.max(0, Math.min(nextIndex, levels.length - 3));
+  const previewLevels = levels.slice(previewStart, previewStart + 3);
 
   const enterBrief = () => {
-    gameFeedback.trigger("uiTap");
     selectCampaign(campaign.id);
     if (briefSeen && profileReady) {
       router.push("/levels");
@@ -64,7 +69,7 @@ function CampaignHubCard({ campaign, index }: { campaign: (typeof campaigns)[num
     router.push({ pathname: "/game/[levelId]", params: { levelId } });
   };
 
-  const campaignAction = !briefSeen ? "START CAMPAIGN" : profileReady ? "CONTINUE CAMPAIGN" : "SET UP PROFILE";
+  const campaignAction = failureReason ? "REVIEW RUN" : completedCount === levels.length ? "REVIEW CAMPAIGN" : !briefSeen ? "START CAMPAIGN" : profileReady ? "CONTINUE CAMPAIGN" : "SET UP PROFILE";
 
   return <Animated.View entering={FadeInDown.delay(index * 80).duration(320)} style={[styles.hub, wide && styles.hubWide, { borderColor: `${campaign.accent}55` }]}>
     <View style={styles.featureColumn}>
@@ -80,23 +85,22 @@ function CampaignHubCard({ campaign, index }: { campaign: (typeof campaigns)[num
           <Text style={styles.featureTitle}>{campaign.subtitle}</Text>
           <Text style={styles.featureDescription}>{campaign.description}</Text>
           <View style={styles.jimmyByline}><View style={styles.jimmyStatus} /><Text style={styles.jimmyBylineText}>JIMMY  ·  YOUR AI ASSISTANT</Text></View>
-          <Pressable accessibilityRole="button" accessibilityLabel={`${campaignAction} for ${campaign.title}`} onPress={enterBrief} style={({ pressed }) => [styles.enterButton, pressed && styles.enterButtonPressed]}>
-            <Text style={styles.enterButtonText}>{campaignAction}</Text><ArrowIcon color="#071522" />
-          </Pressable>
+          <Button style={{ alignSelf: "flex-start", marginTop: 16 }} onPress={enterBrief}>{campaignAction} →</Button>
         </View>
       </ImageBackground>
       <View style={styles.progressBlock}>
         <View style={styles.progressTop}><Text style={styles.progressLabel}>YOUR PROGRESS</Text><Text style={styles.progressCount}>{completedCount} <Text style={styles.progressSlash}>/</Text> {levels.length} INCIDENTS</Text></View>
-        <View accessibilityRole="progressbar" accessibilityLabel={`${campaign.title} progress`} accessibilityValue={{ min: 0, max: levels.length, now: Math.min(completedCount, levels.length) }} style={styles.progressTrack}><View style={[styles.progressFill, { width: `${progress * 100}%`, backgroundColor: campaign.accent }]} /></View>
+        <ProgressMeter label={`${campaign.title} progress`} value={completedCount} max={levels.length} color={campaign.accent} />
       </View>
     </View>
 
     <View style={[styles.runLog, wide ? styles.runLogWide : styles.runLogStack]}>
-      <View style={styles.logHeader}><View><Text style={styles.logEyebrow}>CHAPTER 01</Text><Text style={styles.logTitle}>Incident log</Text></View><Text style={styles.logCount}>{String(levels.length).padStart(2, "0")} CASES</Text></View>
+      <View style={styles.logHeader}><View><Text style={styles.logEyebrow}>MISSION SELECT</Text><Text style={styles.logTitle}>{failureReason ? "Run debrief" : nextLevel ? "Your next moves" : "Final incidents"}</Text></View><Text style={styles.logCount}>{String(levels.length).padStart(2, "0")} CASES</Text></View>
       <View style={styles.levelList}>
-        {levels.map((level, levelIndex) => {
+        {previewLevels.map((level, previewIndex) => {
+          const levelIndex = levels.indexOf(level);
           const complete = completedLevels.includes(level.id);
-          const unlocked = unlockedLevels.includes(level.id);
+          const unlocked = complete || (!failureReason && unlockedLevels.includes(level.id));
           const status = complete ? "CLEARED" : unlocked ? "READY" : "LOCKED";
           const statusTone = complete ? "complete" : unlocked ? "ready" : "locked";
           return <Pressable
@@ -106,11 +110,11 @@ function CampaignHubCard({ campaign, index }: { campaign: (typeof campaigns)[num
             accessibilityHint={unlocked ? "Open this incident" : "Complete the previous incident to unlock"}
             disabled={!unlocked}
             onPress={() => openLevel(level.id)}
-            style={({ pressed }) => [styles.levelRow, levelIndex < levels.length - 1 && styles.levelRowDivider, !unlocked && styles.levelLocked, pressed && styles.levelPressed]}
+            style={({ pressed }) => [styles.levelRow, previewIndex < previewLevels.length - 1 && styles.levelRowDivider, !unlocked && styles.levelLocked, pressed && styles.levelPressed]}
           >
             <View style={[styles.levelIcon, styles[`${statusTone}Icon` as "completeIcon" | "readyIcon" | "lockedIcon"]]}><ScenarioIcon index={levelIndex} color={complete ? colors.blue : unlocked ? colors.mint : colors.dim} /></View>
             <View style={styles.levelCopy}>
-              <View style={styles.levelMeta}><Text style={styles.levelNumber}>0{level.levelNumber}</Text><Text style={[styles.levelState, styles[`${statusTone}Text` as "completeText" | "readyText" | "lockedText"]]}>{status}</Text></View>
+              <View style={styles.levelMeta}><Text style={styles.levelNumber}>{String(level.levelNumber).padStart(2, "0")}</Text><Text style={[styles.levelState, styles[`${statusTone}Text` as "completeText" | "readyText" | "lockedText"]]}>{status}</Text></View>
               <Text style={[styles.levelTitle, !unlocked && styles.levelTitleLocked]}>{level.title}</Text>
               <Text numberOfLines={1} style={styles.levelSummary}>{level.kicker.replace(/^CHAPTER\s+\d+\s*·\s*/i, "")}</Text>
             </View>
@@ -119,7 +123,8 @@ function CampaignHubCard({ campaign, index }: { campaign: (typeof campaigns)[num
           </Pressable>;
         })}
       </View>
-      <View style={styles.logFooter}><Text style={styles.logFooterText}>{nextLevel ? `UP NEXT  ·  ${nextLevel.title}` : "ALL AVAILABLE INCIDENTS CLEARED"}</Text></View>
+      <Button variant="ghost" onPress={enterBrief}>View campaign map →</Button>
+      <View style={styles.logFooter}><Text style={styles.logFooterText}>{nextLevel ? `UP NEXT  ·  ${nextLevel.title}` : failureReason ? "RUN ENDED · REVIEW YOUR DECISIONS" : "ALL INCIDENTS CLEARED"}</Text></View>
     </View>
   </Animated.View>;
 }
@@ -161,16 +166,11 @@ const styles = StyleSheet.create({
   jimmyByline: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 11 },
   jimmyStatus: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.mint },
   jimmyBylineText: { color: "#D3DFE9", fontSize: 7, fontWeight: "900", letterSpacing: 0.7 },
-  enterButton: { alignSelf: "flex-start", minHeight: 38, flexDirection: "row", alignItems: "center", gap: 9, paddingHorizontal: 12, marginTop: 13, borderRadius: 9, backgroundColor: colors.mint },
-  enterButtonPressed: { backgroundColor: "#B4FFE9", transform: [{ scale: 0.985 }] },
-  enterButtonText: { color: "#071522", fontSize: 8, fontWeight: "900", letterSpacing: 0.7 },
   progressBlock: { paddingHorizontal: 16, paddingVertical: 13, borderTopWidth: 1, borderTopColor: "#26394F", backgroundColor: "#0A1523" },
   progressTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   progressLabel: { color: "#8E9DB0", fontSize: 7, fontWeight: "900", letterSpacing: 1 },
   progressCount: { color: colors.white, fontSize: 8, fontWeight: "900", letterSpacing: 0.5 },
   progressSlash: { color: colors.dim },
-  progressTrack: { height: 3, borderRadius: 2, overflow: "hidden", backgroundColor: "#26364A" },
-  progressFill: { height: "100%", borderRadius: 2 },
   runLog: { minWidth: 0, minHeight: 275, backgroundColor: "#0B1625", borderTopWidth: 1, borderTopColor: "#24364B", paddingHorizontal: 16, paddingTop: 16, paddingBottom: 10, justifyContent: "space-between" },
   runLogWide: { flex: 0.92, borderTopWidth: 0, borderLeftWidth: 1, borderLeftColor: "#24364B" },
   runLogStack: { minHeight: 275 },

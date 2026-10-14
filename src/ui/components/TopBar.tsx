@@ -13,7 +13,7 @@ export function TopBar({ eyebrow = "SCALELOG", title, back = false, right, music
   return (
     <View style={styles.row}>
       <View style={styles.left}>
-        {back && <Pressable accessibilityRole="button" onPress={() => { gameFeedback.trigger("uiTap"); router.back(); }} style={styles.back}><Text style={styles.backText}>‹</Text></Pressable>}
+        {back && <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => { gameFeedback.trigger("uiTap"); if (router.canGoBack()) router.back(); else router.replace("/campaigns"); }} style={styles.back}><Text style={styles.backText}>‹</Text></Pressable>}
         <ScaleLogLogo size={30} />
         <View>
           <Text style={styles.eyebrow}>{eyebrow}</Text>

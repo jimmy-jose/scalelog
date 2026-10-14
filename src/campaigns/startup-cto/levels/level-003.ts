@@ -1,4 +1,5 @@
 import { Level } from "@/domain/types";
+import { changesFor } from "./authoring";
 
 export const level003: Level = {
   id: "startup-003", campaignId: "startup-cto", chapter: 1, levelNumber: 3,
@@ -36,9 +37,8 @@ export const level003: Level = {
         },
       },
       architectureChanges: [
-        { type: "addNode", node: { id: "pooler", type: "service", label: "Pooler", state: "newlyAdded", position: { x: 248, y: 34 }, subtitle: "shared" }, feedback: { sound: "architectureNodeAdded", haptic: "medium" } },
-        { type: "addEdge", edge: { from: "monolith", to: "pooler", dashed: true } },
-        { type: "updateNode", nodeId: "postgres", patch: { state: "normal", subtitle: "120 conns" } },
+        ...changesFor("pooled"),
+        { type: "updateNode", nodeId: "postgres", patch: { state: "normal", subtitle: "bounded DB sessions" } },
       ],
       outcomeTitle: "Seats are shared again.", outcomeDialogue: "The pooler keeps a small number of database connections warm and lets requests take turns. Timeouts vanish without touching PostgreSQL's max_connections.", outcomeEmotion: "celebrating", outcomeNote: "Connection pooling protects the database from a stampede of application processes.",
     },
@@ -83,9 +83,18 @@ export const level003: Level = {
       architectureChanges: [
         { type: "addNode", node: { id: "read-replica", type: "readReplica", label: "Read replica", state: "newlyAdded", position: { x: 320, y: 34 }, subtitle: "replica" }, feedback: { sound: "architectureNodeAdded", haptic: "medium" } },
         { type: "addEdge", edge: { from: "monolith", to: "read-replica", dashed: true } },
+        { type: "addEdge", edge: { from: "postgres", to: "read-replica", label: "async WAL" } },
+        { type: "setCapability", capability: "read-replicas", enabled: true },
+        { type: "setCapability", capability: "reader-routing", enabled: true },
       ],
       outcomeTitle: "Two databases, one connection storm.", outcomeDialogue: "The replica helps read throughput, but every app process still opens too many connections. You added a second system to solve a pooling problem.", outcomeEmotion: "disappointed", outcomeNote: "Distributed systems multiply the number of things you now have to operate.",
     },
   ],
+  variants: [{
+    id: "unresolved-query-debt", when: { missingAny: ["indexed"] },
+    description: "PostgreSQL is rejecting connections before requests can execute. Earlier dashboard query debt remains; pooling fixes admission pressure but does not remove unindexed scans.",
+    metrics: [{ label: "Connections", value: "498 / 500", severity: "critical" }, { label: "Query debt", value: "unindexed dashboard", severity: "warning" }, { label: "Timeouts", value: "18%", severity: "critical" }],
+    dialogue: [{ character: "jimmy", emotion: "concerned", text: "We have two separate problems: connection ownership and the old query plan. Share a bounded pool now, then keep the query repair on the rollout checklist." }],
+  }],
   hints: ["CPU is fine. Look at the resource that is actually exhausted.", "Can many app processes reuse fewer database connections?"], xpReward: 140, unlocks: [], lesson: "Protect scarce resources with a shared boundary before raising their limits.",
 };

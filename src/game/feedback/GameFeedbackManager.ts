@@ -23,6 +23,10 @@ const eventFeedback: Record<FeedbackEventId, FeedbackSpec> = {
 };
 
 class GameFeedbackManagerClass {
+  connectAudioLifecycle() {
+    return AudioManager.connectLifecycle();
+  }
+
   configure(settings: AudioSettings) {
     AudioManager.configure(settings);
     HapticManager.configure(settings);

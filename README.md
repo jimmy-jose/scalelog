@@ -90,7 +90,7 @@ The repository includes `vercel.json`. Vercel runs `npx expo export --platform w
 - `src/ui/components/ArchitectureCanvas.tsx` renders architecture JSON with SVG nodes, arrows, and incident states.
 - `app/` contains only the route-level composition for the screens.
 
-The current playable slice includes the first three Startup CTO levels. Progress is local to the device/browser and can be reset from the main menu developer options.
+Startup CTO contains 36 playable levels across six eras, taking Cartline from a Laravel/PostgreSQL MVP to a bounded, reviewed launch for millions of registered users. The ending reflects the architecture actually built. Progress is local to the device/browser and can be reset from the main menu developer options.
 
 ## Company simulation
 
@@ -100,9 +100,11 @@ Poor choices deduct XP (floored at zero) and CTO confidence. Good decisions can 
 
 The company summary shows its growth stage, health, runway, and latest decision. Player & company includes the full monthly decision history. Incident reviews show the company as it was at that level's start.
 
-Save version 4 rebuilds older saves from recorded choices using these rules, stopping at the first failure or unaffordable choice. Profiles are preserved; old inflated cash and XP are recalculated.
+Save version 6 adds free campaign completion certificates while retaining version 5 financial and history snapshots. Existing three-level saves unlock Level 4 without refilling cash or replaying decisions. Older-version migration rebuilds recorded choices with the shared rules and stops at failure; profiles remain intact.
 
-Run `npm test` for simulation, progression, persistence, and all 27 playable choice combinations. Run `npm run typecheck` for TypeScript validation.
+Completing Startup CTO unlocks a personalized, high-resolution certificate with a LinkedIn caption and ScaleLog referral link. Certificates survive campaign resets. See [certificate behavior and marketing URL configuration](docs/certificates.md) and the [sample certificate](docs/assets/certificate-preview.png).
+
+Run `npm test` for the original 27 opening combinations, complete routes, 120 deterministic mixed playthroughs, every new response, persistence and failures. Run `npm run typecheck`, `npm run lint`, and `npm run validate:campaign`. See [the campaign report](docs/startup-cto-report.md), [progression plan](docs/startup-cto-progression.md), and [technical review](docs/startup-cto-technical-review.md).
 
 ## Adding levels
 

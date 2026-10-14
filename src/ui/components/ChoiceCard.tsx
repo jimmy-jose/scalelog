@@ -1,3 +1,5 @@
+import { LearnMore } from "./LearnMore";
+import { Button } from "@/ui/components/Button";
 import { getChoiceRewards } from "@/domain/simulation";
 import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
@@ -39,7 +41,7 @@ function DecisionGlyph({ choice }: { choice: Choice }) {
   return <View style={styles.glyph}><Svg width={24} height={24} viewBox="0 0 24 24">{icon}</Svg></View>;
 }
 
-export function ChoiceCard({ choice, xpReward, onPress, disabled, disabledLabel, index = 0 }: { choice: Choice; xpReward: number; onPress: () => void; disabled?: boolean; disabledLabel?: string; index?: number }) {
+export function ChoiceCard({ choice, xpReward, onPress, disabled, disabledLabel, index = 0, forecast, cashExhausted }: { choice: Choice; xpReward: number; onPress: () => void; disabled?: boolean; disabledLabel?: string; index?: number; forecast?: string; cashExhausted?: boolean }) {
   const impacts = getImpacts(choice);
   const rewards = getChoiceRewards(choice, xpReward);
   const [explanation, setExplanation] = useState<{ label: string; text: string } | null>(null);
@@ -53,7 +55,7 @@ export function ChoiceCard({ choice, xpReward, onPress, disabled, disabledLabel,
     <View style={styles.card}>
       <View style={styles.topline}>
         <View style={styles.optionMark}><View style={styles.optionDot} /><Text style={styles.optionLabel}>OPTION {String(index + 1).padStart(2, "0")}</Text></View>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Why ${choice.cost === 0 ? "there is no upfront cost" : `this costs $${choice.cost.toLocaleString()} upfront`}`} onPress={() => showExplanation("UPFRONT COST", "upfrontCost")} style={({ pressed }) => [styles.cost, pressed && styles.costPressed]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Why ${choice.cost === 0 ? "there is no upfront cost" : `this costs $${choice.cost.toLocaleString()} upfront`}`} aria-expanded={explanation?.label === "UPFRONT COST"} accessibilityState={{ expanded: explanation?.label === "UPFRONT COST" }} onPress={() => showExplanation("UPFRONT COST", "upfrontCost")} style={({ pressed }) => [styles.cost, pressed && styles.costPressed]}>
           <Text style={styles.costValue}>{choice.cost === 0 ? "NO COST" : `$${choice.cost.toLocaleString()}`}</Text>
           <Text style={styles.costCaption}>{choice.cost === 0 ? "TO SHIP" : "UPFRONT"}</Text>
           <QuestionMark />
@@ -63,65 +65,49 @@ export function ChoiceCard({ choice, xpReward, onPress, disabled, disabledLabel,
         <DecisionGlyph choice={choice} />
         <View style={styles.copy}>
           <Text style={styles.label}>{choice.label}</Text>
-          <Text style={styles.description}>{choice.description}</Text>
         </View>
       </View>
       <View style={styles.tradeoffRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`What you gain: ${choice.tradeoff.upsideLabel}. ${choice.tradeoff.upside} Ask Jimmy why.`}
-          accessibilityState={{ expanded: explanation?.label === "WHAT YOU GAIN" }}
-          onPress={() => {
-            gameFeedback.trigger("uiTap");
-            setExplanation((current) => current?.label === "WHAT YOU GAIN" ? null : { label: "WHAT YOU GAIN", text: choice.tradeoff.jimmyExplanation });
-          }}
-          style={({ pressed }) => [styles.tradeoffCell, explanation?.label === "WHAT YOU GAIN" && styles.tradeoffSelected, pressed && styles.impactPressed]}
-        >
-          <View style={styles.tradeoffHeading}><Text style={[styles.tradeoffLabel, styles.gainLabel]}>WHAT YOU GAIN</Text><QuestionMark /></View>
+        <View style={styles.tradeoffCell}>
+          <Text style={[styles.tradeoffLabel, styles.gainLabel]}>GAIN</Text>
           <Text style={styles.tradeoffTitle}>{choice.tradeoff.upsideLabel}</Text>
-          <Text style={styles.tradeoffText}>{choice.tradeoff.upside}</Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`What you give up: ${choice.tradeoff.downsideLabel}. ${choice.tradeoff.downside} Ask Jimmy why.`}
-          accessibilityState={{ expanded: explanation?.label === "WHAT YOU GIVE UP" }}
-          onPress={() => {
-            gameFeedback.trigger("uiTap");
-            setExplanation((current) => current?.label === "WHAT YOU GIVE UP" ? null : { label: "WHAT YOU GIVE UP", text: choice.tradeoff.jimmyExplanation });
-          }}
-          style={({ pressed }) => [styles.tradeoffCell, explanation?.label === "WHAT YOU GIVE UP" && styles.tradeoffSelected, pressed && styles.impactPressed]}
-        >
-          <View style={styles.tradeoffHeading}><Text style={[styles.tradeoffLabel, styles.costLabel]}>WHAT YOU GIVE UP</Text><QuestionMark /></View>
+        </View>
+        <View style={styles.tradeoffCell}>
+          <Text style={[styles.tradeoffLabel, styles.costLabel]}>TRADE-OFF</Text>
           <Text style={styles.tradeoffTitle}>{choice.tradeoff.downsideLabel}</Text>
-          <Text style={styles.tradeoffText}>{choice.tradeoff.downside}</Text>
-        </Pressable>
+        </View>
       </View>
+      {Boolean(choice.effects.monthlyBurn) && <Text style={styles.description}>Monthly cost change: {choice.effects.monthlyBurn! < 0 ? "−" : "+"}${Math.abs(choice.effects.monthlyBurn!).toLocaleString()}/mo</Text>}
+      {forecast && <Text accessibilityRole={cashExhausted ? "alert" : undefined} style={[styles.forecast, cashExhausted && { color: colors.red }]}>{forecast}</Text>}
+      <LearnMore key={choice.id} label="Learn more: how it works & effects">
+        <Text style={styles.description}>{choice.description}</Text>
+        <Text style={styles.tradeoffText}>Gain: {choice.tradeoff.upside}</Text>
+        <Text style={styles.tradeoffText}>Trade-off: {choice.tradeoff.downside}</Text>
       {impacts.length > 0 && <View style={styles.impactSection}>
-        <View style={styles.impactRow}>{impacts.map((impact) => <Pressable key={impact.key} accessibilityRole="button" accessibilityLabel={`Why ${impact.label.toLowerCase()} changes by ${impact.value}`} onPress={() => showExplanation(impact.label, impact.key)} style={({ pressed }) => [styles.impact, explanation?.label === impact.label && styles.impactSelected, pressed && styles.impactPressed]}>
+        <View style={styles.impactRow}>{impacts.map((impact) => <Pressable key={impact.key} accessibilityRole="button" accessibilityLabel={`Why ${impact.label.toLowerCase()} changes by ${impact.value}`} aria-expanded={explanation?.label === impact.label} accessibilityState={{ expanded: explanation?.label === impact.label }} onPress={() => showExplanation(impact.label, impact.key)} style={({ pressed }) => [styles.impact, explanation?.label === impact.label && styles.impactSelected, pressed && styles.impactPressed]}>
           <Text style={styles.impactLabel}>{impact.label}</Text><Text style={styles.impactValue}>{impact.value}</Text><QuestionMark />
         </Pressable>)}</View>
-        <Text style={styles.impactHint}>TAP ? FOR JIMMY’S REASONING</Text>
+        {explanation && explanation.label !== "UPFRONT COST" && <Text style={styles.tradeoffText}>{explanation.text}</Text>}
       </View>}
       <Text style={[styles.description, { marginTop: 10 }]}>
         CTO confidence {signed(rewards.confidence)} · XP {signed(rewards.xp)} (minimum 0 total XP)
       </Text>
+        <Text style={styles.description}>Cash forecast includes the upfront cost and one operating month. New revenue starts next month.</Text>
+        <Text style={styles.tradeoffText}>{choice.tradeoff.jimmyExplanation}</Text>
+      </LearnMore>
 
-      {explanation && <Animated.View entering={FadeInDown.duration(220)} style={styles.jimmyExplanation}>
+      {explanation?.label === "UPFRONT COST" && <Animated.View entering={FadeInDown.duration(220)} style={styles.jimmyExplanation}>
         <Image source={jimmyExplaining} resizeMode="contain" style={styles.jimmyImage} accessibilityLabel="Jimmy explaining the choice" />
         <View style={styles.explanationCopy}>
           <View style={styles.explanationHeading}><View style={styles.jimmyOnline} /><Text style={styles.explanationLabel}>JIMMY EXPLAINS · {explanation.label}</Text></View>
           <Text style={styles.explanationText}>{explanation.text}</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Close explanation" onPress={() => setExplanation(null)} style={styles.askJimmy}><Text style={styles.askJimmyText}>Hide explanation</Text></Pressable>
         </View>
       </Animated.View>}
 
       <View style={styles.actions}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Ask Jimmy why ${choice.label} is a trade-off`} accessibilityState={{ expanded: explanation !== null }} onPress={() => { gameFeedback.trigger("uiTap"); setExplanation((current) => current?.label === "THE WHOLE CALL" ? null : { label: "THE WHOLE CALL", text: choice.tradeoff.jimmyExplanation }); }} style={styles.askJimmy}>
-          <Text style={styles.askJimmyText}>{explanation?.label === "THE WHOLE CALL" ? "HIDE JIMMY’S TAKE" : "ASK JIMMY WHY"}</Text>
-          <Text style={styles.askJimmyArrow}>{explanation?.label === "THE WHOLE CALL" ? "−" : "+"}</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Choose option ${index + 1}: ${choice.label}`} onPress={onPress} disabled={disabled} style={({ pressed }) => [styles.chooseButton, disabled && styles.chooseDisabled, pressed && styles.choosePressed]}>
-          <Text style={styles.chooseText}>{disabled ? disabledLabel ?? "NOT ENOUGH CASH" : "CHOOSE THIS PATH"}</Text><Text style={styles.chooseArrow}>→</Text>
-        </Pressable>
+        <Button onPress={onPress} disabled={disabled}>{disabled ? disabledLabel ?? "NOT ENOUGH CASH" : "Preview system change →"}</Button>
+
       </View>
     </View>
   );
@@ -132,12 +118,13 @@ function QuestionMark() {
 }
 
 const styles = StyleSheet.create({
+  forecast: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 12 },
   card: { backgroundColor: "#0E1A2B", borderRadius: 14, borderWidth: 1, borderColor: "#2A3E57", padding: spacing.md, marginBottom: 9, overflow: "hidden" },
   topline: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 9, borderBottomWidth: 1, borderBottomColor: "#22354B" },
   optionMark: { flexDirection: "row", alignItems: "center", gap: 7 },
   optionDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.blue },
   optionLabel: { color: "#8494A9", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
-  cost: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 4, paddingLeft: 7 },
+  cost: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 44, paddingVertical: 4, paddingLeft: 7 },
   costPressed: { opacity: 0.72 },
   costValue: { color: "#E4EBF3", fontSize: 12, fontWeight: "900" },
   costCaption: { color: "#718198", fontSize: 7, fontWeight: "800", letterSpacing: 0.65 },
@@ -148,23 +135,20 @@ const styles = StyleSheet.create({
   description: { color: "#99A8BB", fontSize: 12, lineHeight: 17, marginTop: 3 },
   impactSection: { paddingTop: 10, marginTop: 9, borderTopWidth: 1, borderTopColor: "#22354B" },
   impactRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  impact: { borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#14243A", borderWidth: 1, borderColor: "#30445E" },
+  impact: { minHeight: 44, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#14243A", borderWidth: 1, borderColor: "#30445E" },
   impactSelected: { borderColor: "#7099C8", backgroundColor: "#1A2C43" },
   impactPressed: { opacity: 0.72 },
   impactLabel: { color: "#A5B4C7", fontSize: 8, fontWeight: "800", letterSpacing: 0.45 },
   impactValue: { color: "#E0E8F2", fontSize: 10, fontWeight: "900" },
   questionMark: { width: 15, height: 15, borderRadius: 7.5, borderWidth: 1, borderColor: "#5B7595", alignItems: "center", justifyContent: "center", marginLeft: 1 },
   questionText: { color: "#BAD0E8", fontSize: 9, lineHeight: 11, fontWeight: "900" },
-  impactHint: { color: "#71849D", fontSize: 7, fontWeight: "800", letterSpacing: 0.55, marginTop: 7 },
-  tradeoffRow: { flexDirection: "row", gap: 8, marginTop: 11 },
-  tradeoffCell: { flex: 1, minWidth: 0, padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "#30445E", backgroundColor: "#142338" },
-  tradeoffSelected: { borderColor: "#7099C8", backgroundColor: "#1A2C43" },
-  tradeoffHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 4 },
+  tradeoffRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 11 },
+  tradeoffCell: { flexGrow: 1, flexBasis: 180, minWidth: 0, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: "#30445E", backgroundColor: "#142338" },
   tradeoffLabel: { fontSize: 8, fontWeight: "900", letterSpacing: 0.6 },
   gainLabel: { color: "#83B7EC" },
   costLabel: { color: "#E5BC77" },
-  tradeoffTitle: { color: "#E4EBF3", fontSize: 12, lineHeight: 16, fontWeight: "800", marginTop: 7 },
-  tradeoffText: { color: "#ACBACB", fontSize: 10, lineHeight: 15, marginTop: 4 },
+  tradeoffTitle: { color: "#E4EBF3", fontSize: 13, lineHeight: 18, fontWeight: "800", marginTop: 5 },
+  tradeoffText: { color: "#ACBACB", fontSize: 12, lineHeight: 19, marginTop: 5 },
   jimmyExplanation: { flexDirection: "row", alignItems: "center", gap: 8, padding: 9, marginTop: 10, borderWidth: 1, borderColor: "#31516C", borderRadius: 10, backgroundColor: "#12243A" },
   jimmyImage: { width: 48, height: 66, flexShrink: 0 },
   explanationCopy: { flex: 1, minWidth: 0 },
@@ -175,10 +159,4 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginTop: 11, paddingTop: 9, borderTopWidth: 1, borderTopColor: "#22354B" },
   askJimmy: { flexDirection: "row", alignItems: "center", gap: 7, paddingHorizontal: 9, paddingVertical: 8, borderRadius: 8 },
   askJimmyText: { color: colors.blue, fontSize: 8, fontWeight: "900", letterSpacing: 0.65 },
-  askJimmyArrow: { color: colors.blue, fontSize: 14, lineHeight: 16, fontWeight: "700" },
-  chooseButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 36, paddingHorizontal: 12, borderRadius: 9, borderWidth: 1, borderColor: "#355779", backgroundColor: "#172D47" },
-  chooseDisabled: { opacity: 0.45 },
-  choosePressed: { backgroundColor: "#203B5B" },
-  chooseText: { color: colors.white, fontSize: 8, fontWeight: "900", letterSpacing: 0.55 },
-  chooseArrow: { color: colors.mint, fontSize: 13, fontWeight: "900" },
 });

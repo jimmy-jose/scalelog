@@ -1,12 +1,13 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-audio";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
+import { createMusicPlayer, type MusicPlayer } from "./MusicPlayer";
 import { defaultAudioSettings, soundIds, type AudioSettings, type SoundId } from "./feedbackTypes";
 import { backgroundMusicSources, soundRegistry } from "./soundRegistry";
 import { soundMix, type SoundLane } from "./soundMix";
 
 class AudioManagerClass {
   private players = new Map<SoundId, AudioPlayer>();
-  private musicPlayer?: AudioPlayer;
+  private musicPlayer?: MusicPlayer;
   private musicTrackIndex = Math.floor(Math.random() * backgroundMusicSources.length);
   private warnedMissing = new Set<SoundId>();
   private settings: AudioSettings = defaultAudioSettings;
@@ -14,6 +15,26 @@ class AudioManagerClass {
   private lastPlayed = new Map<SoundId, number>();
   private laneRequests: Record<SoundLane, number> = { ui: 0, event: 0 };
   private active = new Map<SoundLane, { id: SoundId; until: number }>();
+
+  connectLifecycle() {
+    const resume = () => this.configureMusic();
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") resume();
+    });
+    if (Platform.OS !== "web" || typeof document === "undefined") return () => subscription.remove();
+
+    const onVisible = () => { if (document.visibilityState === "visible") resume(); };
+    // These calls stay inside the gesture; no await before browser play().
+    document.addEventListener("pointerup", resume);
+    document.addEventListener("keydown", resume);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      subscription.remove();
+      document.removeEventListener("pointerup", resume);
+      document.removeEventListener("keydown", resume);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }
 
   configure(settings: AudioSettings) {
     this.settings = settings;
@@ -108,33 +129,44 @@ class AudioManagerClass {
 
   private configureMusic() {
     if (!this.settings.musicEnabled || this.settings.musicVolume <= 0) {
-      if (this.musicPlayer?.playing) this.musicPlayer.pause();
+      this.musicPlayer?.pause();
       return;
     }
 
     try {
       if (!this.musicPlayer) {
-        const player = createAudioPlayer(backgroundMusicSources[this.musicTrackIndex], 250);
-        player.loop = false;
+        const player = createMusicPlayer(backgroundMusicSources[this.musicTrackIndex]);
         this.musicPlayer = player;
-        player.addListener("playbackStatusUpdate", (status) => {
-          if (!status.didJustFinish || !this.settings.musicEnabled || this.settings.musicVolume <= 0) return;
+        player.onEnded(() => {
+          if (!this.settings.musicEnabled || this.settings.musicVolume <= 0) return;
           this.musicTrackIndex = (this.musicTrackIndex + 1) % backgroundMusicSources.length;
           player.replace(backgroundMusicSources[this.musicTrackIndex]);
-          player.volume = this.settings.musicVolume;
-          player.play();
+          this.startMusic(player);
         });
       }
       this.musicPlayer.volume = this.settings.musicVolume;
       if (!this.musicPlayer.playing) {
         const player = this.musicPlayer;
-        void this.ensureAudioMode().then(() => {
-          if (this.settings.musicEnabled && this.settings.musicVolume > 0 && this.musicPlayer === player) player.play();
-        });
+        if (Platform.OS === "web") this.startMusic(player);
+        else void this.ensureAudioMode().then(() => this.startMusic(player));
       }
     } catch (error) {
       if (__DEV__) console.warn(`[ScaleLog audio] Could not configure background music on ${Platform.OS}.`, error);
     }
+  }
+
+  private startMusic(player: MusicPlayer) {
+    if (!this.settings.musicEnabled || this.settings.musicVolume <= 0 || this.musicPlayer !== player || player.playing) return;
+    player.volume = this.settings.musicVolume;
+    try {
+      void Promise.resolve(player.play()).catch((error) => this.reportMusicError(error));
+    } catch (error) {
+      this.reportMusicError(error);
+    }
+  }
+
+  private reportMusicError(error: unknown) {
+    if (__DEV__) console.warn("[ScaleLog audio] Music playback was interrupted or blocked; retrying on the next interaction.", error);
   }
 }
 

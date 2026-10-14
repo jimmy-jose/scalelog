@@ -1,12 +1,19 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { CampaignResetButton } from "@/ui/components/CampaignResetButton";
+import { CertificateReward } from "@/ui/components/CertificateReward";
+import { LearnMore } from "@/ui/components/LearnMore";
 import { CompanySummary } from "@/ui/components/CompanySummary";
 import { Image, ImageBackground, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import Animated, { FadeInDown } from "react-native-reanimated";
-import { signed } from "@/lib/format";
-import { getLevel } from "@/campaigns";
-import { useGameStore } from "@/store/gameStore";
+import Animated, { FadeInDown, useReducedMotion } from "react-native-reanimated";
+import { RewardCount } from "@/ui/components/RewardCount";
+import { RunProgress } from "@/ui/components/RunProgress";
+import { campaigns, getLevel } from "@/campaigns";
+import { getLevelAtStart, useGameStore } from "@/store/gameStore";
+import { ArchitectureCanvas } from "@/ui/components/ArchitectureCanvas";
+import { getCampaignEnding } from "@/domain/campaignEnding";
+import { premiumLaunchCapabilities, launchHazards } from "@/campaigns/startup-cto/launchContract";
 import { Screen } from "@/ui/components/Screen";
 import { TopBar } from "@/ui/components/TopBar";
 import { Button } from "@/ui/components/Button";
@@ -19,10 +26,18 @@ const office = require("../assets/scenes/startup_office_background.png");
 
 export default function LevelCompleteScreen() {
   const { width } = useWindowDimensions();
+  const reducedMotion = useReducedMotion();
   const wide = width >= 760;
   const outcome = useGameStore((state) => state.lastOutcome);
   const playerName = useGameStore((state) => state.profile.name.trim());
   const awardUnlocked = useGameStore((state) => state.player.awards.some((award) => award.unlocked));
+  const activeCampaignId = useGameStore((state) => state.activeCampaignId);
+  const company = useGameStore((state) => state.company);
+  const architecture = useGameStore((state) => state.architecture);
+  const progress = useGameStore((state) => state.progress);
+  const history = useGameStore((state) => state.history);
+  const campaign = campaigns.find((item) => item.id === activeCampaignId);
+  const ending = useMemo(() => getCampaignEnding(architecture, company, premiumLaunchCapabilities, launchHazards), [architecture, company]);
   const level = outcome ? getLevel(outcome.levelId) : undefined;
   useEffect(() => {
     if (!outcome || !level) return;
@@ -42,15 +57,16 @@ export default function LevelCompleteScreen() {
       if (completeTimer) clearTimeout(completeTimer);
       if (awardTimer) clearTimeout(awardTimer);
     };
-  }, [outcome?.levelId, outcome?.choiceId, level?.levelNumber, awardUnlocked]);
+  }, [outcome, level, awardUnlocked]);
   if (!outcome || !level) return <Screen><Text style={styles.missing}>Ready for a new run.</Text><Button onPress={() => router.replace("/levels")}>Start from the campaign map</Button></Screen>;
   const failed = Boolean(outcome.failureReason);
   const setback = outcome.confidenceAfter < outcome.confidenceBefore;
-  const nextLevel = !failed && outcome.nextLevel ? getLevel(outcome.nextLevel) : undefined;
+  const nextLevel = !failed && outcome.nextLevel ? getLevelAtStart({ activeCampaignId, progress, history, architecture }, outcome.nextLevel) : undefined;
+  const completed = !failed && Boolean(campaign && progress.completedLevels.length >= campaign.totalLevels);
   const greeting = failed ? "Your run ends here." : setback ? "A costly lesson." : playerName ? `Nice work, ${playerName}.` : "Decision logged.";
 
   return <Screen contentStyle={styles.screen}>
-    <TopBar back eyebrow="CAMPAIGN PROGRESS" title={failed ? "Run ended" : "Chapter handoff"} right={<Pill color={failed ? colors.red : setback ? colors.yellow : colors.mint}>{failed ? "RUN ENDED" : setback ? "SETBACK" : nextLevel ? "LEVEL CLEARED" : "CHAPTER PAUSED"}</Pill>} />
+    <TopBar back eyebrow="CAMPAIGN PROGRESS" title={failed ? "Run ended" : completed ? "Campaign complete" : "Mission complete"} right={<Pill color={failed ? colors.red : setback ? colors.yellow : colors.mint}>{failed ? "RUN ENDED" : setback ? "SETBACK" : nextLevel ? "LEVEL CLEARED" : completed ? "CAMPAIGN COMPLETE" : "CHAPTER PAUSED"}</Pill>} />
 
     <Animated.View entering={FadeInDown.duration(360)} style={[styles.hero, wide && styles.heroWide]}>
       <ImageBackground source={office} resizeMode="cover" style={StyleSheet.absoluteFill} imageStyle={styles.heroImage}>
@@ -60,34 +76,43 @@ export default function LevelCompleteScreen() {
         <Text style={styles.heroKicker}>LEVEL {String(level.levelNumber).padStart(2, "0")}  ·  DECISION RECORDED</Text>
         <Text style={styles.heroTitle}>{greeting}</Text>
         <Text style={styles.levelTitle}>{level.title}</Text>
-        <View style={styles.reward}>
-          <Text style={styles.rewardStar}>✦</Text>
-          <View><Text style={styles.rewardLabel}>CTO EXPERIENCE</Text><Text style={styles.rewardValue}>{signed(outcome.xpEarned)} XP</Text></View>
-        </View>
+        <Animated.View entering={reducedMotion ? undefined : FadeInDown.delay(120).duration(320)} style={styles.reward}>
+          <Text style={[styles.rewardStar, outcome.xpEarned < 0 && { color: colors.orange }]}>{outcome.xpEarned < 0 ? "◇" : "✦"}</Text>
+          <View><Text style={styles.rewardLabel}>CTO EXPERIENCE</Text><RewardCount key={`${outcome.levelId}-${outcome.choiceId}`} value={outcome.xpEarned} style={[styles.rewardValue, outcome.xpEarned < 0 && { color: colors.orange }]} /></View>
+        </Animated.View>
       </View>
       <Image source={failed ? characterAssets.defeated : setback ? characterAssets.disappointed : characterAssets.celebrating} resizeMode="contain" style={[styles.jimmyImage, wide && styles.jimmyImageWide]} accessibilityLabel={failed ? "Jimmy reacts to the failed run" : setback ? "Jimmy reflects on the setback" : "Jimmy celebrates the decision"} />
     </Animated.View>
 
-    <CompanySummary />
-    {failed ? <View style={styles.nextCard}><Text style={styles.nextTitle}>The consequences caught up.</Text><Text style={styles.nextText}>{outcome.failureReason}</Text><Text style={styles.nextText}>Review your decisions in Player & company, or reset the campaign above to try a different path.</Text></View> : nextLevel ? <Animated.View entering={FadeInDown.delay(100).duration(320)} style={styles.nextCard}>
+    <RunProgress />
+    {failed ? <View style={styles.nextCard}><Text style={styles.nextTitle}>The consequences caught up.</Text><Text style={styles.nextText}>{outcome.failureReason}</Text><CampaignResetButton campaignId={activeCampaignId} campaignTitle={campaign?.title ?? "this campaign"} /></View> : nextLevel ? <Animated.View entering={FadeInDown.delay(100).duration(320)} style={styles.nextCard}>
       <View style={styles.nextTopline}><Text style={styles.nextKicker}>NEXT INCIDENT  ·  LEVEL {String(nextLevel.levelNumber).padStart(2, "0")}</Text><Text style={styles.nextCampaign}>CARTLINE</Text></View>
       <Text style={styles.nextTitle}>{nextLevel.title}</Text>
-      <Text style={styles.nextText}>{nextLevel.description}</Text>
-      <View style={styles.nextRule} />
-      <Text style={styles.handoffText}>Your call is in. The company moves on to the next problem.</Text>
+
     </Animated.View> : <Animated.View entering={FadeInDown.delay(100).duration(320)} style={styles.nextCard}>
-      <Text style={styles.nextKicker}>CHAPTER 01 · CURRENTLY PLAYABLE</Text>
-      <Text style={styles.nextTitle}>That’s the end of this chapter.</Text>
-      <Text style={styles.nextText}>Your decisions are saved. More incidents will appear here as the campaign grows.</Text>
+      <Text style={styles.nextKicker}>{completed ? "CARTLINE · YOUR ARCHITECTURE" : "CURRENT CHAPTER COMPLETE"}</Text>
+      <Text style={styles.nextTitle}>{completed ? ending.title : "That’s the end of this chapter."}</Text>
+      <Text style={styles.nextText}>{completed ? ending.summary : "Your decisions are saved. More incidents will appear as the campaign grows."}</Text>
+      {completed && <LearnMore key={level.id} label="Learn more: your final architecture">
+        <Text style={styles.nextText}>Started with Laravel → PostgreSQL and two engineers. Now: {company.users.toLocaleString()} registered users and {company.engineers} engineers.</Text>
+        <ArchitectureCanvas graph={{ ...architecture, nodes: architecture.nodes.map(node => node.type === "client" ? { ...node, subtitle: `${company.users.toLocaleString()} registered users` } : node) }} compact />
+        <Text style={styles.nextText}>Practices retained: {ending.capabilities.join(", ") || "No additional capabilities recorded."}</Text>
+        {ending.gaps.length > 0 && <Text style={styles.nextText}>Before the premium forecast: {ending.gaps.join(", ")}.</Text>}
+        <Text style={styles.nextText}>Capacity and recovery are modeled campaign results. Growth beyond the proven envelope needs another measurement and review.</Text>
+      </LearnMore>}
     </Animated.View>}
 
-    <Button variant="secondary" onPress={() => router.push("/stats")}>Review company & decisions</Button>
+    {completed && <CertificateReward />}
     <View style={[styles.actions, wide && styles.actionsWide]}>
       <Button style={styles.primaryAction} onPress={() => nextLevel ? router.replace({ pathname: "/game/[levelId]", params: { levelId: nextLevel.id } }) : router.replace("/levels")}>
         {nextLevel ? "Go to the next incident" : "Back to the campaign map"} <Text>→</Text>
       </Button>
-      <Button variant="secondary" style={styles.secondaryAction} onPress={() => router.replace("/levels")}>View campaign map</Button>
+      {nextLevel && <Button variant="secondary" style={styles.secondaryAction} onPress={() => router.replace("/levels")}>View campaign map</Button>}
     </View>
+    <LearnMore key={`${outcome.levelId}-${outcome.choiceId}`} label="Company details & decision history">
+      <CompanySummary />
+      <Button variant="secondary" onPress={() => router.push("/stats")}>Review company & decisions</Button>
+    </LearnMore>
   </Screen>;
 }
 
@@ -113,8 +138,6 @@ const styles = StyleSheet.create({
   nextCampaign: { color: "#71849C", fontSize: 7, fontWeight: "900", letterSpacing: 1 },
   nextTitle: { color: colors.white, fontSize: 18, lineHeight: 23, fontWeight: "900", marginTop: 8 },
   nextText: { color: "#A5B5C8", fontSize: 11, lineHeight: 17, marginTop: 6 },
-  nextRule: { height: 1, backgroundColor: "#263A51", marginTop: 13 },
-  handoffText: { color: "#8193AA", fontSize: 9, lineHeight: 14, marginTop: 9 },
   actions: { gap: 9, marginTop: 14 },
   actionsWide: { flexDirection: "row", justifyContent: "flex-end", alignItems: "center" },
   primaryAction: { minWidth: 220, minHeight: 46, borderRadius: radii.sm },

@@ -32,7 +32,7 @@ export default function CampaignOnboardingScreen() {
   const briefSeen = useGameStore((state) => state.campaignSaves[campaign.id]?.briefSeen ?? (state.activeCampaignId === campaign.id && state.briefSeen));
   const unlockedLevels = useGameStore((state) => state.activeCampaignId === campaign.id ? state.player.unlockedLevels : state.campaignSaves[campaign.id]?.player.unlockedLevels ?? emptyLevels);
   const completedLevels = useGameStore((state) => state.activeCampaignId === campaign.id ? state.progress.completedLevels : state.campaignSaves[campaign.id]?.progress.completedLevels ?? emptyLevels);
-  const currentLevelId = useGameStore((state) => state.activeCampaignId === campaign.id ? state.player.currentLevel : state.campaignSaves[campaign.id]?.player.currentLevel);
+  const failureReason = useGameStore((state) => state.activeCampaignId === campaign.id ? state.failureReason : state.campaignSaves[campaign.id]?.failureReason);
   const selectCampaign = useGameStore((state) => state.selectCampaign);
   const setProfile = useGameStore((state) => state.setProfile);
   const markCampaignBriefSeen = useGameStore((state) => state.markCampaignBriefSeen);
@@ -59,11 +59,12 @@ export default function CampaignOnboardingScreen() {
     return useGameStore.persist.onFinishHydration(() => setHydrated(true));
   }, []);
 
-  const profileComplete = Boolean(profile.name.trim()) && profile.age !== null;
+  const profileComplete = Boolean(profile.name.trim());
   const campaignLevels = allLevels.filter((level) => level.campaignId === campaign.id);
-  const nextPlayable = campaignLevels.find((level) => unlockedLevels.includes(level.id) && !completedLevels.includes(level.id))
-    ?? campaignLevels.find((level) => level.id === currentLevelId);
-  const requestedLevel = typeof startLevel === "string" && getLevel(startLevel)?.campaignId === campaign.id ? getLevel(startLevel) : undefined;
+  const availableLevels = unlockedLevels.length ? unlockedLevels : campaign.levelIds.slice(0, 1);
+  const nextPlayable = failureReason ? undefined : campaignLevels.find((level) => availableLevels.includes(level.id) && !completedLevels.includes(level.id));
+  const requestedLevel = typeof startLevel === "string" && getLevel(startLevel)?.campaignId === campaign.id
+    && (completedLevels.includes(startLevel) || (!failureReason && availableLevels.includes(startLevel))) ? getLevel(startLevel) : undefined;
   const targetLevel = requestedLevel ?? nextPlayable;
   const architectureNodes = architecture?.nodes ?? [];
   const stackLabels = [
@@ -137,7 +138,7 @@ export default function CampaignOnboardingScreen() {
 
   if (!hydrated) return <Screen><View style={styles.loading}><Text style={styles.loadingText}>Loading your campaign…</Text></View></Screen>;
 
-  const hasCompleteProfile = Boolean(profile.name.trim()) && profile.age !== null;
+  const hasCompleteProfile = profileComplete;
   const ageGuidance = profile.age !== null && profile.age < 18
     ? "I’ll explain the unfamiliar engineering terms as we go and keep each trade-off concrete."
     : "I’ll keep the advice practical, and unpack the technical details whenever they matter.";
@@ -176,7 +177,7 @@ export default function CampaignOnboardingScreen() {
           <Text style={styles.privacy}>Saved only on this device. Your age helps me choose how much background to include.</Text>
           <Button onPress={saveProfileAndContinue}>Meet the company <Text>→</Text></Button>
         </View> : <View style={styles.profileSummary}>
-          <View style={styles.profileBadge}><ProfileIcon /><Text style={styles.profileBadgeText}>PROFILE READY  ·  AGE {profile.age}</Text></View>
+          <View style={styles.profileBadge}><ProfileIcon /><Text style={styles.profileBadgeText}>PROFILE READY{profile.age !== null ? `  ·  AGE ${profile.age}` : ""}</Text></View>
           <Text style={styles.bodySmall}>First up: the company you’re inheriting, what’s already working, and what you’re here to change.</Text>
           <Button onPress={showBrief}>Meet {campaign.story.companyName} <Text>→</Text></Button>
         </View>}

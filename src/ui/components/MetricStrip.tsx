@@ -1,17 +1,19 @@
 import { StyleSheet, Text, View } from "react-native";
-import Animated, { FadeInUp } from "react-native-reanimated";
+import Animated, { FadeInUp, useReducedMotion } from "react-native-reanimated";
 import Svg, { Circle, Ellipse, Path, Rect } from "react-native-svg";
 import { IncidentMetric } from "@/domain/types";
-import { colors, radii } from "@/ui/theme";
+import { colors } from "@/ui/theme";
 
 const severityColor = { normal: colors.mint, warning: colors.yellow, critical: colors.red };
 
 export function MetricStrip({ metrics }: { metrics: IncidentMetric[] }) {
+  const reducedMotion = useReducedMotion();
   return <View style={styles.row}>{metrics.map((metric, index) => {
     const accent = severityColor[metric.severity];
-    return <Animated.View entering={FadeInUp.delay(index * 45).duration(260)} key={metric.label} style={[styles.metric, { borderTopColor: accent }]}>
+    return <Animated.View entering={reducedMotion ? undefined : FadeInUp.delay(index * 45).duration(260)} key={metric.label} style={[styles.metric, { borderTopColor: accent }]}>
       <View style={styles.top}><View style={[styles.icon, { backgroundColor: `${accent}14`, borderColor: `${accent}45` }]}><MetricIcon label={metric.label} color={accent} /></View><Text numberOfLines={2} style={styles.label}>{metric.label}</Text></View>
       <Text style={[styles.value, { color: accent }]}>{metric.value}</Text>
+      <Text style={[styles.status, { color: accent }]}>{metric.severity === "critical" ? "! CRITICAL" : metric.severity === "warning" ? "△ WATCH" : "● NORMAL"}</Text>
     </Animated.View>;
   })}</View>;
 }
@@ -31,8 +33,9 @@ function MetricIcon({ label, color }: { label: string; color: string }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: "row", gap: 8 },
-  metric: { flex: 1, minWidth: 0, backgroundColor: "#0D192A", borderWidth: 1, borderColor: "#263B55", borderTopWidth: 2, borderRadius: 12, paddingHorizontal: 9, paddingVertical: 8 },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  metric: { flex: 1, minWidth: 125, backgroundColor: "#0D192A", borderWidth: 1, borderColor: "#263B55", borderTopWidth: 2, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12 },
+  status: { fontSize: 8, fontWeight: "800", letterSpacing: 0.7, marginTop: 10 },
   top: { flexDirection: "row", alignItems: "center", gap: 6, minHeight: 19 },
   icon: { width: 19, height: 19, borderRadius: 6, borderWidth: 1, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   label: { color: "#9AACC0", fontSize: 8, lineHeight: 10, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.45, flexShrink: 1 },

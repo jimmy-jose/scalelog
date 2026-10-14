@@ -65,7 +65,7 @@ export function CompanySummary({ levelId, showHistory = false, onBack }: { level
   const campaign = campaigns.find((item) => item.id === activeCampaignId);
   const levelIndex = levelId ? campaign?.levelIds.indexOf(levelId) ?? -1 : -1;
   const visibleHistory = levelIndex >= 0 ? history.filter((item) => (campaign?.levelIds.indexOf(item.levelId) ?? -1) < levelIndex) : history;
-  const snapshot = levelId ? getCompanyAtLevelStart({ company, progress, activeCampaignId }, levelId) : company;
+  const snapshot = levelId ? getCompanyAtLevelStart({ company, progress, activeCampaignId, history }, levelId) : company;
   const snapshotConfidence = levelIndex >= 0 ? visibleHistory[visibleHistory.length - 1]?.confidenceAfter ?? 70 : confidence;
   const summary = getCompanySummary(snapshot, snapshotConfidence, visibleHistory.length);
   const failed = levelId ? undefined : failureReason;
@@ -78,7 +78,7 @@ export function CompanySummary({ levelId, showHistory = false, onBack }: { level
   const resources: { kind: ResourceKind; label: string; value: string; unit: string; color: string }[] = [
     { kind: "cash", label: "TREASURY", value: formatMoney(snapshot.cash), unit: "cash available", color: snapshot.cash <= 0 ? colors.red : colors.mint },
     { kind: "runway", label: "RUNWAY", value: summary.runway === null ? "∞" : summary.runway.toFixed(1), unit: summary.runway === null ? "self-funded" : "months remaining", color: summary.runway !== null && summary.runway < 3 ? colors.red : colors.yellow },
-    { kind: "users", label: "ACTIVE USERS", value: snapshot.users.toLocaleString(), unit: "customers", color: colors.blue },
+    { kind: "users", label: "REGISTERED USERS", value: snapshot.users.toLocaleString(), unit: "accounts", color: colors.blue },
     { kind: "revenue", label: "REVENUE", value: formatMoney(snapshot.monthlyRevenue), unit: "per month", color: colors.mint },
     { kind: "burn", label: "BURN RATE", value: formatMoney(snapshot.monthlyBurn), unit: "per month", color: colors.orange },
     { kind: "balance", label: "NET CASH FLOW", value: `${netFlow < 0 ? "−" : "+"}${formatMoney(Math.abs(netFlow))}`, unit: "per month", color: netFlow < 0 ? colors.red : colors.mint },
@@ -94,7 +94,7 @@ export function CompanySummary({ levelId, showHistory = false, onBack }: { level
       <View style={styles.headerActions}>
         <MusicButton />
         <View style={[styles.health, { borderColor: `${accent}55`, backgroundColor: `${accent}10` }]}><View style={[styles.statusDot, { backgroundColor: accent }]} /><Text style={[styles.healthText, { color: accent }]}>{health.toUpperCase()}</Text></View>
-        <Pressable accessibilityRole="button" accessibilityLabel={expanded ? "Collapse company details" : "Expand company details"} accessibilityState={{ expanded }} onPress={() => { gameFeedback.trigger("toggleSwitch"); setExpanded((current) => !current); }} hitSlop={6} style={styles.rulesButton}><Text style={styles.rulesButtonText}>{expanded ? "LESS −" : "MORE +"}</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={expanded ? "Collapse company details" : "Expand company details"} aria-expanded={expanded} accessibilityState={{ expanded }} onPress={() => { gameFeedback.trigger("toggleSwitch"); setExpanded((current) => !current); }} hitSlop={6} style={styles.rulesButton}><Text style={styles.rulesButtonText}>{expanded ? "LESS −" : "DETAILS +"}</Text></Pressable>
       </View>
     </View>
     {expanded && <View style={styles.metaRow}><Text style={styles.meta}>{summary.stage.toUpperCase()} · {levelId ? "AT INCIDENT START" : "LIVE SNAPSHOT"}</Text><Text style={styles.meta}>{visibleHistory.length} DECISIONS</Text></View>}
@@ -105,14 +105,14 @@ export function CompanySummary({ levelId, showHistory = false, onBack }: { level
       {expanded && <Text style={styles.unit}>{resource.unit}</Text>}
     </View>)}</View>
 
-    <View style={styles.meters}>
+    {expanded && <View style={styles.meters}>
       {[
         { label: "CTO CONFIDENCE", value: snapshotConfidence, color: colors.purple, limit: 20 },
         { label: "TRUST", value: snapshot.customerTrust, color: colors.blue, limit: 20 },
         { label: "RELIABILITY", value: snapshot.reliability, color: colors.mint, limit: 35 },
         { label: "OPS LOAD", value: snapshot.complexity, color: colors.orange, limit: 85, inverse: true },
       ].map((meter) => <View key={meter.label} style={{ width: meterWidth }}><HealthMeter {...meter} /></View>)}
-    </View>
+    </View>}
 
     {failed && <View accessibilityRole="alert" style={styles.failure}><Text style={styles.failureTitle}>RUN ENDED</Text><Text style={styles.failureText}>{failed}</Text><CampaignResetButton campaignId={activeCampaignId} campaignTitle={campaign?.title ?? "this campaign"} /></View>}
     {expanded && latest && !showHistory && <View style={styles.decision}>

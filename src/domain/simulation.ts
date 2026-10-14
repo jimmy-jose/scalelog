@@ -2,6 +2,23 @@ import type { CampaignCompanyState, Choice, Level } from "./types";
 
 const clampScore = (value: number) => Math.max(0, Math.min(100, value));
 
+/** One eligibility rule for previews, acceptance and next-incident progression. */
+export function getChoiceBlockReason(company: CampaignCompanyState, choice: Choice): string | undefined {
+  if (company.cash < choice.cost) return "Not enough cash";
+  const requirement = choice.requirements?.find(({ stat, min, max }) =>
+    (min !== undefined && company[stat] < min) || (max !== undefined && company[stat] > max));
+  if (!requirement) return undefined;
+  const below = requirement.min !== undefined && company[requirement.stat] < requirement.min;
+  return `Requires ${requirement.stat} ${below ? "at least" : "at most"} ${below ? requirement.min : requirement.max}`;
+}
+
+export function getProgressionFailure(company: CampaignCompanyState, level: Level): string | undefined {
+  if (level.choices.some((choice) => !getChoiceBlockReason(company, choice))) return undefined;
+  return level.choices.every((choice) => company.cash < choice.cost)
+    ? "There is not enough cash to fund any response to the next incident."
+    : "The company cannot meet the requirements of any response to the next incident.";
+}
+
 export function getChoiceRewards(choice: Choice, xpReward: number) {
   const badChoice = choice.tone === "risky" || choice.tone === "overkill";
   return {
@@ -27,7 +44,7 @@ export function getFailureReason(company: CampaignCompanyState, confidence: numb
 /** One decision advances one operating month. New revenue starts next month. */
 export function resolveDecision(company: CampaignCompanyState, ctoXp: number, confidence: number, level: Level, choice: Choice) {
   const next = { ...company };
-  for (const key of ["monthlyRevenue", "monthlyBurn", "users", "customerTrust", "reliability", "complexity"] as const) {
+  for (const key of ["engineers", "monthlyRevenue", "monthlyBurn", "users", "customerTrust", "reliability", "complexity"] as const) {
     next[key] = Math.max(0, next[key] + (choice.effects[key] ?? 0));
   }
   for (const key of ["customerTrust", "reliability", "complexity"] as const) next[key] = clampScore(next[key]);

@@ -1,25 +1,15 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { PanResponder, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import Animated, { Easing, FadeInDown, cancelAnimation, useAnimatedProps, useSharedValue, withDelay, withRepeat, withTiming } from "react-native-reanimated";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import Animated, { Easing, FadeInDown, cancelAnimation, useAnimatedProps, useReducedMotion, useSharedValue, withDelay, withRepeat, withTiming } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Circle, Defs, Ellipse, G, LinearGradient as SvgGradient, Marker, Path, Pattern, Rect, Stop, Text as SvgText } from "react-native-svg";
 import type { ArchitectureGraph, ArchitectureNode, ArchitectureNodeType } from "@/domain/types";
+import { buildArchitectureLayout, routeArchitectureEdges, isBackgroundEdge, type Point, type PlacedNode, type DiagramLayout } from "@/ui/architecture/layout";
 import { colors, radii, spacing } from "@/ui/theme";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-const WIDE_CANVAS_WIDTH = 720;
-const NODE_HEIGHT = 88;
-const WIDE_NODE_WIDTH = 184;
-const MOBILE_NODE_HEIGHT = 88;
 const EMPTY_HIGHLIGHTS: string[] = [];
 
-type LaneId = "frontend" | "backend" | "data";
-type Point = { x: number; y: number };
-type Lane = { id: LaneId; title: string; note: string; color: string; x: number; y: number; width: number; height: number };
-type PlacedNode = { node: ArchitectureNode; lane: LaneId; laneIndex: number; x: number; y: number };
-type DiagramLayout = { width: number; height: number; nodeWidth: number; nodeHeight: number; lanes: Lane[]; nodes: PlacedNode[]; initialPositions: Record<string, Point> };
-
-const laneColors: Record<LaneId, string> = { frontend: "#71C9ED", backend: "#B29DFF", data: "#F0BA7B" };
 const nodeColors: Record<ArchitectureNodeType, string> = {
   client: colors.blue, api: "#71B8FF", monolith: colors.purple, loadBalancer: colors.blue,
   postgres: colors.orange, mysql: colors.orange, redis: colors.pink, queue: colors.yellow,
@@ -28,19 +18,8 @@ const nodeColors: Record<ArchitectureNodeType, string> = {
   rateLimiter: colors.pink,
 };
 
-const laneCopy: Record<LaneId, { title: string; note: string }> = {
-  frontend: { title: "CLIENT LAYER", note: "Entry points" },
-  backend: { title: "COMPUTE LAYER", note: "Application services" },
-  data: { title: "DATA LAYER", note: "Storage & infrastructure" },
-};
-
-function laneFor(type: ArchitectureNodeType): LaneId {
-  if (type === "client" || type === "cdn") return "frontend";
-  if (["postgres", "mysql", "redis", "queue", "kafka", "objectStorage", "search", "readReplica", "region"].includes(type)) return "data";
-  return "backend";
-}
-
 function nodeExplanation(node: ArchitectureNode) {
+  if (node.id === "pooler") return "Reuses a bounded set of database connections. Application requests pass through this pool before reaching PostgreSQL.";
   if (node.type === "api" && node.label === "Gateway") return "Routes each incoming HTTP request to the right service, then sends that service's response back to the client.";
   const descriptions: Partial<Record<ArchitectureNodeType, string>> = {
     client: "The web and mobile apps used by customers. They send requests to the backend and display the returned result.",
@@ -62,54 +41,6 @@ function nodeExplanation(node: ArchitectureNode) {
     rateLimiter: "Controls how many requests a client may send in a time window.",
   };
   return descriptions[node.type] ?? "A component in this system's request path.";
-}
-
-function buildLayout(graph: ArchitectureGraph, wide: boolean, mobileWidth: number): DiagramLayout {
-  const width = mobileWidth;
-  const nodeWidth = wide ? WIDE_NODE_WIDTH : Math.min(238, width - 100);
-  const nodeHeight = wide ? NODE_HEIGHT : MOBILE_NODE_HEIGHT;
-  const laneIds: LaneId[] = ["frontend", "backend", "data"];
-  const grouped = Object.fromEntries(laneIds.map((lane) => [lane, graph.nodes.filter((node) => laneFor(node.type) === lane).sort((a, b) => a.position.x - b.position.x)])) as Record<LaneId, ArchitectureNode[]>;
-  const laneCount = Math.max(1, ...laneIds.map((id) => grouped[id].length));
-  const lanes: Lane[] = [];
-  const nodes: PlacedNode[] = [];
-  const initialPositions: Record<string, Point> = {};
-
-  if (wide) {
-    const columns = [
-      { id: "frontend" as const, x: 16, width: (width - 64) / 3 },
-      { id: "backend" as const, x: 32 + (width - 64) / 3, width: (width - 64) / 3 },
-      { id: "data" as const, x: 48 + (width - 64) * 2 / 3, width: (width - 64) / 3 },
-    ];
-    const height = Math.max(250, 92 + laneCount * 128 + 30);
-    columns.forEach((column, laneIndex) => {
-      const copy = laneCopy[column.id];
-      lanes.push({ ...column, ...copy, y: 16, height: height - 32, color: laneColors[column.id] });
-      grouped[column.id].forEach((node, index) => {
-        const x = column.x + (column.width - nodeWidth) / 2;
-        const y = 88 + index * 128 + (column.id === "data" ? (laneCount - grouped[column.id].length) * 64 : 0);
-        nodes.push({ node, lane: column.id, laneIndex, x, y });
-        initialPositions[node.id] = { x, y };
-      });
-    });
-    return { width, height, nodeWidth, nodeHeight, lanes, nodes, initialPositions };
-  }
-
-  let y = 14;
-  laneIds.forEach((id, laneIndex) => {
-    const copy = laneCopy[id];
-    const count = grouped[id].length;
-    const height = Math.max(72, 48 + count * 114);
-    lanes.push({ id, ...copy, x: 10, y, width: width - 20, height, color: laneColors[id] });
-    grouped[id].forEach((node, index) => {
-      const x = (width - nodeWidth) / 2;
-      const nodeY = y + 48 + index * 114;
-      nodes.push({ node, lane: id, laneIndex, x, y: nodeY });
-      initialPositions[node.id] = { x, y: nodeY };
-    });
-    y += height + 20;
-  });
-  return { width, height: y + 2, nodeWidth, nodeHeight, lanes, nodes, initialPositions };
 }
 
 function nodeStatus(node: ArchitectureNode) {
@@ -136,78 +67,22 @@ function edgeLabel(from: ArchitectureNode, to: ArchitectureNode, label?: string)
   return "request";
 }
 
-function responseLabel(to: ArchitectureNode) {
-  if (["postgres", "mysql", "readReplica"].includes(to.type)) return "result rows";
-  if (to.type === "redis") return "cache value";
-  if (to.type === "search") return "results";
-  if (to.type === "objectStorage") return "object";
-  return "response";
-}
-
-function isOneWayEdge(from: ArchitectureNode, to: ArchitectureNode, label: string | undefined) {
-  return ["queue", "kafka"].includes(from.type) || ["queue", "kafka"].includes(to.type) || /event|publish|stream|async/i.test(label ?? "");
-}
-
-function connection(from: PlacedNode, to: PlacedNode, wide: boolean, nodeWidth: number, nodeHeight: number) {
-  const fromCenter = { x: from.x + nodeWidth / 2, y: from.y + nodeHeight / 2 };
-  const toCenter = { x: to.x + nodeWidth / 2, y: to.y + nodeHeight / 2 };
-  if (wide && from.laneIndex !== to.laneIndex) {
-    const direction = toCenter.x >= fromCenter.x ? 1 : -1;
-    return { x1: fromCenter.x + direction * (nodeWidth / 2), y1: fromCenter.y, x2: toCenter.x - direction * (nodeWidth / 2), y2: toCenter.y };
-  }
-  if (!wide && from.laneIndex !== to.laneIndex) {
-    const direction = toCenter.y >= fromCenter.y ? 1 : -1;
-    return { x1: fromCenter.x, y1: fromCenter.y + direction * (nodeHeight / 2), x2: toCenter.x, y2: toCenter.y - direction * (nodeHeight / 2) };
-  }
-  if (Math.abs(toCenter.x - fromCenter.x) > Math.abs(toCenter.y - fromCenter.y)) {
-    const direction = toCenter.x >= fromCenter.x ? 1 : -1;
-    return { x1: fromCenter.x + direction * (nodeWidth / 2), y1: fromCenter.y, x2: toCenter.x - direction * (nodeWidth / 2), y2: toCenter.y };
-  }
-  const direction = toCenter.y >= fromCenter.y ? 1 : -1;
-  return { x1: fromCenter.x, y1: fromCenter.y + direction * (nodeHeight / 2), x2: toCenter.x, y2: toCenter.y - direction * (nodeHeight / 2) };
-}
-
-function edgeFlow(from: PlacedNode, to: PlacedNode, wide: boolean, nodeWidth: number, nodeHeight: number, oneWay: boolean) {
-  const line = connection(from, to, wide, nodeWidth, nodeHeight);
-  const fromCenter = { x: from.x + nodeWidth / 2, y: from.y + nodeHeight / 2 };
-  const toCenter = { x: to.x + nodeWidth / 2, y: to.y + nodeHeight / 2 };
-  const routedAroundNodes = from.laneIndex === to.laneIndex || !wide;
-  if (routedAroundNodes) {
-    const railInset = 18;
-    const rightRail = Math.max(from.x, to.x) + nodeWidth + railInset;
-    const leftRail = Math.min(from.x, to.x) - railInset;
-    return {
-      line,
-      sameLane: true,
-      request: [fromCenter, { x: from.x + nodeWidth, y: fromCenter.y }, { x: rightRail, y: fromCenter.y }, { x: rightRail, y: toCenter.y }, { x: to.x + nodeWidth, y: toCenter.y }, toCenter],
-      response: [toCenter, { x: to.x, y: toCenter.y }, { x: leftRail, y: toCenter.y }, { x: leftRail, y: fromCenter.y }, { x: from.x, y: fromCenter.y }, fromCenter],
-    };
-  }
-  const distance = Math.max(1, Math.hypot(line.x2 - line.x1, line.y2 - line.y1));
-  const offsetX = oneWay ? 0 : (line.y2 - line.y1) / distance * 6;
-  const offsetY = oneWay ? 0 : -(line.x2 - line.x1) / distance * 6;
-  const request = [fromCenter, { x: line.x1 + offsetX, y: line.y1 + offsetY }, { x: line.x2 + offsetX, y: line.y2 + offsetY }, toCenter];
-  const response = [toCenter, { x: line.x2 - offsetX, y: line.y2 - offsetY }, { x: line.x1 - offsetX, y: line.y1 - offsetY }, fromCenter];
-  return { line, sameLane: false, request, response };
-}
-
 function pathThrough(points: Point[]) {
   return points.map((point, index) => `${index ? "L" : "M"}${point.x} ${point.y}`).join(" ");
 }
 
-function FlowDot({ points, color, delay, duration, phase }: { points: Point[]; color: string; delay: number; duration: number; phase: "single" | "request" | "response" }) {
+function FlowDot({ points, color, delay, duration }: { points: Point[]; color: string; delay: number; duration: number }) {
   const progress = useSharedValue(0);
   const segmentLengths = useMemo(() => points.slice(1).map((point, index) => Math.hypot(point.x - points[index].x, point.y - points[index].y)), [points]);
   const totalLength = segmentLengths.reduce((total, length) => total + length, 0);
   useEffect(() => {
     progress.value = 0;
-    progress.value = withDelay(delay, withRepeat(withTiming(1, { duration: phase === "single" ? duration : duration * 2, easing: Easing.linear }), -1, false));
+    progress.value = withDelay(delay, withRepeat(withTiming(1, { duration, easing: Easing.linear }), -1, false));
     return () => cancelAnimation(progress);
-  }, [delay, duration, phase, progress]);
+  }, [delay, duration, progress]);
   const animatedProps = useAnimatedProps(() => {
     if (points.length < 2) return { cx: -10, cy: -10, opacity: 0 };
-    const visible = phase === "single" || (phase === "request" ? progress.value < 0.5 : progress.value >= 0.5);
-    const routeProgress = phase === "single" ? progress.value : phase === "request" ? Math.min(1, progress.value * 2) : Math.max(0, (progress.value - 0.5) * 2);
+    const routeProgress = progress.value;
     let remaining = routeProgress * totalLength;
     let segment = 0;
     while (segment < segmentLengths.length - 1 && remaining > segmentLengths[segment]) {
@@ -220,36 +95,10 @@ function FlowDot({ points, color, delay, duration, phase }: { points: Point[]; c
     return {
       cx: start.x + (end.x - start.x) * localProgress,
       cy: start.y + (end.y - start.y) * localProgress,
-      opacity: visible ? 0.5 + Math.sin(routeProgress * Math.PI) * 0.5 : 0,
+      opacity: 0.5 + Math.sin(routeProgress * Math.PI) * 0.5,
     };
   });
   return <AnimatedCircle r={4} fill={color} stroke="#081321" strokeWidth={1.5} animatedProps={animatedProps} />;
-}
-
-function flowRoutes(graph: ArchitectureGraph, byId: Record<string, PlacedNode>, wide: boolean, nodeWidth: number, nodeHeight: number) {
-  const outgoing = new Map<string, string[]>();
-  graph.edges.forEach((edge) => outgoing.set(edge.from, [...(outgoing.get(edge.from) ?? []), edge.to]));
-  const starts = graph.nodes.filter((node) => node.type === "client");
-  const paths: string[][] = [];
-  const walk = (id: string, path: string[]) => {
-    const next = (outgoing.get(id) ?? []).filter((candidate) => !path.includes(candidate));
-    if (!next.length) { if (path.length > 1) paths.push(path); return; }
-    next.forEach((candidate) => walk(candidate, [...path, candidate]));
-  };
-  starts.forEach((node) => walk(node.id, [node.id]));
-  return paths.map((path) => {
-    const flows = path.slice(1).map((id, index) => {
-      const from = byId[path[index]]; const to = byId[id];
-      const edge = graph.edges.find((item) => item.from === path[index] && item.to === id);
-      if (!from || !to || !edge) return null;
-      const oneWay = isOneWayEdge(from.node, to.node, edge.label);
-      return { ...edgeFlow(from, to, wide, nodeWidth, nodeHeight, oneWay), oneWay };
-    }).filter((flow): flow is NonNullable<typeof flow> => flow !== null);
-    const requestPoints = flows.flatMap((flow, index) => index === 0 ? flow.request : flow.request.slice(1));
-    const synchronous = flows.length === path.length - 1 && flows.every((flow) => !flow.oneWay);
-    const responsePoints = synchronous ? [...flows].reverse().flatMap((flow, index) => index === 0 ? flow.response : flow.response.slice(1)) : [];
-    return { requestPoints, responsePoints, synchronous, edgeCount: flows.length };
-  }).filter((route) => route.requestPoints.length > 1);
 }
 
 function NodeIcon({ type, color, size }: { type: ArchitectureNodeType; color: string; size: number }) {
@@ -268,40 +117,27 @@ function NodeIcon({ type, color, size }: { type: ArchitectureNodeType; color: st
   return <Svg width={size} height={size} viewBox="0 0 24 24">{glyph}</Svg>;
 }
 
-function DraggableNode({ placed, position, layout, zoom, offsetX, index, highlighted, selected, onMove, onInfo }: {
-  placed: PlacedNode; position: Point; layout: DiagramLayout; zoom: number; offsetX: number; index: number; highlighted: boolean; selected: boolean; onMove: (id: string, dx: number, dy: number) => void; onInfo: (id: string) => void;
+function DiagramNode({ placed, layout, zoom, offsetX, index, highlighted, selected, animateEntrance, interactive, onInfo }: {
+  placed: PlacedNode; layout: DiagramLayout; zoom: number; offsetX: number; index: number; highlighted: boolean; selected: boolean; animateEntrance: boolean; interactive: boolean; onInfo: (id: string) => void;
 }) {
-  const previous = useRef({ dx: 0, dy: 0 });
   const accent = statusColor(placed.node);
-  const panResponder = useMemo(() => PanResponder.create({
-    onStartShouldSetPanResponder: () => false,
-    onMoveShouldSetPanResponder: (_event, gesture) => Math.abs(gesture.dx) + Math.abs(gesture.dy) > 4,
-    onPanResponderTerminationRequest: () => false,
-    onPanResponderGrant: () => { previous.current = { dx: 0, dy: 0 }; },
-    onPanResponderMove: (_event, gesture) => {
-      const deltaX = gesture.dx - previous.current.dx;
-      const deltaY = gesture.dy - previous.current.dy;
-      previous.current = { dx: gesture.dx, dy: gesture.dy };
-      onMove(placed.node.id, deltaX / zoom, deltaY / zoom);
-    },
-  }), [onMove, placed.node.id, zoom]);
-
   return (
     <Animated.View
-      {...panResponder.panHandlers}
-      entering={FadeInDown.delay(highlighted ? 170 + index * 75 : index * 55).duration(highlighted ? 430 : 240)}
+      entering={animateEntrance ? FadeInDown.delay(highlighted ? 170 + index * 75 : index * 55).duration(highlighted ? 430 : 240) : undefined}
       style={[
         styles.node,
-        { left: offsetX + position.x * zoom, top: position.y * zoom, width: layout.nodeWidth * zoom, height: layout.nodeHeight * zoom, borderColor: highlighted || selected ? accent : `${accent}50`, shadowColor: selected ? accent : "#000", shadowOpacity: selected ? .2 : .3 },
+        { left: offsetX + placed.x * zoom, top: placed.y * zoom, width: layout.nodeWidth * zoom, height: layout.nodeHeight * zoom, borderColor: highlighted || selected ? accent : `${accent}50`, shadowColor: selected ? accent : "#000", shadowOpacity: selected ? .2 : .3 },
       ]}
     >
       <LinearGradient pointerEvents="none" colors={[`${accent}18`, "#0C1929", "#0A1422"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[StyleSheet.absoluteFill, { borderRadius: 13 }]} />
       <View pointerEvents="none" style={[styles.nodeAccent, { backgroundColor: accent, opacity: selected || highlighted ? 1 : .6 }]} />
       <Pressable
+        disabled={!interactive}
         accessibilityRole="button"
         accessibilityLabel={`Info about ${placed.node.label}`}
         accessibilityState={{ expanded: selected }}
-        accessibilityHint={`${nodeStatus(placed.node)}. Tap to inspect, or drag to reposition within its layer.`}
+        aria-expanded={selected}
+        accessibilityHint={`${nodeStatus(placed.node)}. Tap to inspect this component and its connections.`}
         onPress={() => onInfo(placed.node.id)}
         style={({ pressed }) => [styles.nodeInner, { padding: 10 * zoom }, pressed && { opacity: .8 }]}
       >
@@ -310,8 +146,8 @@ function DraggableNode({ placed, position, layout, zoom, offsetX, index, highlig
             <NodeIcon type={placed.node.type} color={accent} size={20 * zoom} />
           </View>
           <View style={styles.nodeCopy}>
-            <Text numberOfLines={1} style={[styles.nodeTitle, { fontSize: 11 * zoom }]}>{placed.node.label}</Text>
-            <Text numberOfLines={1} style={[styles.nodeSubtitle, { fontSize: 9 * zoom, marginTop: 3 * zoom }]}>{placed.node.subtitle || laneCopy[placed.lane].note}</Text>
+            <Text numberOfLines={2} style={[styles.nodeTitle, { fontSize: 11 * zoom }]}>{placed.node.label}</Text>
+            <Text numberOfLines={1} style={[styles.nodeSubtitle, { fontSize: 9 * zoom, marginTop: 3 * zoom }]}>{placed.node.subtitle || placed.node.type}</Text>
           </View>
         </View>
         <View style={[styles.nodeFooter, { paddingTop: 7 * zoom, marginTop: 7 * zoom }]}>
@@ -323,48 +159,36 @@ function DraggableNode({ placed, position, layout, zoom, offsetX, index, highlig
   );
 }
 
-export function ArchitectureCanvas({ graph, compact = false, highlightIds = EMPTY_HIGHLIGHTS }: { graph: ArchitectureGraph; compact?: boolean; highlightIds?: string[] }) {
+export function ArchitectureCanvas({ graph, compact = false, highlightIds = EMPTY_HIGHLIGHTS, animateEntrance = true, animateTraffic = true, interactive = true }: {
+  graph: ArchitectureGraph;
+  compact?: boolean;
+  highlightIds?: string[];
+  animateEntrance?: boolean;
+  animateTraffic?: boolean;
+  interactive?: boolean;
+}) {
+  const scrollRef = useRef<ScrollView>(null);
   const [containerWidth, setContainerWidth] = useState<number | null>(null);
   const availableWidth = Math.max(240, containerWidth === null ? 320 : containerWidth - (compact ? 26 : 34));
-  const wide = availableWidth >= WIDE_CANVAS_WIDTH;
+  const reducedMotion = useReducedMotion();
   const svgId = `map-${useId().replace(/:/g, "")}`;
   const incidentCount = graph.nodes.filter((node) => node.state === "failed" || node.state === "overloaded" || node.state === "warning").length;
-  const layout = useMemo(() => buildLayout(graph, wide, availableWidth), [graph, wide, availableWidth]);
-  const [positions, setPositions] = useState<Record<string, Point>>(() => layout.initialPositions);
+  const layout = useMemo(() => buildArchitectureLayout(graph, availableWidth), [graph, availableWidth]);
   const [zoom, setZoom] = useState(1);
   const [minimized, setMinimized] = useState(false);
   const [infoNodeId, setInfoNodeId] = useState<string | null>(null);
-  useEffect(() => { setPositions(layout.initialPositions); }, [layout]);
-
-  const moveNode = useCallback((id: string, dx: number, dy: number) => {
-    setPositions((current) => {
-      const node = layout.nodes.find((item) => item.node.id === id);
-      const position = current[id];
-      if (!node || !position) return current;
-      const lane = layout.lanes.find((item) => item.id === node.lane);
-      if (!lane) return current;
-      const minY = lane.y + (wide ? 64 : 44);
-      const maxX = lane.x + lane.width - layout.nodeWidth - 7;
-      const maxY = lane.y + lane.height - layout.nodeHeight - 7;
-      const minX = lane.x + 7;
-      return {
-        ...current,
-        [id]: {
-          x: Math.max(minX, Math.min(maxX, position.x + dx)),
-          y: Math.max(minY, Math.min(maxY, position.y + dy)),
-        },
-      };
-    });
-  }, [layout, wide]);
-
-  const placed = useMemo(() => layout.nodes.map((item) => ({ ...item, x: positions[item.node.id]?.x ?? item.x, y: positions[item.node.id]?.y ?? item.y })), [layout, positions]);
+  const placed = layout.nodes;
   const byId = useMemo(() => Object.fromEntries(placed.map((item) => [item.node.id, item])), [placed]);
   const infoNode = infoNodeId ? byId[infoNodeId]?.node : null;
-  const routes = useMemo(() => flowRoutes(graph, byId, wide, layout.nodeWidth, layout.nodeHeight), [graph, byId, wide, layout.nodeWidth, layout.nodeHeight]);
+  const routes = useMemo(() => routeArchitectureEdges(graph, layout), [graph, layout]);
   const stageWidth = layout.width * zoom;
   const stageHeight = layout.height * zoom;
   const contentWidth = Math.max(stageWidth, availableWidth);
   const offsetX = (contentWidth - stageWidth) / 2;
+  // Keep the entry path visible when parallel branches extend beyond a phone's width.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ x: Math.max(0, (contentWidth - availableWidth) / 2), animated: false });
+  }, [contentWidth, availableWidth, minimized]);
 
   return (
     <View style={[styles.card, compact && styles.compactCard]} onLayout={(event) => setContainerWidth(event.nativeEvent.layout.width)}>
@@ -380,16 +204,16 @@ export function ArchitectureCanvas({ graph, compact = false, highlightIds = EMPT
         <Text style={styles.componentCount}>{String(graph.nodes.length).padStart(2, "0")} <Text style={styles.componentCountLabel}>nodes</Text>  <Text style={styles.countDivider}>/</Text>  {String(graph.edges.length).padStart(2, "0")} <Text style={styles.componentCountLabel}>links</Text></Text>
         <View style={styles.zoomTools}>
           {!minimized && <>
-            <Pressable accessibilityRole="button" accessibilityLabel="Zoom out" disabled={zoom <= 0.7} onPress={() => setZoom((value) => Math.max(0.7, Math.round((value - 0.1) * 10) / 10))} style={[styles.zoomButton, zoom <= 0.7 && styles.zoomDisabled]}><Text style={styles.zoomButtonText}>−</Text></Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Fit all components" onPress={() => { setZoom(1); setPositions(layout.initialPositions); }} style={styles.zoomReadout}><Text style={styles.zoomLabel}>{Math.round(zoom * 100)}%</Text></Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Zoom in" disabled={zoom >= 1.5} onPress={() => setZoom((value) => Math.min(1.5, Math.round((value + 0.1) * 10) / 10))} style={[styles.zoomButton, zoom >= 1.5 && styles.zoomDisabled]}><Text style={styles.zoomButtonText}>+</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Zoom out" disabled={!interactive || zoom <= 0.7} onPress={() => setZoom((value) => Math.max(0.7, Math.round((value - 0.1) * 10) / 10))} style={[styles.zoomButton, zoom <= 0.7 && styles.zoomDisabled]}><Text style={styles.zoomButtonText}>−</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Reset diagram zoom" disabled={!interactive} onPress={() => setZoom(1)} style={styles.zoomReadout}><Text style={styles.zoomLabel}>{Math.round(zoom * 100)}%</Text></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Zoom in" disabled={!interactive || zoom >= 1.5} onPress={() => setZoom((value) => Math.min(1.5, Math.round((value + 0.1) * 10) / 10))} style={[styles.zoomButton, zoom >= 1.5 && styles.zoomDisabled]}><Text style={styles.zoomButtonText}>+</Text></Pressable>
           </>}
-          <Pressable accessibilityRole="button" accessibilityLabel={minimized ? "Expand map" : "Minimize map"} onPress={() => setMinimized((value) => !value)} style={styles.minimizeButton}><Text style={styles.minimizeText}>{minimized ? "SHOW" : "HIDE"}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={minimized ? "Expand map" : "Minimize map"} disabled={!interactive} onPress={() => setMinimized((value) => !value)} style={styles.minimizeButton}><Text style={styles.minimizeText}>{minimized ? "SHOW" : "HIDE"}</Text></Pressable>
         </View>
       </View>
-      {minimized ? <Pressable accessibilityRole="button" accessibilityLabel="Expand map to see all components" onPress={() => setMinimized(false)} style={styles.mapSummary}><Text style={styles.summaryLabel}>{graph.nodes.length} COMPONENTS · TAP TO EXPAND</Text><Text numberOfLines={1} style={styles.summaryNodes}>{graph.nodes.map((node) => node.label).join("  ·  ")}</Text></Pressable> : <>
-      <View style={styles.canvasMeta}><View style={styles.live}><View style={styles.liveDot} /><Text style={styles.liveText}>REQUEST FLOW</Text></View><Text style={styles.dragHint}>DRAG TO ARRANGE · TAP TO INSPECT</Text></View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} bounces={false} style={[styles.canvasScroll, { height: stageHeight }]} contentContainerStyle={{ width: contentWidth, height: stageHeight }}>
+      {minimized ? <Pressable accessibilityRole="button" accessibilityLabel="Expand map to see all components" disabled={!interactive} onPress={() => setMinimized(false)} style={styles.mapSummary}><Text style={styles.summaryLabel}>{graph.nodes.length} COMPONENTS · TAP TO EXPAND</Text><Text numberOfLines={1} style={styles.summaryNodes}>{graph.nodes.map((node) => node.label).join("  ·  ")}</Text></Pressable> : <>
+      <View style={styles.canvasMeta}><View style={styles.live}><View style={styles.liveDot} /><Text style={styles.liveText}>FLOW ↓</Text></View><Text style={styles.dragHint}>{contentWidth > availableWidth ? "SCROLL SIDEWAYS FOR BRANCHES · TAP TO TRACE" : "TAP A COMPONENT TO TRACE ITS CONNECTIONS"}</Text></View>
+      <ScrollView ref={scrollRef} onContentSizeChange={() => scrollRef.current?.scrollTo({ x: Math.max(0, (contentWidth - availableWidth) / 2), animated: false })} horizontal showsHorizontalScrollIndicator bounces={false} style={[styles.canvasScroll, { height: stageHeight }]} contentContainerStyle={{ width: contentWidth, height: stageHeight }}>
         <View style={{ width: contentWidth, height: stageHeight, position: "relative" }}>
           <Svg width={stageWidth} height={stageHeight} viewBox={`0 0 ${layout.width} ${layout.height}`} style={[StyleSheet.absoluteFill, { left: offsetX }]}>
             <Defs>
@@ -397,7 +221,7 @@ export function ArchitectureCanvas({ graph, compact = false, highlightIds = EMPT
               <Pattern id={`${svgId}-grid`} width={100} height={100} patternUnits="userSpaceOnUse"><Path d="M100 0H0V100" fill="none" stroke="#244256" strokeWidth={.5} strokeOpacity={.26} /><Path d="M0 4V0H4" fill="none" stroke="#628698" strokeWidth={1} strokeOpacity={.35} /></Pattern>
               <SvgGradient id={`${svgId}-surface`} x1="0%" y1="0%" x2="100%" y2="100%"><Stop offset="0" stopColor="#0C1C2D" /><Stop offset="1" stopColor="#060E1A" /></SvgGradient>
               {layout.lanes.map((lane) => <SvgGradient key={lane.id} id={`${svgId}-${lane.id}`} x1="0%" y1="0%" x2="0%" y2="100%"><Stop offset="0" stopColor={lane.color} stopOpacity={.055} /><Stop offset="1" stopColor={lane.color} stopOpacity={.012} /></SvgGradient>)}
-              {([["request", colors.blue], ["response", colors.mint], ["proposal", colors.purple], ["incident", colors.red]] as const).map(([name, color]) => <Marker key={name} id={`${svgId}-${name}-arrow`} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><Path d="m1 1 3.5 2L1 5" fill="none" stroke={color} strokeWidth={1} strokeLinecap="round" strokeLinejoin="round" /></Marker>)}
+              {([["request", colors.blue], ["background", colors.yellow], ["proposal", colors.purple], ["incident", colors.red]] as const).map(([name, color]) => <Marker key={name} id={`${svgId}-${name}-arrow`} markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><Path d="m1 1 3.5 2L1 5" fill="none" stroke={color} strokeWidth={1} strokeLinecap="round" strokeLinejoin="round" /></Marker>)}
             </Defs>
             <Rect width={layout.width} height={layout.height} fill={`url(#${svgId}-surface)`} />
             <Rect width={layout.width} height={layout.height} fill={`url(#${svgId}-dots)`} />
@@ -405,54 +229,39 @@ export function ArchitectureCanvas({ graph, compact = false, highlightIds = EMPT
             {layout.lanes.map((lane, index) => <G key={lane.id}>
               <Rect x={lane.x} y={lane.y} width={lane.width} height={lane.height} rx={12} fill={`url(#${svgId}-${lane.id})`} stroke={lane.color} strokeOpacity={.13} strokeWidth={1} />
               <Rect x={lane.x + 12} y={lane.y + 12} width={22} height={19} rx={5} fill={lane.color} fillOpacity={.09} stroke={lane.color} strokeOpacity={.2} />
-              <SvgText fontFamily="monospace" x={lane.x + 23} y={lane.y + 25} fill={lane.color} textAnchor="middle" fontSize={8} fontWeight="700">0{index + 1}</SvgText>
+              <SvgText fontFamily="monospace" x={lane.x + 23} y={lane.y + 25} fill={lane.color} textAnchor="middle" fontSize={8} fontWeight="700">{String(index + 1).padStart(2, "0")}</SvgText>
               <SvgText fontFamily="monospace" x={lane.x + 42} y={lane.y + 25} fill="#A9BDCF" fontSize={9} fontWeight="700" letterSpacing={1}>{lane.title}</SvgText>
-              {wide && <SvgText fontFamily="monospace" x={lane.x + 14} y={lane.y + 47} fill="#658198" fontSize={9}>{lane.note}</SvgText>}
             </G>)}
-            {graph.edges.map((edge) => {
-              const from = byId[edge.from]; const to = byId[edge.to];
-              if (!from || !to) return null;
-              const incident = [from.node, to.node].find((node) => node.state === "overloaded" || node.state === "failed");
-              const color = incident ? colors.red : edge.dashed ? colors.purple : colors.blue;
-              const label = edgeLabel(from.node, to.node, edge.label);
-              const oneWay = isOneWayEdge(from.node, to.node, edge.label);
-              const flow = edgeFlow(from, to, wide, layout.nodeWidth, layout.nodeHeight, oneWay);
-              const line = flow.line;
-              const requestPath = pathThrough(flow.request.slice(1, -1));
-              const responsePath = pathThrough(flow.response.slice(1, -1));
-              const midX = (line.x1 + line.x2) / 2;
-              const midY = (line.y1 + line.y2) / 2;
-              const labelX = flow.sameLane ? flow.request[2].x + 5 : midX + (wide ? 0 : 20);
-              const responseX = flow.sameLane ? flow.response[2].x - 5 : midX + (wide ? 0 : 20);
+            {routes.map(({ edge, points }) => {
+              const from = byId[edge.from], to = byId[edge.to];
+              const incident = [from.node, to.node].some(node => node.state === "overloaded" || node.state === "failed");
+              const background = isBackgroundEdge(edge, from.node, to.node);
+              const color = incident ? colors.red : background ? colors.yellow : edge.dashed ? colors.purple : colors.blue;
               const focused = !infoNodeId || edge.from === infoNodeId || edge.to === infoNodeId;
-              return <G key={`${edge.from}-${edge.to}`} opacity={focused ? 1 : .2}>
-                <Path d={requestPath} fill="none" stroke={color} strokeOpacity={.07} strokeWidth={7} strokeLinejoin="round" />
-                <Path d={requestPath} fill="none" stroke={color} strokeOpacity={0.8} strokeWidth={1.4} strokeLinejoin="round" strokeDasharray={edge.dashed ? "5 5" : undefined} markerEnd={`url(#${svgId}-${incident ? "incident" : edge.dashed ? "proposal" : "request"}-arrow)`} />
-                {!oneWay && <Path d={responsePath} fill="none" stroke={incident ? colors.red : colors.mint} strokeOpacity={0.45} strokeWidth={1.2} strokeDasharray="3 5" strokeLinejoin="round" markerEnd={`url(#${svgId}-${incident ? "incident" : "response"}-arrow)`} />}
-                <SvgText fontFamily="monospace" x={labelX} y={midY - (wide ? 10 : 7)} fill="#B6C4D5" fontSize={wide ? 8.5 : 8} fontWeight="700" textAnchor={flow.sameLane || !wide ? "start" : "middle"}>{(wide && !flow.sameLane || oneWay ? label : "REQ").toUpperCase()}</SvgText>
-                {!oneWay && <SvgText fontFamily="monospace" x={responseX} y={midY + (wide ? 19 : 8)} fill="#89D7C0" fontSize={wide ? 8.5 : 8} fontWeight="700" textAnchor={flow.sameLane ? "end" : wide ? "middle" : "start"}>{(wide && !flow.sameLane ? responseLabel(to.node) : "RESP").toUpperCase()}</SvgText>}
+              return <G key={`${edge.from}-${edge.to}`} opacity={focused ? 1 : .12}>
+                <Path d={pathThrough(points)} fill="none" stroke={color} strokeOpacity={.85} strokeWidth={focused && infoNodeId ? 2.5 : 1.5} strokeLinejoin="round" strokeDasharray={background || edge.dashed ? "5 5" : undefined} markerEnd={`url(#${svgId}-${incident ? "incident" : background ? "background" : edge.dashed ? "proposal" : "request"}-arrow)`} />
               </G>;
             })}
           </Svg>
-          {placed.map((item, index) => <DraggableNode key={`${item.node.id}-${highlightIds.includes(item.node.id) ? "changed" : "base"}`} placed={item} position={{ x: item.x, y: item.y }} layout={layout} zoom={zoom} offsetX={offsetX} index={index} highlighted={highlightIds.includes(item.node.id)} selected={infoNodeId === item.node.id} onMove={moveNode} onInfo={(id) => setInfoNodeId((current) => current === id ? null : id)} />)}
-          <Svg pointerEvents="none" width={stageWidth} height={stageHeight} viewBox={`0 0 ${layout.width} ${layout.height}`} style={[StyleSheet.absoluteFill, { left: offsetX, zIndex: 1 }]}>
-            {routes.map((route, index) => <G key={`flow-${index}`}>
-              <FlowDot points={route.requestPoints} color={colors.blue} delay={index * 350} duration={Math.max(1800, route.edgeCount * 1100)} phase={route.synchronous ? "request" : "single"} />
-              {route.synchronous && <FlowDot points={route.responsePoints} color={colors.mint} delay={index * 350} duration={Math.max(1800, route.edgeCount * 1100)} phase="response" />}
-            </G>)}
-          </Svg>
+          {placed.map((item, index) => <DiagramNode key={item.node.id} placed={item} layout={layout} zoom={zoom} offsetX={offsetX} index={index} highlighted={highlightIds.includes(item.node.id)} selected={infoNodeId === item.node.id} animateEntrance={animateEntrance && !reducedMotion} interactive={interactive} onInfo={(id) => setInfoNodeId((current) => current === id ? null : id)} />)}
+          {animateTraffic && !reducedMotion && (routes.length <= 12 || infoNodeId) && <Svg pointerEvents="none" width={stageWidth} height={stageHeight} viewBox={`0 0 ${layout.width} ${layout.height}`} style={[StyleSheet.absoluteFill, { left: offsetX, zIndex: 1 }]}>
+            {routes.filter(({ edge }) => !infoNodeId || edge.from === infoNodeId || edge.to === infoNodeId).map(({ edge, points }, index) => <FlowDot key={`${edge.from}-${edge.to}`} points={points} color={isBackgroundEdge(edge, byId[edge.from].node, byId[edge.to].node) ? colors.yellow : colors.blue} delay={index * 150} duration={2000} />)}
+          </Svg>}
         </View>
       </ScrollView>
       {infoNode && <View style={styles.infoPanel}>
-        <View style={styles.infoTop}><View style={[styles.infoGlyph, { borderColor: `${statusColor(infoNode)}55`, backgroundColor: `${statusColor(infoNode)}17` }]}><NodeIcon type={infoNode.type} color={statusColor(infoNode)} size={20} /></View><View style={styles.infoCopy}><Text style={styles.infoEyebrow}>COMPONENT  /  {laneCopy[laneFor(infoNode.type)].title}</Text><Text style={styles.infoTitle}>{infoNode.label}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Close component info" onPress={() => setInfoNodeId(null)} style={styles.infoClose}><Text style={styles.infoCloseText}>×</Text></Pressable></View>
+        <View style={styles.infoTop}><View style={[styles.infoGlyph, { borderColor: `${statusColor(infoNode)}55`, backgroundColor: `${statusColor(infoNode)}17` }]}><NodeIcon type={infoNode.type} color={statusColor(infoNode)} size={20} /></View><View style={styles.infoCopy}><Text style={styles.infoEyebrow}>COMPONENT  /  {layout.lanes.find(lane => lane.id === byId[infoNode.id].lane)?.title}</Text><Text style={styles.infoTitle}>{infoNode.label}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Close component info" disabled={!interactive} onPress={() => setInfoNodeId(null)} style={styles.infoClose}><Text style={styles.infoCloseText}>×</Text></Pressable></View>
         <Text style={styles.infoDescription}>{nodeExplanation(infoNode)}</Text>
+        {graph.edges.filter(edge => byId[edge.from] && byId[edge.to] && (edge.from === infoNode.id || edge.to === infoNode.id)).map(edge => <Text key={`${edge.from}-${edge.to}`} style={styles.infoConnection}>
+          {byId[edge.from]?.node.label} → {byId[edge.to]?.node.label}: {edgeLabel(byId[edge.from].node, byId[edge.to].node, edge.label)}
+        </Text>)}
         <Text style={[styles.infoState, { color: healthColor(infoNode) }]}>{nodeStatus(infoNode).toUpperCase()}{infoNode.subtitle ? `  ·  ${infoNode.subtitle}` : ""}</Text>
       </View>}
       <View style={styles.legend}>
         <Text style={styles.legendLabel}>TRAFFIC</Text>
-        <LegendDot color={colors.blue} label="request" />
-        <LegendDot color={colors.mint} label="response" />
-        <Text style={styles.legendHint}>Select a node to explore</Text>
+        <LegendDot color={colors.blue} label="request / lookup" />
+        <LegendDot color={colors.yellow} label="background / replication" />
+        <Text style={styles.legendHint}>Arrows follow the actual connections</Text>
       </View>
       </>}
     </View>
@@ -464,6 +273,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 }
 
 const styles = StyleSheet.create({
+  infoConnection: { color: colors.text, fontSize: 11, lineHeight: 18, marginTop: 6 },
   card: { backgroundColor: "#0A1523", borderRadius: radii.lg, borderWidth: 1, borderColor: "#263D50", padding: spacing.md, overflow: "hidden" },
   compactCard: { padding: 12, borderRadius: 18 },
   headingRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 4 },

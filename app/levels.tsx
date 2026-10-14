@@ -1,10 +1,15 @@
+import { useState } from "react";
+import { Button } from "@/ui/components/Button";
+import { CertificateReward } from "@/ui/components/CertificateReward";
+import { RunProgress } from "@/ui/components/RunProgress";
+import { ProgressMeter } from "@/ui/components/ProgressMeter";
 import { CompanySummary } from "@/ui/components/CompanySummary";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown, useReducedMotion } from "react-native-reanimated";
 import Svg, { Circle, Path, Rect } from "react-native-svg";
-import { allLevels } from "@/campaigns";
-import { useGameStore } from "@/store/gameStore";
+import { allLevels, campaigns } from "@/campaigns";
+import { getLevelAtStart, useGameStore } from "@/store/gameStore";
 import { Screen } from "@/ui/components/Screen";
 import { TopBar } from "@/ui/components/TopBar";
 import { Pill } from "@/ui/components/Pill";
@@ -17,24 +22,39 @@ const topics = ["TEAM & ARCHITECTURE", "DATABASE PERFORMANCE", "CONNECTION MANAG
 export default function LevelSelectionScreen() {
   const failureReason = useGameStore((state) => state.failureReason);
   const unlockedLevels = useGameStore((state) => state.player.unlockedLevels);
-  const completedLevels = useGameStore((state) => state.progress.completedLevels);
+  const progress = useGameStore((state) => state.progress);
+  const history = useGameStore((state) => state.history);
+  const architecture = useGameStore((state) => state.architecture);
+  const completedLevels = progress.completedLevels;
   const campaignId = useGameStore((state) => state.activeCampaignId);
-  const completedCount = allLevels.filter((level) => completedLevels.includes(level.id)).length;
-  const progress = allLevels.length ? completedCount / allLevels.length : 0;
+  const [showAll, setShowAll] = useState(false);
+  const reducedMotion = useReducedMotion();
+  const campaign = campaigns.find((item) => item.id === campaignId);
+  const levels = allLevels.filter((level) => level.campaignId === campaignId);
+  const nextIndex = levels.findIndex((level) => unlockedLevels.includes(level.id) && !completedLevels.includes(level.id));
+  const nextLevel = !failureReason && levels[nextIndex] ? getLevelAtStart({ activeCampaignId: campaignId, progress, history, architecture }, levels[nextIndex].id) : undefined;
+  const completedCount = levels.filter((level) => completedLevels.includes(level.id)).length;
+  const focusIndex = failureReason ? Math.max(0, completedCount - 1) : nextIndex >= 0 ? nextIndex : levels.length - 1;
+  const windowStart = Math.max(0, Math.min(focusIndex - 1, levels.length - 6));
+  const visibleLevels = showAll ? levels : levels.slice(windowStart, windowStart + 6);
 
   return (
-    <Screen>
-      <TopBar back title="Startup CTO" right={<View style={styles.headerActions}><Pill color={colors.mint}>CHAPTER 01</Pill><SettingsButton /></View>} />
+    <Screen resetKey={`${campaignId}-${showAll}`}>
+      <TopBar back title={campaign?.title ?? "Campaign"} right={<View style={styles.headerActions}><Pill color={colors.mint}>MISSION MAP</Pill><SettingsButton /></View>} />
 
+      <RunProgress />
       <View style={styles.hero}>
         <View style={styles.heroHeading}>
           <View style={styles.heroIcon}><CampaignGlyph /></View>
           <View style={styles.heroCopy}>
-            <Text style={styles.eyebrow}>YOUR CAMPAIGN</Text>
-            <Text style={styles.title}>From garage to growth</Text>
+            <Text style={styles.eyebrow}>{failureReason ? "RUN ENDED" : nextLevel ? "YOUR NEXT MISSION" : "CAMPAIGN COMPLETE"}</Text>
+            <Text style={styles.title}>{nextLevel?.title ?? (failureReason ? "Every run teaches you something." : "From garage to growth.")}</Text>
           </View>
         </View>
-        <Text style={styles.description}>Build the right thing for the company you have—not the one you might become.</Text>
+        <Text style={styles.description}>{nextLevel?.description ?? (failureReason ? "Review your decisions and reset your campaign to try a different path." : "Your decisions built this company. Explore the incidents to see how you got here.")}</Text>
+        {nextLevel && <View style={styles.missionAction}><Text style={styles.missionMeta}>INCIDENT {String(nextLevel.levelNumber).padStart(2, "0")}  /  {String(levels.length).padStart(2, "0")} · NEXT UP</Text><Button onPress={() => router.push({ pathname: "/game/[levelId]", params: { levelId: nextLevel.id } })}>Continue mission →</Button></View>}
+        {failureReason && <Button style={{ marginTop: 16 }} variant="secondary" onPress={() => router.push("/stats")}>Review your decisions →</Button>}
+        {!failureReason && levels.length > 0 && completedCount === levels.length && <Button style={{ marginTop: 16 }} onPress={() => router.push("/complete")}>Review campaign ending →</Button>}
         <View style={styles.heroActionRow}>
           <Text style={styles.briefHint}>Need a refresher?</Text>
           <Pressable
@@ -53,37 +73,37 @@ export default function LevelSelectionScreen() {
         </View>
         <View style={styles.heroProgress}>
           <View style={styles.progressLabelRow}>
-            <Text style={styles.progressLabel}>CHAPTER PROGRESS</Text>
-            <Text style={styles.progressValue}>{String(completedCount).padStart(2, "0")} <Text style={styles.progressSlash}>/</Text> {String(allLevels.length).padStart(2, "0")}</Text>
+            <Text style={styles.progressLabel}>INCIDENTS COMPLETED</Text>
+            <Text style={styles.progressValue}>{String(completedCount).padStart(2, "0")} <Text style={styles.progressSlash}>/</Text> {String(levels.length).padStart(2, "0")}</Text>
           </View>
-          <View accessibilityRole="progressbar" accessibilityLabel="Chapter progress" accessibilityValue={{ min: 0, max: allLevels.length, now: completedCount }} style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-          </View>
+          <ProgressMeter label="Campaign progress" value={completedCount} max={levels.length} />
         </View>
       </View>
 
+      <CertificateReward />
       <CompanySummary />
       <View style={styles.sectionHead}>
-        <View><Text style={styles.sectionTitle}>THE INCIDENTS</Text><Text style={styles.sectionSubtitle}>Three calls. A growing system.</Text></View>
-        <Text style={styles.sectionCount}>{allLevels.length} SCENARIOS</Text>
+        <View><Text style={styles.sectionTitle}>THE INCIDENTS</Text><Text style={styles.sectionSubtitle}>Every decision leaves its mark.</Text></View>
+        <Text style={styles.sectionCount}>{levels.length} SCENARIOS</Text>
       </View>
 
       <View style={styles.route}>
-        {allLevels.map((level, index) => {
-          const unlocked = !failureReason && unlockedLevels.includes(level.id);
+        {visibleLevels.map((level, visibleIndex) => {
+          const index = levels.indexOf(level);
           const completed = completedLevels.includes(level.id);
+          const unlocked = completed || (!failureReason && unlockedLevels.includes(level.id));
           const current = unlocked && !completed;
-          const state = completed ? "DECISION LOGGED" : current ? "AVAILABLE" : "LOCKED";
+          const state = completed ? "DECISION LOGGED" : current ? "NEXT MISSION" : "LOCKED";
           const tone = completed ? "completed" : current ? "current" : "locked";
-          const action = completed ? "REVIEW SCENARIO" : current ? "ENTER SCENARIO" : "CLEAR THE PREVIOUS INCIDENT";
+          const action = completed ? "REVIEW SCENARIO" : current ? "PLAY MISSION" : "CLEAR THE PREVIOUS INCIDENT";
 
           return (
-            <Animated.View key={level.id} entering={FadeInDown.delay(index * 70).duration(300)} style={styles.routeItem}>
+            <Animated.View key={level.id} entering={reducedMotion ? undefined : FadeInDown.delay(Math.min(visibleIndex, 5) * 35).duration(240)} style={styles.routeItem}>
               <View style={styles.rail}>
                 <View style={[styles.topicIcon, styles[`${tone}Icon` as "completedIcon" | "currentIcon" | "lockedIcon"]]}>
                   <TopicGlyph index={index} color={tone === "completed" ? colors.blue : tone === "current" ? colors.mint : colors.dim} />
                 </View>
-                {index < allLevels.length - 1 && <View style={[styles.railLine, completed && styles.railLineComplete]} />}
+                {visibleIndex < visibleLevels.length - 1 && <View style={[styles.railLine, completed && styles.railLineComplete]} />}
               </View>
 
               <Pressable
@@ -91,6 +111,7 @@ export default function LevelSelectionScreen() {
                 accessibilityLabel={`Level ${level.levelNumber}, ${level.title}, ${state.toLowerCase()}`}
                 accessibilityHint={unlocked ? action : "Complete the previous level to unlock this scenario"}
                 disabled={!unlocked}
+                accessibilityState={{ disabled: !unlocked }}
                 onPress={() => {
                   gameFeedback.trigger("uiTap");
                   router.push({ pathname: "/game/[levelId]", params: { levelId: level.id } });
@@ -122,14 +143,16 @@ export default function LevelSelectionScreen() {
         })}
       </View>
 
+      {levels.length > 6 && <Button variant="secondary" style={{ marginTop: 16 }} onPress={() => setShowAll((value) => !value)}>{showAll ? "Focus on current missions ↑" : `View all ${levels.length} incidents ↓`}</Button>}
+
       <View style={styles.nextChapter}>
         <View style={styles.nextChapterGlyph}><PathGlyph /></View>
         <View style={styles.nextChapterCopy}>
-          <Text style={styles.nextChapterEyebrow}>UP NEXT</Text>
-          <Text style={styles.nextChapterTitle}>More incidents ahead</Text>
-          <Text style={styles.nextChapterDescription}>New scenarios unlock as the campaign grows.</Text>
+          <Text style={styles.nextChapterEyebrow}>YOUR JOURNEY</Text>
+          <Text style={styles.nextChapterTitle}>{completedCount === levels.length ? "Campaign complete" : `${levels.length - completedCount} incidents remaining`}</Text>
+          <Text style={styles.nextChapterDescription}>Keep the company alive. Build a system that lasts.</Text>
         </View>
-        <Text style={styles.nextChapterCount}>{completedCount}/{allLevels.length}</Text>
+        <Text style={styles.nextChapterCount}>{completedCount}/{levels.length}</Text>
       </View>
     </Screen>
   );
@@ -177,6 +200,8 @@ function PathGlyph() {
 }
 
 const styles = StyleSheet.create({
+  missionAction: { gap: 12, marginTop: 20 },
+  missionMeta: { color: colors.mint, fontSize: 10, fontWeight: "800", letterSpacing: 1 },
   headerActions: { flexDirection: "row", alignItems: "center", gap: 8 },
   hero: { padding: spacing.lg, backgroundColor: "#0D1B31", borderWidth: 1, borderColor: colors.border, borderRadius: radii.lg },
   heroHeading: { flexDirection: "row", alignItems: "center", gap: 13 },
@@ -195,8 +220,6 @@ const styles = StyleSheet.create({
   progressLabel: { color: colors.muted, fontSize: 8, fontWeight: "900", letterSpacing: 1 },
   progressValue: { color: colors.white, fontSize: 10, fontWeight: "900", letterSpacing: 0.5 },
   progressSlash: { color: colors.dim },
-  progressTrack: { height: 4, borderRadius: 3, backgroundColor: "#1B2B40", overflow: "hidden" },
-  progressFill: { height: "100%", borderRadius: 3, backgroundColor: colors.mint },
   sectionHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: spacing.xl, marginBottom: spacing.md },
   sectionTitle: { color: colors.white, fontSize: 12, fontWeight: "900", letterSpacing: 1.2 },
   sectionSubtitle: { color: colors.muted, fontSize: 10, marginTop: 4 },

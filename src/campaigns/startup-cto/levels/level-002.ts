@@ -19,7 +19,7 @@ export const level002: Level = {
   },
   choices: [
     {
-      id: "add-index", label: "Add an index", description: "Index the customer_id and created_at columns used by the orders query.", cost: 200, tone: "recommended",
+      id: "add-index", label: "Add an index", description: "Verify the filter and sort with EXPLAIN, then build a composite (customer_id, created_at) index concurrently and check its validity before rollout.", cost: 200, tone: "recommended",
       effects: { cash: -200, reliability: 8, customerTrust: 5, complexity: 1, users: 2000, monthlyRevenue: 1000, xp: 120, confidence: 10 },
       feedback: { sound: "choiceSuccess", haptic: "success" },
       tradeoff: {
@@ -35,7 +35,7 @@ export const level002: Level = {
           complexity: "One maintained index adds a small schema responsibility, but no new runtime component.",
         },
       },
-      architectureChanges: [{ type: "updateNode", nodeId: "postgres", patch: { state: "normal", subtitle: "indexed" } }],
+      architectureChanges: [{ type: "updateNode", nodeId: "postgres", patch: { state: "normal", subtitle: "indexed" } }, { type: "setCapability", capability: "indexed", enabled: true }],
       outcomeTitle: "The query found its shortcut.", outcomeDialogue: "The index turns a table scan into a quick lookup. p95 drops below 400ms, the error graph goes quiet, and you still have almost all your cash.", outcomeEmotion: "happy", outcomeNote: "Measure the bottleneck, then remove exactly that bottleneck.",
     },
     {

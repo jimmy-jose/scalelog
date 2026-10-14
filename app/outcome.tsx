@@ -1,27 +1,28 @@
-import { CompanySummary } from "@/ui/components/CompanySummary";
 import { useEffect } from "react";
-import { Image, ImageBackground, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { router } from "expo-router";
+import { ImageBackground, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import Animated, { FadeInDown, cancelAnimation, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
-import { getLevel } from "@/campaigns";
+import Animated, { FadeInDown, cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
+import { getLevelAtStart } from "@/store/gameStore";
 import { useGameStore } from "@/store/gameStore";
 import { Screen } from "@/ui/components/Screen";
 import { TopBar } from "@/ui/components/TopBar";
+import { LearnMore } from "@/ui/components/LearnMore";
 import { Button } from "@/ui/components/Button";
 import { Pill } from "@/ui/components/Pill";
 import { characterAssets } from "@/ui/components/JimmyAvatar";
-import { colors, radii } from "@/ui/theme";
+import { colors } from "@/ui/theme";
 import { formatMoney, signed } from "@/lib/format";
 import { gameFeedback } from "@/game/feedback/GameFeedbackManager";
 
 const office = require("../assets/scenes/startup_office_background.png");
 
-type LedgerKey = "cash" | "monthlyRevenue" | "users" | "monthlyBurn" | "reliability" | "customerTrust" | "complexity";
+type LedgerKey = "engineers" | "cash" | "monthlyRevenue" | "users" | "monthlyBurn" | "reliability" | "customerTrust" | "complexity";
 const ledgerFields: { key: LedgerKey; label: string; goodWhen: "higher" | "lower" }[] = [
   { key: "cash", label: "Cash on hand", goodWhen: "higher" },
   { key: "monthlyRevenue", label: "Monthly revenue", goodWhen: "higher" },
-  { key: "users", label: "Active users", goodWhen: "higher" },
+  { key: "engineers", label: "Engineers", goodWhen: "higher" },
+  { key: "users", label: "Registered users", goodWhen: "higher" },
   { key: "monthlyBurn", label: "Monthly burn", goodWhen: "lower" },
   { key: "reliability", label: "Reliability", goodWhen: "higher" },
   { key: "customerTrust", label: "Customer trust", goodWhen: "higher" },
@@ -31,27 +32,34 @@ const ledgerFields: { key: LedgerKey; label: string; goodWhen: "higher" | "lower
 function ledgerValue(key: LedgerKey, value: number) {
   if (key === "cash") return formatMoney(value);
   if (key === "monthlyBurn" || key === "monthlyRevenue") return `${formatMoney(value)}/mo`;
-  if (key === "reliability") return `${value}%`;
+  if (key === "reliability") return `${value}/100`;
   return String(value);
 }
 
 function ledgerDelta(key: LedgerKey, delta: number) {
   if (key === "cash" || key === "monthlyBurn" || key === "monthlyRevenue") return `${delta < 0 ? "−" : "+"}${formatMoney(Math.abs(delta))}${key === "monthlyBurn" || key === "monthlyRevenue" ? "/mo" : ""}`;
-  return `${signed(delta)}${key === "users" ? "" : " pts"}`;
+  return `${signed(delta)}${key === "users" || key === "engineers" ? "" : " pts"}`;
 }
 
 export default function OutcomeScreen() {
+  const { levelId } = useLocalSearchParams<{ levelId?: string }>();
   const { width } = useWindowDimensions();
   const wide = width >= 760;
-  const outcome = useGameStore((state) => state.lastOutcome);
+  const reviewingHistory = typeof levelId === "string";
+  const outcome = useGameStore((state) => reviewingHistory ? state.history.find((entry) => entry.levelId === levelId) : state.lastOutcome);
+  const reducedMotion = useReducedMotion();
   const jimmyBob = useSharedValue(0);
   useEffect(() => {
-    if (outcome?.failureReason) { jimmyBob.value = 0; return; }
+    if (reducedMotion || outcome?.failureReason) { jimmyBob.value = 0; return; }
     jimmyBob.value = withRepeat(withSequence(withTiming(-1.5, { duration: 1900 }), withTiming(0, { duration: 1900 })), -1, true);
     return () => cancelAnimation(jimmyBob);
-  }, [jimmyBob, outcome?.failureReason]);
+  }, [jimmyBob, outcome?.failureReason, reducedMotion]);
   const jimmyMotion = useAnimatedStyle(() => ({ transform: [{ translateY: jimmyBob.value }] }));
-  const level = outcome ? getLevel(outcome.levelId) : undefined;
+  const activeCampaignId = useGameStore((state) => state.activeCampaignId);
+  const progress = useGameStore((state) => state.progress);
+  const history = useGameStore((state) => state.history);
+  const architecture = useGameStore((state) => state.architecture);
+  const level = outcome ? getLevelAtStart({ activeCampaignId, progress, history, architecture }, outcome.levelId) : undefined;
   const choice = level?.choices.find((item) => item.id === outcome?.choiceId);
   const decisionFeedback = outcome?.failureReason ? "riskyDecision" : choice?.feedback ?? (
     choice?.tone === "recommended" ? "goodDecision"
@@ -61,13 +69,15 @@ export default function OutcomeScreen() {
     if (!decisionFeedback || !outcome) return;
     const timer = setTimeout(() => gameFeedback.trigger(decisionFeedback), 260);
     return () => clearTimeout(timer);
-  }, [outcome?.levelId, outcome?.choiceId, decisionFeedback]);
-  if (!outcome || !level || !choice) return <Screen><Text style={styles.missing}>No decision to review.</Text><Button onPress={() => router.replace("/levels")}>Back to campaign map</Button></Screen>;
-  const preferredChoice = level.choices.find((item) => item.tone === "recommended");
-  const missedPreferredPath = preferredChoice && preferredChoice.id !== choice.id ? preferredChoice : undefined;
+  }, [outcome, decisionFeedback]);
+  if (!outcome) return <Screen><Text style={styles.missing}>No decision to review.</Text><Button onPress={() => router.replace("/levels")}>Back to campaign map</Button></Screen>;
+  const preferredChoice = level?.choices.find((item) => item.tone === "recommended");
+  const missedPreferredPath = choice && preferredChoice && preferredChoice.id !== choice.id ? preferredChoice : undefined;
 
   const before = outcome.companyBefore;
   const company = outcome.companyAfter;
+  // Legacy cash balances can recover the original cost unless cash was clamped at zero.
+  const upfrontCost = outcome.choiceCost ?? (company.cash > 0 ? Math.max(0, before.cash + outcome.operatingCashFlow - company.cash) : choice?.cost);
   const ledger = ledgerFields.flatMap(({ key, label, goodWhen }) => {
     const from = before[key];
     const to = company[key];
@@ -79,11 +89,11 @@ export default function OutcomeScreen() {
   const displayedEmotion = outcome.failureReason ? "defeated" : outcome.emotion;
   const character = characterAssets[displayedEmotion];
 
-  return <Screen contentStyle={styles.screen}>
+  return <Screen contentStyle={styles.screen} resetKey={`${outcome.levelId}-${outcome.choiceId}`}>
     <TopBar back eyebrow="DECISION LOG" title="After the call" right={<Pill color={outcome.failureReason ? colors.red : colors.mint}>{outcome.failureReason ? "RUN ENDED" : "RECORDED"}</Pill>} />
 
     <View style={styles.caseLine}>
-      <Text style={styles.caseKicker}>INCIDENT {String(level.levelNumber).padStart(2, "0")}  ·  {level.title.toUpperCase()}</Text>
+      <Text style={styles.caseKicker}>{level ? `INCIDENT ${String(level.levelNumber).padStart(2, "0")}  ·  ${level.title.toUpperCase()}` : outcome.levelId.toUpperCase()}</Text>
       <Text style={styles.caseStatus}>DECISION RECORDED</Text>
     </View>
 
@@ -95,42 +105,21 @@ export default function OutcomeScreen() {
         <View style={styles.heroCopy}>
           <Text style={styles.heroKicker}>JIMMY’S DEBRIEF</Text>
           <Text style={[styles.heroTitle, wide && styles.heroTitleWide]}>{outcome.title}</Text>
-          <Text style={styles.heroChoice}>{choice.label}</Text>
+          <Text style={styles.heroChoice}>{outcome.choiceLabel}</Text>
         </View>
         <Animated.Image entering={FadeInDown.delay(90).duration(380)} source={character} resizeMode="contain" style={[styles.jimmyImage, wide && styles.jimmyImageWide, jimmyMotion]} accessibilityLabel={`Jimmy looks ${displayedEmotion}`} />
         <View pointerEvents="none" style={styles.sceneGround} />
       </View>
-      <View style={styles.dialogue}>
-        <View style={styles.speakerLine}><View style={styles.speakerDot} /><Text style={styles.speaker}>JIMMY</Text><Text style={styles.speakerRole}>YOUR AI ASSISTANT</Text></View>
-        <Text style={styles.dialogueText}>{outcome.dialogue}</Text>
-      </View>
-      {missedPreferredPath && <Animated.View entering={FadeInDown.delay(130).duration(300)} style={styles.recommendation}>
-        <View style={styles.recommendationHeading}><View style={styles.speakerDot} /><Text style={styles.recommendationLabel}>JIMMY’S RETROSPECTIVE  ·  A STRONGER FIT</Text></View>
-        <Text style={styles.recommendationTitle}>I would have chosen {missedPreferredPath.label}.</Text>
-        <Text style={styles.recommendationText}>{missedPreferredPath.tradeoff.jimmyExplanation}</Text>
-      </Animated.View>}
     </Animated.View>
-
-    <View style={styles.tradeSection}>
-      <View style={styles.sectionHeading}>
-        <View><Text style={styles.sectionKicker}>THE EXCHANGE</Text><Text style={styles.sectionTitle}>What this call bought</Text></View>
-        <Text style={styles.optionNumber}>LOCKED IN</Text>
-      </View>
-      <View style={styles.exchangeRow}>
-        <View style={[styles.exchangeSide, styles.gainSide]}>
-          <Text style={styles.exchangeLabel}>GAIN</Text>
-          <Text style={styles.exchangeTitle}>{choice.tradeoff.upsideLabel}</Text>
-          <Text style={styles.exchangeText}>{choice.tradeoff.upside}</Text>
-        </View>
-        <View style={[styles.exchangeSide, styles.costSide]}>
-          <Text style={styles.exchangeLabel}>COST</Text>
-          <Text style={styles.exchangeTitle}>{choice.tradeoff.downsideLabel}</Text>
-          <Text style={styles.exchangeText}>{choice.tradeoff.downside}</Text>
-        </View>
-      </View>
+    {outcome.failureReason && <Text accessibilityRole="alert" style={styles.failure}>{outcome.failureReason}</Text>}
+    <View style={styles.lesson}><Text style={styles.lessonKicker}>TAKE THIS FORWARD</Text><Text style={styles.lessonText}>{outcome.lesson}</Text></View>
+    <View style={styles.footer}>
+      <Button onPress={() => router.replace(reviewingHistory ? "/levels" : "/complete")}>{reviewingHistory ? "Back to campaign map →" : outcome.failureReason ? "View run summary →" : "Continue →"}</Button>
     </View>
+    <LearnMore key={`${outcome.levelId}-${outcome.choiceId}`} label="Learn more: results & Jimmy’s advice">
+      <Text style={styles.dialogueText}>{outcome.dialogue}</Text>
+    <Animated.View entering={FadeInDown.duration(260)} style={styles.ledgerSection}>
 
-    <View style={styles.ledgerSection}>
       <View style={styles.sectionHeading}>
         <View><Text style={styles.sectionKicker}>COMPANY LEDGER</Text><Text style={styles.sectionTitle}>The numbers after your call</Text></View>
         <View style={styles.xpBadge}><Text style={[styles.xpText, { color: outcome.xpEarned > 0 ? colors.mint : colors.red }]}>{signed(outcome.xpEarned)} CTO XP</Text></View>
@@ -146,21 +135,23 @@ export default function OutcomeScreen() {
 
       <View style={styles.progression}>
         <Text style={styles.progressionKicker}>ONE OPERATING MONTH LATER</Text>
-        <Text style={styles.progressionText}>Cash includes {formatMoney(choice.cost)} upfront and {signed(outcome.operatingCashFlow)} operating cash flow. Revenue from this decision starts next month.</Text>
+        <Text style={styles.progressionText}>Cash includes {upfrontCost !== undefined ? `${formatMoney(upfrontCost)} upfront and ` : ""}{signed(outcome.operatingCashFlow)} operating cash flow. Revenue from this decision starts next month.</Text>
         <Text style={styles.progressionText}>CTO confidence: {outcome.confidenceBefore} → {outcome.confidenceAfter}/100. {outcome.xpEarned === 0 ? "No XP awarded. XP cannot fall below zero." : ""}</Text>
       </View>
-    </View>
+    </Animated.View>
+      {missedPreferredPath && <Animated.View entering={FadeInDown.delay(130).duration(300)} style={styles.recommendation}>
+        <View style={styles.recommendationHeading}><View style={styles.speakerDot} /><Text style={styles.recommendationLabel}>JIMMY’S RETROSPECTIVE  ·  A STRONGER FIT</Text></View>
+        <Text style={styles.recommendationTitle}>I would have chosen {missedPreferredPath.label}.</Text>
+        <Text style={styles.recommendationText}>{missedPreferredPath.tradeoff.jimmyExplanation}</Text>
+      </Animated.View>}
+    </LearnMore>
 
-    <CompanySummary />
-    <View style={[styles.footer, wide && styles.footerWide]}>
-      <View style={styles.lesson}><Text style={styles.lessonKicker}>TAKE THIS FORWARD</Text><Text style={styles.lessonText}>{outcome.lesson}</Text></View>
-      <Button style={styles.continueButton} onPress={() => router.replace("/complete")}>Continue <Text>→</Text></Button>
-    </View>
   </Screen>;
 }
 
 const styles = StyleSheet.create({
-  screen: { maxWidth: 980, paddingHorizontal: 20, paddingBottom: 32 },
+  failure: { color: colors.red, fontSize: 14, lineHeight: 21, marginVertical: 12 },
+  screen: { maxWidth: 900, paddingHorizontal: 20, paddingBottom: 32 },
   missing: { color: colors.white, padding: 30 },
   caseLine: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 4, marginBottom: 10 },
   caseKicker: { color: "#8497B0", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
@@ -177,29 +168,16 @@ const styles = StyleSheet.create({
   jimmyImage: { position: "absolute", zIndex: 1, right: 2, bottom: 0, width: 142, height: 205 },
   jimmyImageWide: { right: 8, width: 176, height: 236 },
   sceneGround: { position: "absolute", zIndex: 3, left: 0, right: 0, bottom: 0, height: 18, backgroundColor: "rgba(5, 13, 27, 0.78)", borderTopWidth: 1, borderTopColor: "rgba(168, 191, 213, 0.16)" },
-  dialogue: { paddingHorizontal: 18, paddingVertical: 13, borderTopWidth: 1, borderTopColor: "#263B53", backgroundColor: "#0A1727" },
-  speakerLine: { flexDirection: "row", alignItems: "center", gap: 7 },
   speakerDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.mint },
-  speaker: { color: colors.mint, fontSize: 9, fontWeight: "900", letterSpacing: 1 },
-  speakerRole: { color: "#8292A8", fontSize: 8, fontWeight: "800", letterSpacing: 0.75 },
   dialogueText: { color: "#DCE6F2", fontSize: 13, lineHeight: 19, fontWeight: "600", marginTop: 7 },
   recommendation: { paddingHorizontal: 18, paddingVertical: 14, borderTopWidth: 1, borderTopColor: "#263B53", backgroundColor: "#101D30" },
   recommendationHeading: { flexDirection: "row", alignItems: "center", gap: 7 },
   recommendationLabel: { color: colors.blue, fontSize: 8, fontWeight: "900", letterSpacing: 0.9 },
   recommendationTitle: { color: colors.white, fontSize: 13, lineHeight: 18, fontWeight: "900", marginTop: 7 },
   recommendationText: { color: "#AEBED0", fontSize: 11, lineHeight: 17, marginTop: 4 },
-  tradeSection: { marginTop: 19 },
   sectionHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", gap: 10, marginBottom: 9 },
   sectionKicker: { color: colors.mint, fontSize: 8, fontWeight: "900", letterSpacing: 1.2 },
   sectionTitle: { color: colors.white, fontSize: 17, lineHeight: 22, fontWeight: "900", marginTop: 4 },
-  optionNumber: { color: "#8394AB", fontSize: 8, fontWeight: "900", letterSpacing: 0.9, marginBottom: 3 },
-  exchangeRow: { flexDirection: "row", gap: 9 },
-  exchangeSide: { flex: 1, minWidth: 0, padding: 12, borderRadius: 12, borderWidth: 1, backgroundColor: "#0D1B2D" },
-  gainSide: { borderColor: "#31516D" },
-  costSide: { borderColor: "#66543A" },
-  exchangeLabel: { color: "#91A5BD", fontSize: 8, fontWeight: "900", letterSpacing: 1 },
-  exchangeTitle: { color: colors.white, fontSize: 12, lineHeight: 16, fontWeight: "900", marginTop: 6 },
-  exchangeText: { color: "#AAB9CA", fontSize: 10, lineHeight: 15, marginTop: 5 },
   ledgerSection: { marginTop: 19 },
   xpBadge: { borderWidth: 1, borderColor: "#625439", backgroundColor: "#191B20", borderRadius: 99, paddingHorizontal: 9, paddingVertical: 6, marginBottom: 3 },
   xpText: { color: colors.yellow, fontSize: 9, fontWeight: "900", letterSpacing: 0.4 },
@@ -215,16 +193,10 @@ const styles = StyleSheet.create({
   deltaCost: { color: colors.yellow },
   noMetrics: { color: "#A6B5C7", fontSize: 11, lineHeight: 17, paddingVertical: 12 },
   progression: { padding: 11, marginTop: 10, borderRadius: 10, backgroundColor: "#0D1A2A", borderWidth: 1, borderColor: "#263B52" },
-  progressionHeader: { flexDirection: "row", justifyContent: "space-between", flexWrap: "wrap", gap: 6 },
   progressionKicker: { color: colors.blue, fontSize: 8, fontWeight: "900", letterSpacing: 0.85 },
-  progressionTag: { color: "#71849C", fontSize: 7, fontWeight: "900", letterSpacing: 0.65 },
   progressionText: { color: "#9AABC0", fontSize: 9, lineHeight: 14, marginTop: 5 },
-  progressionStats: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
-  progressionStat: { color: "#D4DFEC", fontSize: 9, fontWeight: "800", letterSpacing: 0.2 },
-  footer: { marginTop: 18, gap: 12 },
-  footerWide: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  lesson: { flex: 1, minWidth: 0, borderLeftWidth: 2, borderLeftColor: colors.yellow, paddingLeft: 11, paddingVertical: 2 },
+  footer: { marginTop: 22, gap: 12, flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between" },
+  lesson: { minWidth: 0, borderLeftWidth: 2, borderLeftColor: colors.yellow, paddingLeft: 11, paddingVertical: 2, marginTop: 18 },
   lessonKicker: { color: colors.yellow, fontSize: 8, fontWeight: "900", letterSpacing: 1 },
-  lessonText: { color: "#C7D2E0", fontSize: 11, lineHeight: 16, fontWeight: "700", marginTop: 4 },
-  continueButton: { width: 190, minHeight: 46, borderRadius: radii.sm },
+  lessonText: { color: "#C7D2E0", fontSize: 15, lineHeight: 22, fontWeight: "700", marginTop: 4 },
 });

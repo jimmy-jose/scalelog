@@ -44,11 +44,12 @@ export interface ArchitectureNode {
 }
 
 export interface ArchitectureEdge { from: string; to: string; label?: string; dashed?: boolean }
-export interface ArchitectureGraph { nodes: ArchitectureNode[]; edges: ArchitectureEdge[] }
+export interface ArchitectureGraph { nodes: ArchitectureNode[]; edges: ArchitectureEdge[]; capabilities?: string[] }
 export interface IncidentMetric { label: string; value: string; severity: Severity }
 export interface LevelDialogue { character: "jimmy"; emotion: CharacterEmotion; text: string }
 
 export interface StatEffects {
+  engineers?: number;
   cash?: number;
   monthlyRevenue?: number;
   monthlyBurn?: number;
@@ -95,12 +96,36 @@ export interface Choice {
 }
 
 export type ArchitectureChange =
+  | { type: "setCapability"; capability: string; enabled: boolean; feedback?: FeedbackSpec }
   | { type: "addNode"; node: ArchitectureNode; feedback?: FeedbackSpec }
   | { type: "updateNode"; nodeId: string; patch: Partial<ArchitectureNode>; feedback?: FeedbackSpec }
-  | { type: "addEdge"; edge: ArchitectureEdge; feedback?: FeedbackSpec }
+  | { type: "addEdge"; edge: ArchitectureEdge; ifNodesExist?: boolean; feedback?: FeedbackSpec }
   | { type: "removeEdge"; from: string; to: string; feedback?: FeedbackSpec };
 
+/** First matching variant replaces the incident presentation, optionally its responses. */
+export interface IncidentVariant {
+  id: string;
+  when: { missingAny?: string[]; hasAny?: string[]; hasAll?: string[] };
+  description: string;
+  metrics: IncidentMetric[];
+  dialogue: LevelDialogue[];
+  choices?: Choice[];
+}
+
+/** Explicitly priced prerequisite repair, attached only to responses that need it. */
+export interface ArchitectureRecovery {
+  capability: string;
+  choiceIds: string[];
+  description: string;
+  cost: number;
+  monthlyBurn: number;
+  complexity: number;
+  architectureChanges: ArchitectureChange[];
+}
+
 export interface Level {
+  variants?: IncidentVariant[];
+  recoveries?: ArchitectureRecovery[];
   id: string;
   campaignId: string;
   chapter: number;
@@ -153,9 +178,14 @@ export interface Campaign {
 export interface Award { id: string; title: string; description: string; requirement: string; unlocked: boolean }
 
 export interface OutcomeSnapshot {
+  incidentArchitectureBefore?: ArchitectureGraph;
+  architectureBefore?: ArchitectureGraph;
+  architectureAfter?: ArchitectureGraph;
+  incidentDescription?: string;
   levelId: string;
   choiceId: string;
   choiceLabel: string;
+  choiceCost?: number;
   title: string;
   dialogue: string;
   emotion: CharacterEmotion;
