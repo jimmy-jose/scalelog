@@ -3,12 +3,12 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level004 = defineStartupLevel({
   "levelNumber": 4,
   "title": "The Influencer Weekend",
-  "description": "A viral merchant sends a measured 180 requests/s to one application host. The founder wants a repeatable way to add capacity before the next promotion. Profiles put 78% of app time in rendering; the database check is separate. The reference rendering test uses the indexed, pooled query path; any production query or pooling debt from your earlier choices is explicitly repaired by the measured and bounded responses.",
+  "description": "A viral promotion sends 180 requests/second to our single application host, pushing app CPU to 96% and latency past two seconds. Profiling shows 78% of request time is spent rendering templates and JSON, while the database is healthy. We need a repeatable way to scale app compute before the next flash sale.",
   "dialogue": [
     {
       "character": "jimmy",
       "emotion": "thinking",
-      "text": "The app CPU is pinned, but the query probe is fast. We can buy more rendering capacity without changing the language. Keep the total DB connection budget bounded."
+      "text": "The app CPU is pegged rendering views, but database queries are flying back in 18 milliseconds. We need more app instances behind a load balancer, not a database upgrade. Just remember to keep the total database connection budget capped."
     }
   ],
   "metrics": [
@@ -56,18 +56,18 @@ export const level004 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Measured parallel rendering capacity and a repeatable rollout.",
         "downside": "Three hosts cost more; local sessions and files still need attention.",
-        "jimmyExplanation": "Measured parallel rendering capacity and a repeatable rollout. Three hosts cost more; local sessions and files still need attention.",
+        "jimmyExplanation": "Adding two app instances behind a load balancer directly addresses the bottleneck: 78% of our time was CPU rendering, not database queries. Spreading traffic across three instances gives us parallel headroom immediately. Just be warned: as soon as requests bounce between different servers, anything stored on a local hard drive (like user sessions or uploaded images) will start glitching.",
         "effectReasons": {
-          "upfrontCost": "$1,200 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+600, including 0 hires and the operating costs of this response.",
-          "reliability": "Three hosts cost more; local sessions and files still need attention.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$1,200 covers provisioning the load balancer, deploying two new app instances, and configuring health check draining.",
+          "monthlyBurn": "Running two additional cloud app instances adds $600/month to our infrastructure bill.",
+          "reliability": "Parallel instances absorb the 180 RPS rendering spike and remove a single point of failure in the app tier.",
+          "customerTrust": "Fast page loads during the flash sale keep shoppers happy and stop merchants from seeing timeout errors.",
+          "complexity": "A load balancer and multiple instances introduce rolling deploys, instance health monitoring, and multi-host debugging."
         }
       },
       "architectureChanges": changesFor("app-fleet", "indexed", "pooled"),
       "outcomeTitle": "Rendering gets room to breathe.",
-      "outcomeDialogue": "Measured parallel rendering capacity and a repeatable rollout. Three hosts cost more; local sessions and files still need attention.",
+      "outcomeDialogue": "The load balancer is up, health checks are green, and p95 latency plummeted back to normal. The app layer has breathing room, though we'll need to watch what happens to local server state next.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Scale the saturated tier; load balancing does not make application state portable. Next pressure: Requests now land on different instances; local sessions and uploaded files will become visible liabilities."
     },
@@ -93,18 +93,18 @@ export const level004 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A cheaper implementation buys measured headroom now.",
         "downside": "One failure domain remains, and the next resize requires a maintenance window.",
-        "jimmyExplanation": "A cheaper implementation buys measured headroom now. One failure domain remains, and the next resize requires a maintenance window.",
+        "jimmyExplanation": "Scaling vertically to a beefier server is the simplest move right now. It buys us CPU headroom without the operational overhead of a load balancer. But remember: a single server is still a single point of failure, and you can only upgrade a box so many times before you hit a hard hardware ceiling.",
         "effectReasons": {
-          "upfrontCost": "$540 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $-3,000, including 0 hires and the operating costs of this response.",
-          "reliability": "One failure domain remains, and the next resize requires a maintenance window.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$540 pays for the scheduled instance resize, load testing, and brief maintenance window.",
+          "monthlyBurn": "Pausing contracted roadmap work saves $3,000/month while absorbing the modest cost of the larger server.",
+          "reliability": "More CPU cores reduce queueing delays for now, but a single host crash will still take down the entire storefront.",
+          "customerTrust": "Shoppers get faster responses during this promotion, though the underlying single-server risk remains.",
+          "complexity": "No new network topology or load balancer to maintain; operations remain simple on one host."
         }
       },
       "architectureChanges": changesFor("vertical-app", "indexed", "pooled"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "A cheaper implementation buys measured headroom now. One failure domain remains, and the next resize requires a maintenance window.",
+      "outcomeDialogue": "The larger instance absorbed the CPU surge without changing our deployment topology. It bought us time cheaply, but one server still means one failure domain.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Scale the saturated tier; load balancing does not make application state portable. Next pressure: Requests now land on different instances; local sessions and uploaded files will become visible liabilities."
     },
@@ -130,18 +130,18 @@ export const level004 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Separate ownership could become useful with independent teams.",
         "downside": "The same CPU quota remains saturated, and two engineers gain network failure paths.",
-        "jimmyExplanation": "Separate ownership could become useful with independent teams. The same CPU quota remains saturated, and two engineers gain network failure paths.",
+        "jimmyExplanation": "Splitting rendering into three separate services on the exact same server doesn't create new CPU capacity: they're all still fighting for the same CPU cores! Worse, you've just turned internal function calls into HTTP network calls, adding latency, serialization overhead, and new ways for requests to fail.",
         "effectReasons": {
-          "upfrontCost": "$780 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+690, including 0 hires and the operating costs of this response.",
-          "reliability": "The same CPU quota remains saturated, and two engineers gain network failure paths.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$780 is burned carving up code boundaries without adding any new compute resources.",
+          "monthlyBurn": "Running multiple service runtimes and service-level logging adds $690/month in overhead.",
+          "reliability": "Internal network calls between services add latency and new failure points without relieving CPU pressure.",
+          "customerTrust": "Shoppers experience slower, glitchier checkouts as services time out trying to talk to each other.",
+          "complexity": "Two engineers now have to coordinate three microservice deployments and debug cross-service network failures."
         }
       },
       "architectureChanges": changesFor("render-service-split"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "Separate ownership could become useful with independent teams. The same CPU quota remains saturated, and two engineers gain network failure paths.",
+      "outcomeDialogue": "We split the app into three services, but they're still choking on the same physical CPU host. Now we have the same CPU saturation plus network timeouts and three times the deployment headache.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Scale the saturated tier; load balancing does not make application state portable. The retained risk remains part of your company’s architecture."
     }
@@ -150,5 +150,5 @@ export const level004 = defineStartupLevel({
     "CPU-bound rendering on a single host queues requests; adding DB capacity cannot remove application CPU work.",
     "Scale the saturated tier; load balancing does not make application state portable."
   ],
-  "lesson": "Scale the saturated tier; load balancing does not make application state portable."
+  "lesson": "Scale only the saturated layer: add app servers behind a load balancer when app CPU is pinned, but remember that multiple servers will break any state stored on local disks."
 });

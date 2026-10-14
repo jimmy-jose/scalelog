@@ -3,18 +3,13 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level023 = defineStartupLevel({
   "levelNumber": 23,
   "title": "A Column Becomes an Outage",
-  "description": "An enterprise feature adds and backfills a field on a 600-million-row order/audit dataset. A deployment combines a locking schema change, a full-table update and removal of the old API field.",
+  "description": "An enterprise merchant feature requires adding a tax_region column to our 600-million-row orders table. A migration runs ALTER TABLE orders ADD COLUMN tax_region VARCHAR NOT NULL DEFAULT 'US'. PostgreSQL takes an exclusive table lock to rewrite all 600 million rows. All incoming checkout transactions freeze waiting for the lock, connection pools saturate, and the site crashes.",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "CPU is fine; everyone is waiting for locks. Keep old and new code compatible while we change the data in steps we can stop."
-    },
-    {
-      "character": "jimmy",
-      "emotion": "normal",
-      "text": "This month’s operating plan adds 2 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "You cannot run a locking table rewrite on a table with 600 million rows! An exclusive table lock stops all reads and writes dead in their tracks. We must use the Expand and Contract pattern across multiple backward-compatible deployments."
+      }
   ],
   "metrics": [
     {
@@ -61,18 +56,18 @@ export const level023 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Short controlled steps preserve mixed-version operation and allow rollback.",
         "downside": "The migration spans releases; concurrent index builds still consume I/O and need validation.",
-        "jimmyExplanation": "Short controlled steps preserve mixed-version operation and allow rollback. The migration spans releases; concurrent index builds still consume I/O and need validation.",
+        "jimmyExplanation": "The Expand/Contract pattern achieves zero downtime: 1) Deploy code that can read old or new schemas; 2) Add the column as nullable without a default (instant metadata-only change in PostgreSQL); 3) Dual-write new rows with the new column; 4) Backfill historical rows in small batches of 5,000 rows with pauses; 5) Switch reads to the new column; 6) Remove old code.",
         "effectReasons": {
-          "upfrontCost": "$14,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+16,000, including 2 hires and the operating costs of this response.",
-          "reliability": "The migration spans releases; concurrent index builds still consume I/O and need validation.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$4,800 covers phased migration pipelines, batched backfill workers, and schema compatibility checks.",
+          "monthlyBurn": "Background backfill worker capacity and migration observability add $2,600/month.",
+          "reliability": "Eliminates exclusive table locks and prevents migration-induced database lockouts on giant datasets.",
+          "customerTrust": "Shoppers experience zero interruption during major platform feature upgrades and database migrations.",
+          "complexity": "Requires managing multi-phase deployments, maintaining backward compatibility, and monitoring backfill progress."
         }
       },
       "architectureChanges": changesFor("safe-migrations"),
       "outcomeTitle": "The schema changes in safe steps.",
-      "outcomeDialogue": "Short controlled steps preserve mixed-version operation and allow rollback. The migration spans releases; concurrent index builds still consume I/O and need validation.",
+      "outcomeDialogue": "Zero downtime! All 600 million rows were safely updated over 48 hours in the background while storefront checkouts ran at full speed without a single lock timeout.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Evolve schemas with overlapping compatibility and bounded migrations. Next pressure: New enterprise catalogue requirements exceed the search semantics of ordinary order indexes."
     },
@@ -98,18 +93,18 @@ export const level023 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A declared downtime window can simplify a rare incompatible change.",
         "downside": "The enterprise availability commitment and global merchant schedules make the window expensive.",
-        "jimmyExplanation": "A declared downtime window can simplify a rare incompatible change. The enterprise availability commitment and global merchant schedules make the window expensive.",
+        "jimmyExplanation": "Scheduling a planned 30-minute maintenance window at 2:00 AM on Sunday to run the migration with a strict lock timeout avoids building a phased backfill worker. It causes brief scheduled downtime, but gets the schema updated in one shot.",
         "effectReasons": {
-          "upfrontCost": "$6,300 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+13,600, including 2 hires and the operating costs of this response.",
-          "reliability": "The enterprise availability commitment and global merchant schedules make the window expensive.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$2,160 covers maintenance dry-runs, merchant notification banners, and rollback scripts.",
+          "monthlyBurn": "Maintenance tooling and off-hours engineer on-call compensation add $2,340/month.",
+          "reliability": "Prevents unexpected daytime outages by containing database locks to an off-peak maintenance window.",
+          "customerTrust": "Planned maintenance is respected, though global 24/7 merchants increasingly push back on downtime.",
+          "complexity": "Keeps schema and code simple by avoiding dual-writing, at the cost of requiring scheduled downtime."
         }
       },
       "architectureChanges": changesFor("safe-migrations", "maintenance-window"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "A declared downtime window can simplify a rare incompatible change. The enterprise availability commitment and global merchant schedules make the window expensive.",
+      "outcomeDialogue": "The maintenance window migration completed in 18 minutes. It avoided complex backfill code, though European merchants were unhappy about the scheduled Sunday outage.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Evolve schemas with overlapping compatibility and bounded migrations. Next pressure: New enterprise catalogue requirements exceed the search semantics of ordinary order indexes."
     },
@@ -135,18 +130,18 @@ export const level023 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "One transaction offers a simple rollback boundary.",
         "downside": "Locks and WAL remain unbounded for the user journey and mixed-version clients still break.",
-        "jimmyExplanation": "One transaction offers a simple rollback boundary. Locks and WAL remain unbounded for the user journey and mixed-version clients still break.",
+        "jimmyExplanation": "Running a blocking ALTER TABLE with a DEFAULT value and a synchronous full-table UPDATE during normal operating hours will lock the table for 25 minutes. Every web worker will hang waiting for the table lock, and the entire platform will crash.",
         "effectReasons": {
-          "upfrontCost": "$9,100 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+18,400, including 2 hires and the operating costs of this response.",
-          "reliability": "Locks and WAL remain unbounded for the user journey and mixed-version clients still break.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$3,120 is burned recovering from the migration-induced production outage.",
+          "monthlyBurn": "Incident debriefs and emergency rollback support add $2,990/month.",
+          "reliability": "Exclusive table locks bring down the entire application, causing widespread cascading failures.",
+          "customerTrust": "Crashing the site during business hours for a database change destroys merchant confidence.",
+          "complexity": "Killing hung migrations, unblocking locked database processes, and repairing corrupted deployments."
         }
       },
       "architectureChanges": changesFor("blocking-migration"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "One transaction offers a simple rollback boundary. Locks and WAL remain unbounded for the user journey and mixed-version clients still break.",
+      "outcomeDialogue": "Disaster! The migration locked the orders table for 22 minutes. Web servers ran out of connection slots within 10 seconds, and 4,000 active shoppers saw 504 Gateway Timeouts.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Evolve schemas with overlapping compatibility and bounded migrations. The retained risk remains part of your company’s architecture."
     }
@@ -155,5 +150,5 @@ export const level023 = defineStartupLevel({
     "Long transactions and incompatible rolling changes block concurrent work; raw capacity is not the main limit.",
     "Evolve schemas with overlapping compatibility and bounded migrations."
   ],
-  "lesson": "Evolve schemas with overlapping compatibility and bounded migrations."
+  "lesson": "Use the Expand/Contract migration pattern: add nullable columns without defaults, dual-write in code, backfill in small background batches, switch reads, and finally drop the old column."
 });

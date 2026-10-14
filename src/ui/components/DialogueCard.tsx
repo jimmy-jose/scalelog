@@ -1,14 +1,14 @@
 import { StyleSheet, Text, View } from "react-native";
 import { LevelDialogue } from "@/domain/types";
 import { colors, radii, spacing, typography } from "@/ui/theme";
-import { JimmyAvatar } from "./JimmyAvatar";
+import { ByteAvatar } from "./ByteAvatar";
 
 export function DialogueCard({ dialogue }: { dialogue: LevelDialogue[] }) {
   const current = dialogue[dialogue.length - 1];
   return (
     <View style={styles.card}>
-      <View style={styles.avatarCol}><JimmyAvatar emotion={current.emotion} /></View>
-      <View style={styles.copy}><View style={styles.nameRow}><Text style={styles.name}>JIMMY</Text><Text style={styles.role}>YOUR AI ASSISTANT</Text></View><Text style={styles.quote}>{current.text}</Text>{dialogue.length > 1 && <View style={styles.dots}>{dialogue.map((_, index) => <View key={index} style={[styles.dot, index === dialogue.length - 1 && styles.activeDot]} />)}</View>}</View>
+      <View style={styles.avatarCol}><ByteAvatar emotion={current.emotion} /></View>
+      <View style={styles.copy}><View style={styles.nameRow}><Text style={styles.name}>BYTE</Text><Text style={styles.role}>YOUR AI ASSISTANT</Text></View><Text style={styles.quote}>{current.text}</Text>{dialogue.length > 1 && <View style={styles.dots}>{dialogue.map((_, index) => <View key={index} style={[styles.dot, index === dialogue.length - 1 && styles.activeDot]} />)}</View>}</View>
     </View>
   );
 }

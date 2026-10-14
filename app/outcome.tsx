@@ -103,11 +103,11 @@ export default function OutcomeScreen() {
           <LinearGradient colors={["rgba(5, 13, 27, 0.82)", "rgba(5, 13, 27, 0.72)", "rgba(5, 13, 27, 0.3)"]} start={{ x: 0, y: 0.4 }} end={{ x: 1, y: 0.5 }} style={StyleSheet.absoluteFill} />
         </ImageBackground>
         <View style={styles.heroCopy}>
-          <Text style={styles.heroKicker}>JIMMY’S DEBRIEF</Text>
+          <Text style={styles.heroKicker}>BYTE’S DEBRIEF</Text>
           <Text style={[styles.heroTitle, wide && styles.heroTitleWide]}>{outcome.title}</Text>
           <Text style={styles.heroChoice}>{outcome.choiceLabel}</Text>
         </View>
-        <Animated.Image entering={FadeInDown.delay(90).duration(380)} source={character} resizeMode="contain" style={[styles.jimmyImage, wide && styles.jimmyImageWide, jimmyMotion]} accessibilityLabel={`Jimmy looks ${displayedEmotion}`} />
+        <Animated.Image entering={FadeInDown.delay(90).duration(380)} source={character} resizeMode="contain" style={[styles.jimmyImage, wide && styles.jimmyImageWide, jimmyMotion]} accessibilityLabel={`Byte looks ${displayedEmotion}`} />
         <View pointerEvents="none" style={styles.sceneGround} />
       </View>
     </Animated.View>
@@ -116,7 +116,7 @@ export default function OutcomeScreen() {
     <View style={styles.footer}>
       <Button onPress={() => router.replace(reviewingHistory ? "/levels" : "/complete")}>{reviewingHistory ? "Back to campaign map →" : outcome.failureReason ? "View run summary →" : "Continue →"}</Button>
     </View>
-    <LearnMore key={`${outcome.levelId}-${outcome.choiceId}`} label="Learn more: results & Jimmy’s advice">
+    <LearnMore key={`${outcome.levelId}-${outcome.choiceId}`} label="Learn more: results & Byte’s advice">
       <Text style={styles.dialogueText}>{outcome.dialogue}</Text>
     <Animated.View entering={FadeInDown.duration(260)} style={styles.ledgerSection}>
 
@@ -140,9 +140,9 @@ export default function OutcomeScreen() {
       </View>
     </Animated.View>
       {missedPreferredPath && <Animated.View entering={FadeInDown.delay(130).duration(300)} style={styles.recommendation}>
-        <View style={styles.recommendationHeading}><View style={styles.speakerDot} /><Text style={styles.recommendationLabel}>JIMMY’S RETROSPECTIVE  ·  A STRONGER FIT</Text></View>
+        <View style={styles.recommendationHeading}><View style={styles.speakerDot} /><Text style={styles.recommendationLabel}>BYTE’S RETROSPECTIVE  ·  A STRONGER FIT</Text></View>
         <Text style={styles.recommendationTitle}>I would have chosen {missedPreferredPath.label}.</Text>
-        <Text style={styles.recommendationText}>{missedPreferredPath.tradeoff.jimmyExplanation}</Text>
+        <Text style={styles.recommendationText}>{missedPreferredPath.tradeoff.byteExplanation ?? missedPreferredPath.tradeoff.jimmyExplanation}</Text>
       </Animated.View>}
     </LearnMore>
 

@@ -16,7 +16,7 @@ export function resolveLevel(level: Level, architecture: ArchitectureGraph): Lev
   return {
     ...resolved,
     description: `${resolved.description} Prerequisite work: ${descriptions.join(" ")}`,
-    dialogue: [...resolved.dialogue, { character: "jimmy", emotion: "concerned", text: `We still owe this work: ${descriptions.join(" ")} Its cost is included in the affected responses.` }],
+    dialogue: [...resolved.dialogue, { character: "byte", emotion: "concerned", text: `We still owe this work: ${descriptions.join(" ")} Its cost is included in the affected responses.` }],
     choices: resolved.choices.map((choice) => {
       const needed = repairs.filter((repair) => repair.choiceIds.includes(choice.id));
       if (!needed.length) return choice;

@@ -80,7 +80,7 @@ Module._load = function (id, parent, main) {
   }
   if (id.startsWith('@/ui/components/') && !id.endsWith('/TopBar') && !id.endsWith('/CertificateReward')) {
     const name = id.slice(id.lastIndexOf('/') + 1);
-    if (name === 'JimmyAvatar') return { characterAssets: {} };
+    if (name === 'JimmyAvatar' || name === 'ByteAvatar') return { characterAssets: {} };
     if (name === 'Button') return { Button: Pressable };
     if (name === 'DecisionDeck') return { DecisionDeck: (props) => { decks.push(props); return null; } };
     return { [name]: View };

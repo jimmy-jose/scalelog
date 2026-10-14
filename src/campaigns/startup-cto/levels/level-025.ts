@@ -3,18 +3,18 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level025 = defineStartupLevel({
   "levelNumber": 25,
   "title": "One Domain Earns Its Own Deploy",
-  "description": "Media transforms consume 72% of shared worker CPU and demand six releases a week. Orders release once a week. Cartline has a stable media boundary and can fund a four-person ownership group after hiring three more engineers.",
+  "description": "Media transforms (resizing product photos, transcoding promotional clips) consume 72% of shared worker CPU and demand six releases a week, while core orders release only once a week. Cartline has a clean media boundary and can fund a dedicated four-person team.",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "Media has its own bottleneck, release cadence and funded owners now. That is a reason to extract one boundary. The rest of the monolith still works."
-    },
-    {
-      "character": "jimmy",
-      "emotion": "normal",
-      "text": "This month’s operating plan adds 3 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "Media has completely different resource needs and deploys six times as often as core checkout. That's a textbook reason to extract a dedicated service. But remember: every network boundary turns local function calls into distributed failure modes."
+      },
+      {
+          "character": "jimmy",
+          "emotion": "normal",
+          "text": "This month’s operating plan adds 3 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
+      }
   ],
   "metrics": [
     {
@@ -56,18 +56,18 @@ export const level025 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Media scales and deploys independently while orders stay in the modular core.",
         "downside": "Service contracts, on-call ownership and independent capacity now have a recurring cost.",
-        "jimmyExplanation": "Media scales and deploys independently while orders stay in the modular core. Service contracts, on-call ownership and independent capacity now have a recurring cost.",
+        "jimmyExplanation": "Giving media its own deploy and job queue frees our order workers from heavy image crunching. But running an independent service means managing API contracts, network retries, and dedicated on-call rotations.",
         "effectReasons": {
-          "upfrontCost": "$28,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+26,000, including 3 hires and the operating costs of this response.",
-          "reliability": "Service contracts, on-call ownership and independent capacity now have a recurring cost.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$28,000 covers provisioning independent media services, deployment pipelines, and scoped storage access.",
+          "monthlyBurn": "The monthly change is +$26,000, which includes 3 new engineers and independent service infrastructure.",
+          "reliability": "Isolates media encoding workloads so CPU spikes never impact checkout and order processing.",
+          "customerTrust": "Product image uploads and updates process reliably without causing site-wide lag.",
+          "complexity": "Introduces a new network boundary, independent CI/CD pipeline, and service contract testing."
         }
       },
       "architectureChanges": changesFor("media-service", "media-owned"),
       "outcomeTitle": "Media earns an independent deploy.",
-      "outcomeDialogue": "Media scales and deploys independently while orders stay in the modular core. Service contracts, on-call ownership and independent capacity now have a recurring cost.",
+      "outcomeDialogue": "Media runs as its own service now. Heavy image uploads no longer starve checkout workers, and the media team can deploy updates without waiting for the core release train.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Extract one stable domain when independent scale and ownership pay for the network boundary. Next pressure: A real service boundary needs a durable contract and can fail independently."
     },
@@ -93,18 +93,18 @@ export const level025 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Resource isolation works with fewer distributed contracts.",
         "downside": "Release coordination remains; some media changes still wait for core releases.",
-        "jimmyExplanation": "Resource isolation works with fewer distributed contracts. Release coordination remains; some media changes still wait for core releases.",
+        "jimmyExplanation": "Keeping the code in the monolith while dedicating worker pools gives us CPU isolation without the overhead of maintaining separate microservice infrastructure. The downside is the media team still has to coordinate deployments with the core team.",
         "effectReasons": {
-          "upfrontCost": "$12,600 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+22,100, including 3 hires and the operating costs of this response.",
-          "reliability": "Release coordination remains; some media changes still wait for core releases.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$12,600 covers configuring dedicated worker queues and segregating compute pools.",
+          "monthlyBurn": "The monthly change is +$22,100, including 3 new engineers and dedicated worker instances.",
+          "reliability": "Worker pool segregation prevents media tasks from starving core checkout workers.",
+          "customerTrust": "Merchants see consistent checkout speeds, though media features deploy at the slower monolith pace.",
+          "complexity": "Monolith deployment coordination remains, but network and service operations remain simple."
         }
       },
       "architectureChanges": changesFor("dedicated-media-workers"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "Resource isolation works with fewer distributed contracts. Release coordination remains; some media changes still wait for core releases.",
+      "outcomeDialogue": "Dedicated worker pools keep media processing from hogging checkout CPU, all without creating another git repository or deployment pipeline.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Extract one stable domain when independent scale and ownership pay for the network boundary. Next pressure: A real service boundary needs a durable contract and can fail independently."
     },
@@ -130,18 +130,18 @@ export const level025 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Many domains could eventually scale independently.",
         "downside": "Unproven boundaries and shared-database access create coordination and on-call load faster than the team can absorb.",
-        "jimmyExplanation": "Many domains could eventually scale independently. Unproven boundaries and shared-database access create coordination and on-call load faster than the team can absorb.",
+        "jimmyExplanation": "Splitting users, orders, billing, catalogue, and media into five separate microservices all at once is organizational suicide. We would spend all our time debugging distributed transactions and network timeouts instead of shipping features.",
         "effectReasons": {
-          "upfrontCost": "$18,200 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+29,900, including 3 hires and the operating costs of this response.",
-          "reliability": "Unproven boundaries and shared-database access create coordination and on-call load faster than the team can absorb.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$18,200 is spent attempting a rushed multi-service migration across multiple domains.",
+          "monthlyBurn": "The monthly change is +$29,900, funding 3 engineers plus multi-service overhead and network costs.",
+          "reliability": "Distributed transaction failures, network hops, and missing contract tests cause widespread outages.",
+          "customerTrust": "Intermittent cross-service failures degrade merchant trust and break shopping workflows.",
+          "complexity": "Explosion of network boundaries, operational overhead, and distributed debugging debt."
         }
       },
       "architectureChanges": changesFor("service-sprawl"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "Many domains could eventually scale independently. Unproven boundaries and shared-database access create coordination and on-call load faster than the team can absorb.",
+      "outcomeDialogue": "We shattered the monolith into five services without the tooling or headcount to support them. Network latency exploded, distributed transactions are failing, and on-call is a living nightmare.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Extract one stable domain when independent scale and ownership pay for the network boundary. The retained risk remains part of your company’s architecture."
     }
@@ -150,7 +150,7 @@ export const level025 = defineStartupLevel({
     "Media’s resource profile and release cadence now differ enough to justify a deployment and ownership boundary.",
     "Extract one stable domain when independent scale and ownership pay for the network boundary."
   ],
-  "lesson": "Extract one stable domain when independent scale and ownership pay for the network boundary.",
+  "lesson": "Only extract a microservice when the domain has distinct compute requirements (heavy media encoding vs. fast checkout) and a dedicated team to own its deployment, monitoring, and network failure modes.",
   "recoveries": [
     {
       "capability": "job-queue",

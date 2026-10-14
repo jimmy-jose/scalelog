@@ -3,18 +3,18 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level032 = defineStartupLevel({
   "levelNumber": 32,
   "title": "One Writer Has Reached Its Budget",
-  "description": "Large merchant catalogue feeds now run alongside checkout. After batching, index pruning and a tested vertical upgrade, the largest affordable writer is saturated. Orders remain tenant-scoped; no transaction spans merchants.",
+  "description": "Large merchant catalogue feeds now run alongside checkout. Even after query batching, index pruning, and upgrading to the largest affordable cloud database instance, primary writer CPU is pinned at 94% and disk I/O is saturated. Because order transactions are strictly isolated to individual merchants and no transaction ever spans multiple merchants, we can split data across separate databases.",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "We have measured the writer after fixing avoidable work. Tenant-local transactions give us a possible shard boundary. Plan the migration and recovery before moving data."
-    },
-    {
-      "character": "jimmy",
-      "emotion": "normal",
-      "text": "This month’s operating plan adds 3 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "We have exhausted vertical scaling on our primary database. Because merchants never share transactions, sharding by merchant ID gives us multiple independent database writers. But sharding is a permanent architectural commitment."
+      },
+      {
+          "character": "jimmy",
+          "emotion": "normal",
+          "text": "This month’s operating plan adds 3 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
+      }
   ],
   "metrics": [
     {
@@ -61,18 +61,18 @@ export const level032 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Independent writers distribute aggregate work while keeping transactional invariants local.",
         "downside": "Cross-tenant reporting uses projections; backups, migrations and capacity must be managed per shard.",
-        "jimmyExplanation": "Independent writers distribute aggregate work while keeping transactional invariants local. Cross-tenant reporting uses projections; backups, migrations and capacity must be managed per shard.",
+        "jimmyExplanation": "Splitting our data across eight database writer groups using a tenant routing directory distributes write throughput evenly. Because all checkout transactions stay within a single merchant, we avoid complex distributed cross-database transactions.",
         "effectReasons": {
-          "upfrontCost": "$65,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+41,000, including 3 hires and the operating costs of this response.",
-          "reliability": "Cross-tenant reporting uses projections; backups, migrations and capacity must be managed per shard.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$65,000 covers CDC tenant migration pipelines, shard routing directory services, and cross-shard integrity checks.",
+          "monthlyBurn": "The monthly change is +$41,000, funding 3 data engineers and running eight independent database clusters.",
+          "reliability": "Spreads write load across eight writers, eliminating the single-database CPU and disk I/O bottleneck.",
+          "customerTrust": "High-volume catalogue uploads no longer cause checkout delays for other merchants on the platform.",
+          "complexity": "Introduces shard routing directory, distributed backup orchestration, and per-shard schema migration tooling."
         }
       },
       "architectureChanges": changesFor("tenant-shards", "distributed-ids"),
       "outcomeTitle": "The writer budget can grow by tenant.",
-      "outcomeDialogue": "Independent writers distribute aggregate work while keeping transactional invariants local. Cross-tenant reporting uses projections; backups, migrations and capacity must be managed per shard.",
+      "outcomeDialogue": "Tenant sharding succeeded! Write throughput is spread across eight primary databases, writer CPU dropped from 94% to 22%, and checkout transactions remain completely isolated.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Shard only with a measured writer limit and a transaction-local key. Next pressure: Tenant hashing can distribute many merchants while leaving a single whale tenant hot."
     },
@@ -98,18 +98,18 @@ export const level032 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A valid low-complexity operating envelope protects checkout.",
         "downside": "Revenue growth slows because the new simultaneous-feed contract is not met.",
-        "jimmyExplanation": "A valid low-complexity operating envelope protects checkout. Revenue growth slows because the new simultaneous-feed contract is not met.",
+        "jimmyExplanation": "Keeping a single primary database and aggressively throttling catalogue write feeds protects checkout CPU, but enterprise merchants with huge inventories will face multi-hour delays updating product prices and stock.",
         "effectReasons": {
-          "upfrontCost": "$29,250 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+34,850, including 3 hires and the operating costs of this response.",
-          "reliability": "Revenue growth slows because the new simultaneous-feed contract is not met.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$29,250 covers building feed rate limiters and background ingestion queues.",
+          "monthlyBurn": "The monthly change is +$34,850, funding 3 data engineers and feed queue infrastructure.",
+          "reliability": "Protects the single database from write exhaustion, though feed processing queues accumulate large backlogs.",
+          "customerTrust": "Core checkout stays operational, but enterprise merchants complain about delayed inventory and price updates.",
+          "complexity": "Avoids database sharding complexity, but requires managing large, slow feed ingestion queues."
         }
       },
       "architectureChanges": changesFor("write-admission"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "A valid low-complexity operating envelope protects checkout. Revenue growth slows because the new simultaneous-feed contract is not met.",
+      "outcomeDialogue": "Feed throttling kept checkout alive on our single database, but our largest merchant is furious that inventory updates take five hours to appear.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Shard only with a measured writer limit and a transaction-local key. Next pressure: Tenant hashing can distribute many merchants while leaving a single whale tenant hot."
     },
@@ -135,18 +135,18 @@ export const level032 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Lag-tolerant read capacity increases.",
         "downside": "The saturated writer still performs every mutation; readers do not add write throughput.",
-        "jimmyExplanation": "Lag-tolerant read capacity increases. The saturated writer still performs every mutation; readers do not add write throughput.",
+        "jimmyExplanation": "Hashing by order ID scatters a single merchant's orders, products, and inventory across eight different databases! A simple inventory reservation or cart checkout now requires a distributed two-phase commit transaction across multiple databases.",
         "effectReasons": {
-          "upfrontCost": "$42,250 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+47,150, including 3 hires and the operating costs of this response.",
-          "reliability": "The saturated writer still performs every mutation; readers do not add write throughput.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$42,250 is burned on a disastrous hash-sharding migration and emergency rollback.",
+          "monthlyBurn": "The monthly change is +$47,150, funding 3 engineers and fragmented multi-database infrastructure.",
+          "reliability": "Cross-shard distributed deadlocks and partial transaction commits corrupt inventory and crash checkouts.",
+          "customerTrust": "Desynchronized order records and phantom inventory states cause severe merchant churn.",
+          "complexity": "Untangling cross-database dependencies and rolling back distributed transactions is extraordinarily complex."
         }
       },
       "architectureChanges": changesFor("write-pressure-readers"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "Lag-tolerant read capacity increases. The saturated writer still performs every mutation; readers do not add write throughput.",
+      "outcomeDialogue": "Hashing by order ID broke atomic transactions. Distributed locks caused massive database deadlocks, leaving carts stuck and inventory numbers completely desynchronized.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Shard only with a measured writer limit and a transaction-local key. The retained risk remains part of your company’s architecture."
     }
@@ -155,7 +155,7 @@ export const level032 = defineStartupLevel({
     "Aggregate writes exceed one affordable primary; reads and connections are not the limiting resources.",
     "Shard only with a measured writer limit and a transaction-local key."
   ],
-  "lesson": "Shard only with a measured writer limit and a transaction-local key.",
+  "lesson": "Shard your database only when you cannot vertically scale your single primary any further. Shard by a key where transactions stay isolated (like tenant_id): each merchant's data lives entirely on one database shard, avoiding slow and complex distributed cross-database transactions.",
   "variants": [
     {
       "id": "without-time-partitions",

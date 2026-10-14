@@ -6,6 +6,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-nati
 import { useGameStore, useSaveStatus } from "@/store/gameStore";
 import { gameFeedback } from "@/game/feedback/GameFeedbackManager";
 import { colors } from "@/ui/theme";
+import { WebAnalytics } from "@/ui/components/WebAnalytics";
 
 export default function RootLayout() {
   const saveStatus = useSaveStatus((state) => state.status);
@@ -20,7 +21,7 @@ export default function RootLayout() {
     });
   }, []);
 
-  return <><StatusBar style="light" />{saveStatus === "ready"
+  return <><StatusBar style="light" /><WebAnalytics />{saveStatus === "ready"
     ? <Stack screenOptions={{ headerShown: false, animation: "fade" }} />
     : <View style={styles.loading}>
       {saveStatus === "loading" ? <ActivityIndicator color={colors.mint} /> : null}

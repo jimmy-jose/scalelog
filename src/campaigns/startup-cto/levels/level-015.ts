@@ -3,18 +3,13 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level015 = defineStartupLevel({
   "levelNumber": 15,
   "title": "Retrying the Provider to Death",
-  "description": "The webhook destination returns 429 for two minutes. Concurrent delivery callers immediately retry. Success at the provider is normal once requests fit its documented quota.",
+  "description": "Our third-party webhook notification service experiences a brief outage and responds with HTTP 429 (Too Many Requests). Our worker fleet immediately retries every failed webhook every 100 milliseconds in a tight loop. Instead of recovering, the provider is overwhelmed by thousands of aggressive retries, extending the outage for hours.",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "Safe to retry does not mean safe to retry eighteen hundred times a second. The provider gave us a capacity budget and a time to come back."
-    },
-    {
-      "character": "jimmy",
-      "emotion": "normal",
-      "text": "This month’s operating plan adds 1 engineer. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "We are DDOSing our own webhook provider! When a service says 'I am busy, stop hitting me,' retrying 1,000 times a second just keeps their servers in the dirt. We need exponential backoff and randomized jitter."
+      }
   ],
   "metrics": [
     {
@@ -56,18 +51,18 @@ export const level015 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "The provider can recover without another synchronized storm.",
         "downside": "Some callbacks arrive later; expiry and oldest-job age need visibility.",
-        "jimmyExplanation": "The provider can recover without another synchronized storm. Some callbacks arrive later; expiry and oldest-job age need visibility.",
+        "jimmyExplanation": "Exponential backoff increases the wait time after each failure (1s, 2s, 4s, 8s, 16s) up to a bounded maximum ceiling. Adding randomized 'jitter' (e.g. 4s ± random 500ms) prevents all workers from retrying at the exact same millisecond, smoothing out the request curve and allowing the provider to recover gracefully.",
         "effectReasons": {
-          "upfrontCost": "$4,500 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+6,000, including 1 hires and the operating costs of this response.",
-          "reliability": "Some callbacks arrive later; expiry and oldest-job age need visibility.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$2,000 covers implementing exponential backoff with full jitter, retry budgets, and webhook telemetry.",
+          "monthlyBurn": "Monitoring webhook backoff queues and provider latency adds $1,100/month.",
+          "reliability": "Prevents self-inflicted retry stampedes and allows struggling downstream APIs to self-heal.",
+          "customerTrust": "Webhook deliveries succeed reliably after transient glitches, keeping merchant integrations working.",
+          "complexity": "Adds retry schedule tracking, backoff calculations, and max-retry threshold policies."
         }
       },
       "architectureChanges": changesFor("bounded-retries"),
       "outcomeTitle": "The provider gets room to recover.",
-      "outcomeDialogue": "The provider can recover without another synchronized storm. Some callbacks arrive later; expiry and oldest-job age need visibility.",
+      "outcomeDialogue": "The retry storm ended! When the webhook provider hiccuped, our workers backed off smoothly. Once the provider caught its breath, all queued webhooks cleared cleanly without a single dropped event.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Retries consume capacity; budget them and add jitter. Next pressure: Bounded retries will reveal permanently malformed jobs needing quarantine."
     },
@@ -93,18 +88,18 @@ export const level015 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "An operator can restore a small incident predictably.",
         "downside": "Manual intervention does not scale across many destinations and recovery can be slow.",
-        "jimmyExplanation": "An operator can restore a small incident predictably. Manual intervention does not scale across many destinations and recovery can be slow.",
+        "jimmyExplanation": "Capping retry attempts to three fixed tries spaced 30 seconds apart avoids an infinite loop and reduces provider load. It is a simple, predictable policy, though without randomized jitter, workers can still retry in small synchronized pulses.",
         "effectReasons": {
-          "upfrontCost": "$2,025 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+5,100, including 1 hires and the operating costs of this response.",
-          "reliability": "Manual intervention does not scale across many destinations and recovery can be slow.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$900 covers setting up fixed 3-attempt retry rules and delay queues.",
+          "monthlyBurn": "Basic retry queue monitoring and delay tracking add $990/month.",
+          "reliability": "Limits retry volume and prevents runaway queue consumption during third-party degradations.",
+          "customerTrust": "Most transient webhook failures resolve on the second or third try without overwhelming destinations.",
+          "complexity": "Minimal operational overhead; relies on straightforward fixed-interval retry schedules."
         }
       },
       "architectureChanges": changesFor("manual-delivery"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "An operator can restore a small incident predictably. Manual intervention does not scale across many destinations and recovery can be slow.",
+      "outcomeDialogue": "Fixed retries stopped the infinite loop and gave the provider enough breathing room to process requests. It is an effective, simple backoff strategy.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Retries consume capacity; budget them and add jitter. Next pressure: Bounded retries will reveal permanently malformed jobs needing quarantine."
     },
@@ -130,18 +125,18 @@ export const level015 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "More workers can help when worker CPU is truly saturated.",
         "downside": "Here they send more attempts into the same provider quota and increase backlog.",
-        "jimmyExplanation": "More workers can help when worker CPU is truly saturated. Here they send more attempts into the same provider quota and increase backlog.",
+        "jimmyExplanation": "Retrying immediately in an infinite loop guarantees that any brief 30-second glitch will turn into an all-day outage. Thousands of workers spinning on failed HTTP calls will burn our CPU, exhaust connection pools, and get our API key permanently blacklisted by the provider.",
         "effectReasons": {
-          "upfrontCost": "$2,925 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+6,900, including 1 hires and the operating costs of this response.",
-          "reliability": "Here they send more attempts into the same provider quota and increase backlog.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$1,300 is wasted implementing aggressive infinite-retry loops.",
+          "monthlyBurn": "Massive CPU burn from constant spinning retries adds $1,265/month.",
+          "reliability": "Exhausts worker concurrency and network sockets, causing platform-wide cascading failures.",
+          "customerTrust": "Merchants lose real-time webhook updates completely as the platform gets blocked by partners.",
+          "complexity": "Engineering must urgently intervene to kill stuck retry jobs and negotiate unblocking with vendors."
         }
       },
       "architectureChanges": changesFor("retry-storm"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "More workers can help when worker CPU is truly saturated. Here they send more attempts into the same provider quota and increase backlog.",
+      "outcomeDialogue": "The webhook provider officially banned our IP address and revoked our API key for aggressive spamming. 10,000 webhook jobs are now permanently failing in our queues.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Retries consume capacity; budget them and add jitter. The retained risk remains part of your company’s architecture."
     }
@@ -150,7 +145,7 @@ export const level015 = defineStartupLevel({
     "Immediate retries amplify a temporary quota failure and synchronize worker traffic.",
     "Retries consume capacity; budget them and add jitter."
   ],
-  "lesson": "Retries consume capacity; budget them and add jitter.",
+  "lesson": "Never retry in a tight loop: use exponential backoff with randomized jitter so retries spread out smoothly over time and allow struggling services to recover.",
   "recoveries": [
     {
       "capability": "idempotent-effects",

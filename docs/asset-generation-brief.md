@@ -1,22 +1,22 @@
 # Resource brief for the first three levels
 
-The five requested Jimmy expressions have now been supplied and integrated. Their normalized filenames are `jimmy_neutral.png`, `jimmy_disappointed.png`, `jimmy_panic.png`, `jimmy_shocked.png`, and `jimmy_defeated.png` under `assets/characters/`. Neutral replaces the default wave; onboarding keeps the welcome image. Terminal failure overrides the authored choice emotion on both outcome and completion screens, including existing saves. The generation directions below remain as reference; the audio and optional scene assets are still outstanding.
+The five requested Byte expressions have now been supplied and integrated. Their normalized filenames are `jimmy_neutral.png`, `jimmy_disappointed.png`, `jimmy_panic.png`, `jimmy_shocked.png`, and `jimmy_defeated.png` under `assets/characters/`. Neutral replaces the default wave; onboarding keeps the welcome image. Terminal failure overrides the authored choice emotion on both outcome and completion screens, including existing saves. The generation directions below remain as reference; the audio and optional scene assets are still outstanding.
 
 ## Existing resources
 
-- Six Jimmy cutouts: welcome, thinking, concerned, explain, happy, smug. All are 1122 × 1402 PNGs with alpha, approximately 1.3–1.7 MB each.
+- Six Byte cutouts: welcome, thinking, concerned, explain, happy, smug. All are 1122 × 1402 PNGs with alpha, approximately 1.3–1.7 MB each.
 - One office background: 1672 × 941, used in briefings, outcomes, and chapter handoffs.
 - Architecture and metric icons are already drawn with SVG. The architecture preview can show changed components and connections.
-- Jimmy has a small looping vertical movement. No separate blink, talking, or reaction frames were found.
+- Byte has a small looping vertical movement. No separate blink, talking, or reaction frames were found.
 - Fourteen audio registry entries and the optional background music source are all null. Audio directories contain placeholders only. Selection, incident, architecture, outcome, XP, and completion feedback already have call sites. Several other events are declared but are not yet triggered by gameplay.
 
-## Generate first: five Jimmy expressions
+## Generate first: five Byte expressions
 
 Reuse the existing character as the image reference for every generation. Keep the bald head, beard shape, brown eyes, skin tone, blue hoodie, white shirt, stylized 3D rendering, lighting, lens, proportions, and camera angle consistent. Change expression and gesture only. Deliver one transparent PNG per pose, 1122 × 1402, with the same head size, eye line, and torso alignment. Keep hands within frame with padding. No text, captions, props covering the face, or baked background. Clean the silhouette against dark navy to avoid bright fringes.
 
 Use this shared prompt prefix:
 
-> Create a new expression of the exact Jimmy character in the supplied reference. Preserve his identity, clothing, materials, proportions, camera angle, lighting, and stylized 3D appearance. Upper-body character cutout on a truly transparent background, 1122 × 1402 pixels. Keep head scale and eye line aligned with the reference, and leave padding around all hands. No text or scenery.
+> Create a new expression of the exact Byte character in the supplied reference. Preserve his identity, clothing, materials, proportions, camera angle, lighting, and stylized 3D appearance. Upper-body character cutout on a truly transparent background, 1122 × 1402 pixels. Keep head scale and eye line aligned with the reference, and leave padding around all hands. No text or scenery.
 
 Add the relevant direction:
 
@@ -51,7 +51,7 @@ Second audio batch: a distinct level-complete cue, improved/worsened metric tick
 
 ## Optional background variants
 
-Use the existing office as the reference; preserve the same room and camera position. Deliver 1920 × 1080 or larger, with no Jimmy and no legible UI text. Leave the current character and text areas uncluttered.
+Use the existing office as the reference; preserve the same room and camera position. Deliver 1920 × 1080 or larger, with no Byte and no legible UI text. Leave the current character and text areas uncluttered.
 
 - `startup_office_incident.png`: Same office, dimmer working light and restrained amber/red monitor glow. Use for the slow-dashboard and connection-storm incidents. Specific warning lights can also be added with code, so this asset is optional.
 - `startup_office_shutdown.png`: Same office after the team has left, most monitors off, subdued lighting. Reserve for terminal failure.
@@ -70,10 +70,10 @@ Any level can transition to defeated plus the failure cue when the shared failur
 
 ## Interaction improvements that do not require generated art
 
-- Animate numerical losses and gains and keep Jimmy's reaction synchronized with the committed result.
+- Animate numerical losses and gains and keep Byte's reaction synchronized with the committed result.
 - Use the existing SVG architecture to show Level 1's extra deployment boundaries, Level 2's scan versus indexed lookup, and Level 3's rejected requests versus shared connections. Build accurate animated diagrams in code rather than generating static pictures of technical behavior.
 - Replace continuous bobbing with brief, event-specific gestures where possible. Small transition timing and a held reaction can work with the still images above.
 - Add two aligned blink frames to neutral/thinking later if desired; they need identical pose and canvas alignment. Do not generate full video clips for the first asset pass.
-- Place the extra reactions inside the existing Jimmy area. Keep the compact stats dashboard and avoid introducing more permanent panels.
+- Place the extra reactions inside the existing Byte area. Keep the compact stats dashboard and avoid introducing more permanent panels.
 
 The first useful delivery is five transparent character images and eight short sounds. Background variants and animation frames are optional follow-up work.

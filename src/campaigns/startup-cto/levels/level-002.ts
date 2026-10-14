@@ -27,7 +27,7 @@ export const level002: Level = {
         downsideLabel: "Write & storage overhead",
         upside: "A targeted index turns the expensive full scan into a fast lookup for the orders view.",
         downside: "The index uses storage and adds a little work to writes; it must match the real query pattern.",
-        jimmyExplanation: "This is a precise fix because the trace identified the columns the query filters and sorts by. Reads stop scanning every row, so the incident pressure falls. The trade is a small amount of index storage and write overhead—not a new service to keep warm.",
+        jimmyExplanation: "This is a precise fix because the trace identified the columns the query filters and sorts by. Reads stop scanning every row, so the incident pressure falls. The trade is a small amount of index storage and write overhead, not a new service to keep warm.",
         effectReasons: {
           upfrontCost: "$200 covers a focused schema change and rollout, far less than buying a larger database tier.",
           reliability: "Fewer rows scanned means less CPU contention and fewer slow requests and timeouts on this hot path.",

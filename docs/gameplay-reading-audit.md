@@ -5,9 +5,9 @@ The shared gameplay screens cover all 36 incidents, their 108 choices, and state
 | Area | Friction found | Default experience | Available on request |
 | --- | --- | --- | --- |
 | Company header | Seven metrics plus campaign progress preceded every step | Company health, cash, runway, users | Health meters, finances, rules, history |
-| Incident briefing | Description plus sequential dialogue had to be read before proceeding | Full problem description and direct decision button | All personalized Jimmy dialogue |
+| Incident briefing | Description plus sequential dialogue had to be read before proceeding | Full problem description and direct decision button | All personalized Byte dialogue |
 | System review | Metrics and architecture formed a mandatory intermediate step | Warning/critical signals remain visible; two steps: problem and decision | Full metrics and interactive architecture; problem can be reviewed from the decision |
-| Choice cards | Description, two trade-off paragraphs, effects, reward math, forecast, and advice competed with the action | Option, upfront cost, gain, trade-off, monthly cost change, cash forecast | Implementation details, full trade-offs, effect explanations, XP/confidence, Jimmy's advice |
+| Choice cards | Description, two trade-off paragraphs, effects, reward math, forecast, and advice competed with the action | Option, upfront cost, gain, trade-off, monthly cost change, cash forecast | Implementation details, full trade-offs, effect explanations, XP/confidence, Byte's advice |
 | Results | Three mandatory pages separated result, ledger, and takeaway | Result, takeaway, failure reason when applicable, Continue | Dialogue, before/after ledger, operating-month math, retrospective |
 | Completion | Dashboard and repeated next-incident description delayed continuation | Reward/progress, next incident title, next action; reset remains visible after failure | Company details/history and final architecture analysis |
 

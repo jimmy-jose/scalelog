@@ -38,7 +38,7 @@ export function GameScene({ level, onContinue }: { level: Level; onContinue?: ()
         </View>
         <View style={[styles.dialogue, wide && styles.wideDialogue]}>
           {onContinue && <Button onPress={onContinue}>Choose a solution →</Button>}
-          <LearnMore key={level.id} label="Learn more: Jimmy’s briefing">
+          <LearnMore key={level.id} label="Learn more: Byte’s briefing">
             {level.dialogue.map((line, index) => <Text key={index} style={styles.quote}>
               {line.text.replace(/\{name\}/g, playerName.trim() || "CTO")}
             </Text>)}

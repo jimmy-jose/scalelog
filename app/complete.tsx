@@ -81,7 +81,7 @@ export default function LevelCompleteScreen() {
           <View><Text style={styles.rewardLabel}>CTO EXPERIENCE</Text><RewardCount key={`${outcome.levelId}-${outcome.choiceId}`} value={outcome.xpEarned} style={[styles.rewardValue, outcome.xpEarned < 0 && { color: colors.orange }]} /></View>
         </Animated.View>
       </View>
-      <Image source={failed ? characterAssets.defeated : setback ? characterAssets.disappointed : characterAssets.celebrating} resizeMode="contain" style={[styles.jimmyImage, wide && styles.jimmyImageWide]} accessibilityLabel={failed ? "Jimmy reacts to the failed run" : setback ? "Jimmy reflects on the setback" : "Jimmy celebrates the decision"} />
+      <Image source={failed ? characterAssets.defeated : setback ? characterAssets.disappointed : characterAssets.celebrating} resizeMode="contain" style={[styles.jimmyImage, wide && styles.jimmyImageWide]} accessibilityLabel={failed ? "Byte reacts to the failed run" : setback ? "Byte reflects on the setback" : "Byte celebrates the decision"} />
     </Animated.View>
 
     <RunProgress />

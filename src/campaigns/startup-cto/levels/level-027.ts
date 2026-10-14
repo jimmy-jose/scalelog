@@ -13,18 +13,18 @@ export const level027 = defineStartupLevel({
   }],
   "levelNumber": 27,
   "title": "One Event, Three Different Jobs",
-  "description": "Search indexing, receipts and merchant analytics now share a competing-consumer queue. Engineers discover that each event goes to only one consumer rather than all interested projections.",
+  "description": "When an order is placed, three things need to happen: send a receipt email, update the search index, and log merchant analytics. The team put all three workers on the same queue. Now, Worker A grabs the order and sends an email, but the search index and analytics workers never see the message because each message in a queue is only delivered to one worker!",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "Those workers are not interchangeable. Search, receipts and analytics each need the event. Competing for one copy gives us the wrong delivery semantics."
-    },
-    {
-      "character": "jimmy",
-      "emotion": "normal",
-      "text": "This month’s operating plan adds 2 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "Search, receipts, and analytics are three completely different consumers. Having them pull from one shared worker queue means each event is only seen by one of them. We need a publish/subscribe topic that fans out a copy to each subscriber."
+      },
+      {
+          "character": "jimmy",
+          "emotion": "normal",
+          "text": "This month’s operating plan adds 2 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
+      }
   ],
   "metrics": [
     {
@@ -66,18 +66,18 @@ export const level027 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Each projection sees each event and can fail or scale independently.",
         "downside": "Fan-out multiplies stored work; global ordering is not promised and per-order versions need handling.",
-        "jimmyExplanation": "Each projection sees each event and can fail or scale independently. Fan-out multiplies stored work; global ordering is not promised and per-order versions need handling.",
+        "jimmyExplanation": "Publishing orders to a topic that fans out into dedicated queues for receipts, search, and analytics ensures every service receives every event. If analytics falls behind, its queue buffers messages without slowing down receipts or checkout.",
         "effectReasons": {
-          "upfrontCost": "$28,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+23,000, including 2 hires and the operating costs of this response.",
-          "reliability": "Fan-out multiplies stored work; global ordering is not promised and per-order versions need handling.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$28,000 covers provisioning the pub/sub topic, setting up dedicated subscriber queues, and configuring DLQs.",
+          "monthlyBurn": "The monthly change is +$23,000, funding 2 engineers and managed message topic infrastructure.",
+          "reliability": "Guarantees 100% of order events reach all three downstream systems without consumer cross-interference.",
+          "customerTrust": "Receipts arrive instantly and search results update reliably within seconds of each purchase.",
+          "complexity": "Introduces topic management, fan-out subscription routing, and per-consumer queue alerting."
         }
       },
       "architectureChanges": changesFor("event-fanout", "reliable-projections"),
       "outcomeTitle": "Each subscriber gets its own delivery.",
-      "outcomeDialogue": "Each projection sees each event and can fail or scale independently. Fan-out multiplies stored work; global ordering is not promised and per-order versions need handling.",
+      "outcomeDialogue": "Topic fan-out is live. Every subscriber now has its own durable queue, Dead-Letter Queue, and independent processing speed.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Choose messaging semantics for the consumer relationship. Next pressure: Independent subscribers deploy on different schedules and need compatible versioned contracts."
     },
@@ -103,18 +103,18 @@ export const level027 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A database-backed dispatcher can supply the same logical fan-out at moderate volume.",
         "downside": "More polling and custom dispatch logic burden the core team; it needs the same duplicate and retry discipline.",
-        "jimmyExplanation": "A database-backed dispatcher can supply the same logical fan-out at moderate volume. More polling and custom dispatch logic burden the core team; it needs the same duplicate and retry discipline.",
+        "jimmyExplanation": "Writing specific delivery code for receipts and search without a generic pub/sub topic works for now, but adding new consumers in the future will require editing the core order service every single time.",
         "effectReasons": {
-          "upfrontCost": "$12,600 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+19,550, including 2 hires and the operating costs of this response.",
-          "reliability": "More polling and custom dispatch logic burden the core team; it needs the same duplicate and retry discipline.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$12,600 covers setting up two separate point-to-point queues directly from the order service.",
+          "monthlyBurn": "The monthly change is +$19,550, funding 2 engineers and worker queue infrastructure.",
+          "reliability": "Ensures receipts and search get events, though adding future consumers requires order service code changes.",
+          "customerTrust": "Customers receive their confirmation emails and search catalog updates consistently.",
+          "complexity": "Point-to-point queue logic is simple now, but tight coupling will accumulate technical debt as teams expand."
         }
       },
       "architectureChanges": changesFor("dispatch-fanout", "reliable-projections", "local-dispatch"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "A database-backed dispatcher can supply the same logical fan-out at moderate volume. More polling and custom dispatch logic burden the core team; it needs the same duplicate and retry discipline.",
+      "outcomeDialogue": "Direct queues handle the current three consumers cleanly, though future projections will need more bespoke wiring.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Choose messaging semantics for the consumer relationship. Next pressure: Independent subscribers deploy on different schedules and need compatible versioned contracts."
     },
@@ -140,18 +140,18 @@ export const level027 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "More consumers increase throughput for interchangeable workers.",
         "downside": "They divide work further instead of ensuring all distinct subscribers receive it.",
-        "jimmyExplanation": "More consumers increase throughput for interchangeable workers. They divide work further instead of ensuring all distinct subscribers receive it.",
+        "jimmyExplanation": "Having a worker read an event, check if it's for them, and toss it back into the queue if it's not creates a furious message loop that burns CPU, wastes broker bandwidth, and scrambles event ordering.",
         "effectReasons": {
-          "upfrontCost": "$18,200 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+26,450, including 2 hires and the operating costs of this response.",
-          "reliability": "They divide work further instead of ensuring all distinct subscribers receive it.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$18,200 is wasted implementing worker re-queuing hacks.",
+          "monthlyBurn": "The monthly change is +$26,450, funding 2 engineers plus excessive queue broker bandwidth and CPU thrashing.",
+          "reliability": "Re-queuing storms exhaust broker memory, drop critical order messages, and cause out-of-order execution.",
+          "customerTrust": "Missing receipts and broken search indexes cause customers and merchants to file support tickets.",
+          "complexity": "High debugging burden diagnosing race conditions, queue bloat, and lost message events."
         }
       },
       "architectureChanges": changesFor("competing-projections"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "More consumers increase throughput for interchangeable workers. They divide work further instead of ensuring all distinct subscribers receive it.",
+      "outcomeDialogue": "Workers spent all their CPU re-queuing messages meant for other services. The broker hit memory limits and thousands of events dropped onto the floor.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Choose messaging semantics for the consumer relationship. The retained risk remains part of your company’s architecture."
     }
@@ -160,7 +160,7 @@ export const level027 = defineStartupLevel({
     "A work queue distributes messages among competing consumers; it does not independently deliver every event to each subscriber.",
     "Choose messaging semantics for the consumer relationship."
   ],
-  "lesson": "Choose messaging semantics for the consumer relationship.",
+  "lesson": "Understand worker queues vs. pub/sub topics: a worker queue distributes tasks among competing workers (one worker handles each job). A pub/sub topic fans out each event to multiple independent subscriber queues so every interested service gets its own copy.",
   "recoveries": [
     {
       "capability": "durable-handoff",

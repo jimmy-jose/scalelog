@@ -9,13 +9,13 @@ export const level008 = defineStartupLevel({
   }],
   "levelNumber": 8,
   "title": "Yesterday’s Price",
-  "description": "Merchants edit prices but shoppers still see old catalogue values. This diagnostic checks catalogue browsing; any unsafe checkout caching from an earlier decision remains separate correctness debt. The new promise is visibility within five seconds.",
+  "description": "Merchants update their product prices, but shoppers continue to see old catalogue prices for up to a minute because of the 60-second cache. Merchants demand that price changes become visible across storefronts within five seconds.",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "The storefront needs its own edit-visibility guarantee; earlier checkout correctness debt remains separate. Think about an edit racing a cache fill, not just the happy invalidation path."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "When a merchant edits a price in the database, the cache still holds the old price until it is purged or expires. But watch out: if an update query and a cache-fill query run at the exact same millisecond, a slow read can overwrite your new price with stale data."
+      }
   ],
   "metrics": [
     {
@@ -57,18 +57,18 @@ export const level008 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Edits meet the five-second bound even when an invalidation fails.",
         "downside": "More origin traffic is the price of that freshness bound; checkout still uses the primary.",
-        "jimmyExplanation": "Edits meet the five-second bound even when an invalidation fails. More origin traffic is the price of that freshness bound; checkout still uses the primary.",
+        "jimmyExplanation": "Active cache invalidation purges the specific product key in Redis immediately after the database transaction commits. Pairing that with version checks guarantees that a slow, lagging read query won't overwrite fresh data with an older version. It delivers the 5-second freshness promise reliably.",
         "effectReasons": {
-          "upfrontCost": "$1,400 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+700, including 0 hires and the operating costs of this response.",
-          "reliability": "More origin traffic is the price of that freshness bound; checkout still uses the primary.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$1,400 covers versioned invalidation hooks, Redis publish/subscribe eventing, and race-condition tests.",
+          "monthlyBurn": "Active cache invalidation monitoring and invalidation telemetry add $700/month.",
+          "reliability": "Storefront browsing reliably reflects price updates within 5 seconds without risking stale data resurrection.",
+          "customerTrust": "Merchants can run flash sales and promotional pricing with confidence that shoppers see updated prices immediately.",
+          "complexity": "Adds database commit hooks, versioning tokens on cache keys, and telemetry on dropped invalidation events."
         }
       },
       "architectureChanges": changesFor("fresh-catalogue"),
       "outcomeTitle": "The storefront catches up with edits.",
-      "outcomeDialogue": "Edits meet the five-second bound even when an invalidation fails. More origin traffic is the price of that freshness bound; checkout still uses the primary.",
+      "outcomeDialogue": "Price updates now propagate to storefronts in under two seconds. Even when an invalidation packet drops, the tight 5-second TTL ceiling guarantees merchants won't be stuck with yesterday's prices.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Cache invalidation is a consistency contract, including races and failed invalidations. Next pressure: More origin revalidation can expose geographic delivery cost and later expiry stampedes."
     },
@@ -94,18 +94,18 @@ export const level008 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Immediate reads are straightforward and remove this stale-display path.",
         "downside": "Read capacity costs rise and the repetitive workload still reaches the DB.",
-        "jimmyExplanation": "Immediate reads are straightforward and remove this stale-display path. Read capacity costs rise and the repetitive workload still reaches the DB.",
+        "jimmyExplanation": "Bypassing the cache and querying PostgreSQL directly guarantees 100% fresh prices on every single page load. It completely eliminates cache invalidation bugs, but it pushes all read traffic straight back to PostgreSQL.",
         "effectReasons": {
-          "upfrontCost": "$630 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+980, including 0 hires and the operating costs of this response.",
-          "reliability": "Read capacity costs rise and the repetitive workload still reaches the DB.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$630 funds safely bypassing the cache, tuning PostgreSQL query plans, and monitoring database I/O.",
+          "monthlyBurn": "Increased database connection pools and CPU headroom add $980/month.",
+          "reliability": "Zero risk of stale cache reads or invalidation race conditions since all reads hit authoritative storage.",
+          "customerTrust": "Shoppers and merchants always see real-time prices with zero lag, eliminating pricing disputes.",
+          "complexity": "Simplifies the read architecture by removing cache invalidation logic, at the cost of higher database load."
         }
       },
       "architectureChanges": [...changesFor("fresh-catalogue", "cache-bypassed"), ...disable("catalogue-cache", "cache-coalescing")],
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "Immediate reads are straightforward and remove this stale-display path. Read capacity costs rise and the repetitive workload still reaches the DB.",
+      "outcomeDialogue": "Catalogue prices are now 100% real-time directly from PostgreSQL. We traded cache complexity for higher database CPU, but the freshness guarantee is rock-solid.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Cache invalidation is a consistency contract, including races and failed invalidations. Next pressure: More origin revalidation can expose geographic delivery cost and later expiry stampedes."
     },
@@ -131,18 +131,18 @@ export const level008 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Origin load falls during steady browsing traffic.",
         "downside": "Price edits remain invisible much longer than the merchant contract allows.",
-        "jimmyExplanation": "Origin load falls during steady browsing traffic. Price edits remain invisible much longer than the merchant contract allows.",
+        "jimmyExplanation": "Extending the cache TTL to an hour to hide database load is a dangerous shortcut. If a merchant makes a typo (like listing a $500 item for $50), that mistake will be locked in the cache for 60 minutes while shoppers snap up underpriced inventory.",
         "effectReasons": {
-          "upfrontCost": "$910 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+805, including 0 hires and the operating costs of this response.",
-          "reliability": "Price edits remain invisible much longer than the merchant contract allows.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$910 pays for basic TTL configuration and cache size adjustments.",
+          "monthlyBurn": "Larger cache memory footprints add $1,155/month in infrastructure spend.",
+          "reliability": "Database CPU drops, but application consistency degrades severely as prices remain stale for up to an hour.",
+          "customerTrust": "Merchants lose faith in the platform when their price adjustments fail to appear, causing immediate churn.",
+          "complexity": "Support staff spend hours fielding tickets about why prices aren't updating and manually flushing cache keys."
         }
       },
       "architectureChanges": changesFor("long-cache-ttl"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "Origin load falls during steady browsing traffic. Price edits remain invisible much longer than the merchant contract allows.",
+      "outcomeDialogue": "Extending the cache TTL lowered database CPU, but merchants are furious. A pricing typo remained visible for an hour, costing a merchant thousands of dollars in lost revenue.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Cache invalidation is a consistency contract, including races and failed invalidations. The retained risk remains part of your company’s architecture."
     }
@@ -151,7 +151,7 @@ export const level008 = defineStartupLevel({
     "Expiry alone cannot satisfy the tighter edit-visibility contract, and racing fills can resurrect stale values.",
     "Cache invalidation is a consistency contract, including races and failed invalidations."
   ],
-  "lesson": "Cache invalidation is a consistency contract, including races and failed invalidations.",
+  "lesson": "Cache invalidation is a consistency contract: when data changes, explicitly purge cache keys and use version checks so slow database reads don't overwrite fresh data with stale cache entries.",
   "variants": [
     {
       "id": "without-catalogue-cache",
@@ -160,7 +160,7 @@ export const level008 = defineStartupLevel({
           "catalogue-cache"
         ]
       },
-      "description": "Your route has no safe catalogue cache. Merchants now require edits visible within five seconds; any unsafe checkout cache remains separate debt. A staging cache experiment with a 60-second TTL fails that contract; choose a safe implementation or keep direct reads.",
+      "description": "Merchants demand that product price edits become visible on storefronts within five seconds. Direct database queries meet this freshness promise but risk overwhelming database CPU as traffic grows. We need an explicit cache invalidation strategy.",
       "metrics": [
         {
           "label": "Production cache",
@@ -179,17 +179,17 @@ export const level008 = defineStartupLevel({
         }
       ],
       "dialogue": [
-        {
-          "character": "jimmy",
-          "emotion": "thinking",
-          "text": "Your route has no safe catalogue cache. Merchants now require edits visible within five seconds; any unsafe checkout cache remains separate debt. A staging cache experiment with a 60-second TTL fails that contract; choose a safe implementation or keep direct reads."
-        },
-        {
-          "character": "jimmy",
-          "emotion": "thinking",
-          "text": "The storefront needs its own edit-visibility guarantee; earlier checkout correctness debt remains separate. Think about an edit racing a cache fill, not just the happy invalidation path."
-        }
-      ]
+                {
+                        "character": "jimmy",
+                        "emotion": "thinking",
+                        "text": "Merchants are changing product prices for flash sales, but our cache keeps serving stale data for a full minute. We need a way to purge the cache the instant an edit is saved."
+                },
+                {
+                        "character": "jimmy",
+                        "emotion": "thinking",
+                        "text": "Remember: cache invalidation isn't just deleting a key. You have to handle race conditions where an old database query finishes right after an update and writes stale data back into the cache."
+                }
+        ]
     }
   ]
 });

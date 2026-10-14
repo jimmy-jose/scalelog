@@ -3,18 +3,18 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level034 = defineStartupLevel({
   "levelNumber": 34,
   "title": "The Region Is Unreachable",
-  "description": "International merchants request regional disaster recovery, not active-active writes. The business accepts up to 60 seconds of committed-data loss in a regional catastrophe and a 15-minute RTO; a zone failure still has the stricter existing contract.",
+  "description": "A major cloud provider outage takes down an entire geographic region (US-East). Enterprise merchants demand regional disaster recovery. However, multi-region active-active writing is notorious for impossible data conflicts and network latency. The business agrees that losing up to 60 seconds of data during an extreme regional disaster (RPO 60s) is acceptable if the site can be back up within 15 minutes (RTO 15 min).",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "The business gave us a loss budget and a recovery deadline. That is more useful than a request for active-active. Test every dependency needed to reopen checkout."
-    },
-    {
-      "character": "jimmy",
-      "emotion": "normal",
-      "text": "This month’s operating plan adds 3 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "Active-active multi-region databases sound wonderful in vendor pitch decks, but cross-region latency and data conflict resolution will bury us. A warm standby region with a 60-second RPO and 15-minute failover is achievable, affordable, and tested."
+      },
+      {
+          "character": "jimmy",
+          "emotion": "normal",
+          "text": "This month’s operating plan adds 3 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
+      }
   ],
   "metrics": [
     {
@@ -56,18 +56,18 @@ export const level034 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Warm recovery meets the rehearsed regional contract without concurrent cross-region writers.",
         "downside": "Stale lag samples cannot prove a hard loss bound. If evidence is insufficient, wait or explicitly renegotiate the loss/recovery contract; reconcile payments and event gaps after promotion and rehearse failback.",
-        "jimmyExplanation": "Warm recovery meets the rehearsed regional contract without concurrent cross-region writers. Stale lag samples cannot prove a hard loss bound. If evidence is insufficient, wait or explicitly renegotiate the loss/recovery contract; reconcile payments and event gaps after promotion and rehearse failback.",
+        "jimmyExplanation": "Asynchronously replicating all database shards and object storage to a secondary region gives us a proven warm standby. In a disaster, automated fencing prevents split-brain writes, and DNS traffic shifts restore checkout within 15 minutes.",
         "effectReasons": {
-          "upfrontCost": "$85,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+52,000, including 3 hires and the operating costs of this response.",
-          "reliability": "Stale lag samples cannot prove a hard loss bound. If evidence is insufficient, wait or explicitly renegotiate the loss/recovery contract; reconcile payments and event gaps after promotion and rehearse failback.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$85,000 covers secondary region VPC setup, cross-region replication pipelines, and automated failover runbooks.",
+          "monthlyBurn": "The monthly change is +$52,000, funding 3 engineers and standing cross-region secondary database clusters.",
+          "reliability": "Guarantees 15-minute recovery from total cloud datacenter disasters without complex multi-master write conflicts.",
+          "customerTrust": "Enterprise merchants sign multi-year contracts knowing our disaster recovery meets audited enterprise SLA standards.",
+          "complexity": "Requires regular rehearsed disaster recovery drills, failover fencing automation, and replication lag monitoring."
         }
       },
       "architectureChanges": changesFor("regional-dr"),
       "outcomeTitle": "Regional recovery is rehearsed.",
-      "outcomeDialogue": "Warm recovery meets the rehearsed regional contract without concurrent cross-region writers. Stale lag samples cannot prove a hard loss bound. If evidence is insufficient, wait or explicitly renegotiate the loss/recovery contract; reconcile payments and event gaps after promotion and rehearse failback.",
+      "outcomeDialogue": "Our unannounced regional failover drill completed in 11 minutes with zero data corruption! The warm standby region promoted cleanly, and asynchronous replication stayed well within our 60-second loss budget.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Regional architecture follows RPO/RTO and conflict semantics, not a universal active-active ideal. Next pressure: Recovery drills must include queues, objects, secrets, routing and payment reconciliation, not only databases."
     },
@@ -93,18 +93,18 @@ export const level034 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Lower steady-state cost is legitimate for customers who accept the recovery delay.",
         "downside": "It cannot meet the premium 15-minute promise, so enterprise expansion is limited.",
-        "jimmyExplanation": "Lower steady-state cost is legitimate for customers who accept the recovery delay. It cannot meet the premium 15-minute promise, so enterprise expansion is limited.",
+        "jimmyExplanation": "Storing daily encrypted backups in a secondary region and spinning up infrastructure from Terraform scripts during a disaster saves money, but restoring 6 terabytes of data from cold storage will take over 4 hours instead of 15 minutes.",
         "effectReasons": {
-          "upfrontCost": "$38,250 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+44,200, including 3 hires and the operating costs of this response.",
-          "reliability": "It cannot meet the premium 15-minute promise, so enterprise expansion is limited.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$38,250 covers infrastructure-as-code automation and off-site backup storage pipelines.",
+          "monthlyBurn": "The monthly change is +$44,200, funding 3 engineers and cross-region backup storage.",
+          "reliability": "Data is safe off-site, but recovery time (RTO) stretches to multiple hours during a catastrophic regional outage.",
+          "customerTrust": "Cost-conscious merchants accept the longer recovery window, but enterprise accounts withhold expansion.",
+          "complexity": "Low operational complexity during steady state, but high-stress manual verification required during disaster recovery."
         }
       },
       "architectureChanges": changesFor("cold-dr"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "Lower steady-state cost is legitimate for customers who accept the recovery delay. It cannot meet the premium 15-minute promise, so enterprise expansion is limited.",
+      "outcomeDialogue": "Cold restore drills took 4 hours to rehydrate database volumes. It saves money, but the business must accept extended downtime if a region dies.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Regional architecture follows RPO/RTO and conflict semantics, not a universal active-active ideal. Next pressure: Recovery drills must include queues, objects, secrets, routing and payment reconciliation, not only databases."
     },
@@ -130,18 +130,18 @@ export const level034 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Local write latency remains low in both regions.",
         "downside": "Without conflict and inventory semantics, concurrent writes can oversell stock; asynchronous replication alone does not resolve them.",
-        "jimmyExplanation": "Local write latency remains low in both regions. Without conflict and inventory semantics, concurrent writes can oversell stock; asynchronous replication alone does not resolve them.",
+        "jimmyExplanation": "Running synchronous cross-region database transactions introduces a mandatory 170-millisecond speed-of-light network roundtrip on every single checkout click, making the site feel agonizingly slow worldwide.",
         "effectReasons": {
-          "upfrontCost": "$55,250 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+59,800, including 3 hires and the operating costs of this response.",
-          "reliability": "Without conflict and inventory semantics, concurrent writes can oversell stock; asynchronous replication alone does not resolve them.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$55,250 is wasted attempting multi-region synchronous write clusters.",
+          "monthlyBurn": "The monthly change is +$59,800, funding 3 engineers plus extreme cross-region network egress and database clustering costs.",
+          "reliability": "Inter-region network latency spikes and split-brain partition bugs bring down checkout reliability worldwide.",
+          "customerTrust": "Sluggish checkout speeds and inconsistent cart states cause immediate customer abandonment and merchant complaints.",
+          "complexity": "Nightmarish complexity debugging distributed consensus algorithms, cross-region latency jitter, and split-brain data conflicts."
         }
       },
       "architectureChanges": changesFor("uncoordinated-multiwriter"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "Local write latency remains low in both regions. Without conflict and inventory semantics, concurrent writes can oversell stock; asynchronous replication alone does not resolve them.",
+      "outcomeDialogue": "Synchronous cross-region writes crippled checkout performance. Latency spiked by 300ms, database connection pools exhausted, and network partitions caused split-brain data conflicts.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Regional architecture follows RPO/RTO and conflict semantics, not a universal active-active ideal. The retained risk remains part of your company’s architecture."
     }
@@ -150,7 +150,7 @@ export const level034 = defineStartupLevel({
     "Zone-local redundancy does not survive regional isolation within the promised recovery time.",
     "Regional architecture follows RPO/RTO and conflict semantics, not a universal active-active ideal."
   ],
-  "lesson": "Regional architecture follows RPO/RTO and conflict semantics, not a universal active-active ideal.",
+  "lesson": "Disaster recovery is about pragmatism, not perfection: don't attempt complex multi-region active-active writes unless you are Google. Maintain a warm standby region with asynchronous replication and rehearsed failover procedures.",
   "recoveries": [
     {
       "capability": "pitr",

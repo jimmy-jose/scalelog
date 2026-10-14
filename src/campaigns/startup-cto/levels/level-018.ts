@@ -3,18 +3,18 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level018 = defineStartupLevel({
   "levelNumber": 18,
   "title": "The Import Ate the Receipts",
-  "description": "A merchant imports 100,000 images into the same worker pool as receipts. The queue is durable but normal receipts now wait behind slow media jobs. Two engineers join to own integrations and operations.",
+  "description": "An enterprise merchant uploads a bulk catalog import of 100,000 product images. All 100,000 image resizing jobs are dumped into the exact same background worker queue used for customer receipts. Because the queue is processed in FIFO order, lightweight, critical customer purchase receipts are stuck waiting behind 100,000 slow, 10-second image resizing tasks. We are also adding two engineers this month.",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "A queue preserves work; it does not decide what matters first. Count the oldest receipt, not just how many messages are waiting."
-    },
-    {
-      "character": "jimmy",
-      "emotion": "normal",
-      "text": "This month’s operating plan adds 2 engineers. Their compensation is included in every response’s recurring burn. Ownership has to grow with the architecture."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "Bulk image processing and customer purchase receipts are sharing the same worker pool. Receipts take 50 milliseconds, but they are stuck in traffic behind 100,000 heavy image downloads that take 10 seconds each."
+      },
+      {
+          "character": "jimmy",
+          "emotion": "normal",
+          "text": "We are hiring two engineers this month to own integrations and operational infrastructure. Their salaries are factored into our recurring monthly burn."
+      }
   ],
   "metrics": [
     {
@@ -56,18 +56,18 @@ export const level018 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Latency-sensitive jobs retain capacity during bulk imports.",
         "downside": "Separate queues need scheduling and operational ownership; more concurrency must respect DB and provider limits.",
-        "jimmyExplanation": "Latency-sensitive jobs retain capacity during bulk imports. Separate queues need scheduling and operational ownership; more concurrency must respect DB and provider limits.",
+        "jimmyExplanation": "Queue isolation and class-of-service separation solve head-of-line blocking: we create two separate queues: high-priority-receipts and bulk-imports, each with dedicated worker pools. Even if a merchant queues 500,000 images, the receipt workers are on their own reserved pool and continue processing customer receipts in under 100 milliseconds.",
         "effectReasons": {
-          "upfrontCost": "$7,500 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+14,000, including 2 hires and the operating costs of this response.",
-          "reliability": "Separate queues need scheduling and operational ownership; more concurrency must respect DB and provider limits.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$3,600 covers configuring multi-queue topologies, dedicated worker pool routing, and backpressure metrics.",
+          "monthlyBurn": "Includes our two new engineering hires ($10,000/mo) plus dedicated worker instance pools, totaling $12,500/month.",
+          "reliability": "Guarantees that bulk batch operations cannot starve or degrade time-sensitive customer-facing workflows.",
+          "customerTrust": "Shoppers receive instant receipts even when enterprise merchants run massive catalog syncs.",
+          "complexity": "The team now manages separate worker deployments, queue priority rules, and per-queue autoscaling."
         }
       },
       "architectureChanges": changesFor("isolated-workers"),
       "outcomeTitle": "Receipts get reserved capacity.",
-      "outcomeDialogue": "Latency-sensitive jobs retain capacity during bulk imports. Separate queues need scheduling and operational ownership; more concurrency must respect DB and provider limits.",
+      "outcomeDialogue": "Queues are cleanly separated! Customer receipts fly through the high-priority worker pool instantly, while bulk image resizing crunches away peacefully in its own isolated background pool.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Queues need class isolation, backpressure and bounded admission. Next pressure: Reliable async work expands merchant adoption and produces more personalized database reads."
     },
@@ -93,18 +93,18 @@ export const level018 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A simple schedule meets receipt latency without many queues.",
         "downside": "International merchants lack a universal night; imports have a longer turnaround contract.",
-        "jimmyExplanation": "A simple schedule meets receipt latency without many queues. International merchants lack a universal night; imports have a longer turnaround contract.",
+        "jimmyExplanation": "Rate-limiting the bulk import pipeline to 20 jobs per second and running imports during off-peak hours gives receipts breathing room without adding extra worker pools today. It protects receipts, though big imports take longer to finish.",
         "effectReasons": {
-          "upfrontCost": "$3,375 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+11,900, including 2 hires and the operating costs of this response.",
-          "reliability": "International merchants lack a universal night; imports have a longer turnaround contract.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$1,620 covers import rate limiting, scheduling windows, and worker thread balancing.",
+          "monthlyBurn": "Includes our two new hires ($10,000/mo) plus baseline worker capacity, totaling $10,625/month.",
+          "reliability": "Prevents queue starvation during peak hours by strictly metering incoming batch workloads.",
+          "customerTrust": "Purchase receipts arrive promptly, though merchants importing huge catalogs must accept slower sync times.",
+          "complexity": "Requires tuning rate-limit parameters and handling merchant expectations around bulk import durations."
         }
       },
       "architectureChanges": changesFor("scheduled-imports"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "A simple schedule meets receipt latency without many queues. International merchants lack a universal night; imports have a longer turnaround contract.",
+      "outcomeDialogue": "Throttling the import rate prevented receipts from drowning. Bulk imports take longer, but checkout receipts are delivered on time without hiring extra dedicated infrastructure.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Queues need class isolation, backpressure and bounded admission. Next pressure: Reliable async work expands merchant adoption and produces more personalized database reads."
     },
@@ -130,18 +130,18 @@ export const level018 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "A homogeneous CPU-bound queue could drain faster this way.",
         "downside": "Slow jobs hide in the count and workers can overwhelm database/provider budgets.",
-        "jimmyExplanation": "A homogeneous CPU-bound queue could drain faster this way. Slow jobs hide in the count and workers can overwhelm database/provider budgets.",
+        "jimmyExplanation": "Simply scaling the single worker pool to 100 workers to power through the combined queue is an expensive disaster. The 100 workers will grab 100 images, flood the database with connection requests, saturate network bandwidth, and run up a huge cloud bill without guaranteeing that receipts won't still get delayed.",
         "effectReasons": {
-          "upfrontCost": "$4,875 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+16,100, including 2 hires and the operating costs of this response.",
-          "reliability": "Slow jobs hide in the count and workers can overwhelm database/provider budgets.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$2,340 is burned provisioning large uncapped worker pools.",
+          "monthlyBurn": "Includes our two new hires ($10,000/mo) plus massive worker instance spend, totaling $14,375/month.",
+          "reliability": "Massive uncoordinated worker pools overwhelm database connections and network egress capacity.",
+          "customerTrust": "Platform-wide slowdowns anger both shoppers and merchants while catalog imports still experience delays.",
+          "complexity": "Managing huge, bursty worker fleets and debugging downstream database saturation burns engineering time."
         }
       },
       "architectureChanges": changesFor("unbounded-workers"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "A homogeneous CPU-bound queue could drain faster this way. Slow jobs hide in the count and workers can overwhelm database/provider budgets.",
+      "outcomeDialogue": "Scaling to 100 workers slammed PostgreSQL with 200 new database connections and saturated our network bandwidth. The database slowed to a crawl, dragging the entire storefront down with it.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Queues need class isolation, backpressure and bounded admission. The retained risk remains part of your company’s architecture."
     }
@@ -150,7 +150,7 @@ export const level018 = defineStartupLevel({
     "A shared FIFO and concurrency pool let long bulk jobs starve latency-sensitive work.",
     "Queues need class isolation, backpressure and bounded admission."
   ],
-  "lesson": "Queues need class isolation, backpressure and bounded admission.",
+  "lesson": "Don't let elephants block the fast lane: isolate heavy, bulk batch jobs from lightweight, customer-facing tasks into dedicated queues and separate worker pools.",
   "variants": [
     {
       "id": "without-job-queue",

@@ -4,13 +4,13 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level036 = defineStartupLevel({
   "levelNumber": 36,
   "title": "The Cartline Launch Review",
-  "description": "The founder proposes a global merchant launch. The planning envelope is 4 million registered users, 400,000 DAU, 500 average and 3,000 peak origin RPS (6×), up to 12,000 edge RPS, and 6 TB of relational data including indexes. This is a forecast; your actual company and topology decide the launch tier.",
+  "description": "The founder proposes a global merchant launch. The expected peak load is 4 million registered users, 400,000 daily active users, 3,000 peak origin requests per second, and 6 terabytes of relational data. Every architectural decision we made over the past three years will now be put to the ultimate test.",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "Bring the diagram you actually built, the contracts it can support, and the evidence. An honest smaller launch is better than an unsupported promise to every merchant."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "Three years of scaling have brought us here. We don't launch on hope or whiteboard diagrams; we launch on proven benchmarks, rehearsed disaster recovery drills, and realistic capacity boundaries."
+      }
   ],
   "metrics": [
     {
@@ -61,19 +61,19 @@ export const level036 = defineStartupLevel({
         "upsideLabel": "Targeted improvement",
         "downsideLabel": "Cost and ownership",
         "upside": "An earned launch contract combines capacity, correctness and recovery evidence.",
-        "downside": "Passing a game decision is a modeled rehearsal, not a real production benchmark; continuing growth requires new measurements.",
-        "jimmyExplanation": "An earned launch contract combines capacity, correctness and recovery evidence. Passing a game decision is a modeled rehearsal, not a real production benchmark; continuing growth requires new measurements.",
+        "downside": "A full production rehearsal consumes significant compute budget and engineering time; ongoing traffic growth will still require continuous measurement.",
+        "jimmyExplanation": "We subject our entire production topology to a full end-to-end rehearsal at peak forecast load plus 30% headroom, simulate regional failover, verify payment idempotency, and test priority load shedding. We only sign off when the data proves we can handle the load.",
         "effectReasons": {
-          "upfrontCost": "$60,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+15,000, including 0 hires and the operating costs of this response.",
-          "reliability": "Passing a game decision is a modeled rehearsal, not a real production benchmark; continuing growth requires new measurements.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$60,000 covers full-scale synthetic load testing, chaos engineering drills, and third-party security audits.",
+          "monthlyBurn": "Full-scale production monitoring, enterprise support tiers, and infrastructure capacity cost $15,000/month.",
+          "reliability": "Validates all capacity, consistency, and disaster recovery guarantees under sustained production traffic.",
+          "customerTrust": "Merchants and global brands launch with absolute confidence in our platform stability and contractual SLAs.",
+          "complexity": "Disciplined operational runbooks and rehearsed failure modes keep ongoing architecture clean and manageable."
         }
       },
       "architectureChanges": changesFor("launch-reviewed", "launch-qualified"),
       "outcomeTitle": "The launch has a proven envelope.",
-      "outcomeDialogue": "An earned launch contract combines capacity, correctness and recovery evidence. Passing a game decision is a modeled rehearsal, not a real production benchmark; continuing growth requires new measurements.",
+      "outcomeDialogue": "The global launch rehearsal was an unqualified success! Every system held within its latency budgets, regional failover was seamless, and the board has certified Cartline for global scale.",
       "outcomeEmotion": "happy",
       "outcomeNote": "The simplest acceptable architecture is the one demonstrated to meet the workload and business contract. Next pressure: Completion records the architecture actually built and its launch scope; no design handles arbitrary future load."
     },
@@ -99,18 +99,18 @@ export const level036 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A viable narrower launch preserves the architecture actually built.",
         "downside": "It sacrifices near-term revenue and the premium global SLA; omitted capabilities remain visible.",
-        "jimmyExplanation": "A viable narrower launch preserves the architecture actually built. It sacrifices near-term revenue and the premium global SLA; omitted capabilities remain visible.",
+        "jimmyExplanation": "Limiting the initial launch cohort to 1 million users with a staged waitlist guarantees our existing architecture will not be overwhelmed, while giving the engineering team time to observe real production metrics before unlocking global scale.",
         "effectReasons": {
-          "upfrontCost": "$27,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+12,750, including 0 hires and the operating costs of this response.",
-          "reliability": "It sacrifices near-term revenue and the premium global SLA; omitted capabilities remain visible.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$27,000 covers waitlist onboarding portals and cohort management tooling.",
+          "monthlyBurn": "Staged launch monitoring and cohort support cost $12,750/month.",
+          "reliability": "Protects production capacity by strictly bounding incoming user growth to measured server limits.",
+          "customerTrust": "Onboarded merchants experience flawless stability, though waitlisted merchants must wait for capacity expansions.",
+          "complexity": "Avoids high-stress launch day surprises, allowing measured and controlled operational expansion."
         }
       },
       "architectureChanges": changesFor("scoped-launch"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "A viable narrower launch preserves the architecture actually built. It sacrifices near-term revenue and the premium global SLA; omitted capabilities remain visible.",
+      "outcomeDialogue": "The bounded launch went off without a hitch. The waitlist kept traffic safely within our proven boundaries, and the team is steadily onboarding new merchants each week.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "The simplest acceptable architecture is the one demonstrated to meet the workload and business contract. Next pressure: Completion records the architecture actually built and its launch scope; no design handles arbitrary future load."
     },
@@ -136,18 +136,18 @@ export const level036 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "The market window opens immediately.",
         "downside": "Unverified bottlenecks and failure domains turn a forecast into an unsupported contractual promise.",
-        "jimmyExplanation": "The market window opens immediately. Unverified bottlenecks and failure domains turn a forecast into an unsupported contractual promise.",
+        "jimmyExplanation": "Opening the floodgates globally without integrated load testing or disaster rehearsals is pure gambling. Untested bottlenecks in payment reconciliation or shard routing will fail simultaneously under peak traffic.",
         "effectReasons": {
-          "upfrontCost": "$39,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+17,250, including 0 hires and the operating costs of this response.",
-          "reliability": "Unverified bottlenecks and failure domains turn a forecast into an unsupported contractual promise.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$39,000 is burned in emergency hotfixes, PR damage control, and incident triage.",
+          "monthlyBurn": "Emergency incident response retainers and crisis infrastructure cost $17,250/month.",
+          "reliability": "Simultaneous failures across unverified dependencies cause complete platform collapse under global peak load.",
+          "customerTrust": "Public launch day crash destroys company credibility and leads to massive merchant churn.",
+          "complexity": "Chaos in production: multiple teams debugging overlapping distributed failures without baseline metrics."
         }
       },
       "architectureChanges": changesFor("unverified-launch"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "The market window opens immediately. Unverified bottlenecks and failure domains turn a forecast into an unsupported contractual promise.",
+      "outcomeDialogue": "Catastrophic launch day failure! Cascading database connection pool exhaustion and payment timeout storms knocked Cartline offline within twenty minutes of launch.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "The simplest acceptable architecture is the one demonstrated to meet the workload and business contract. The retained risk remains part of your company’s architecture."
     }
@@ -156,7 +156,7 @@ export const level036 = defineStartupLevel({
     "No single new component can certify capacity, consistency and recovery across the system; evidence and unresolved architecture debt determine a safe scope.",
     "The simplest acceptable architecture is the one demonstrated to meet the workload and business contract."
   ],
-  "lesson": "The simplest acceptable architecture is the one demonstrated to meet the workload and business contract.",
+  "lesson": "The goal of software architecture is not to build the most complex system imaginable, but the simplest system that reliably supports the real business workload within budget. Verify your system with end-to-end load tests, know your failure boundaries, and keep it as boring as possible.",
   "variants": [
     {
       "id": "launch-prerequisites-missing",

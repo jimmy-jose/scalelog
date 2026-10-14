@@ -34,7 +34,9 @@ const effectsSchema = z.object({
 
 const choiceTradeoffSchema = z.object({
   upsideLabel: z.string().trim().min(3), downsideLabel: z.string().trim().min(3),
-  upside: z.string().trim().min(20), downside: z.string().trim().min(20), jimmyExplanation: z.string().trim().min(20),
+  upside: z.string().trim().min(20), downside: z.string().trim().min(20),
+  jimmyExplanation: z.string().trim().min(20),
+  byteExplanation: z.string().trim().min(20).optional(),
   effectReasons: z.object({ upfrontCost: z.string().optional(), monthlyBurn: z.string().optional(), reliability: z.string().optional(), customerTrust: z.string().optional(), complexity: z.string().optional() }),
 });
 
@@ -60,7 +62,7 @@ const variantSchema = z.object({
   when: z.object({ missingAny: z.array(z.string().min(1)).min(1).optional(), hasAny: z.array(z.string().min(1)).min(1).optional(), hasAll: z.array(z.string().min(1)).min(1).optional() }),
   description: z.string().min(1),
   metrics: z.array(z.object({ label: z.string(), value: z.string(), severity: z.enum(["normal", "warning", "critical"]) })),
-  dialogue: z.array(z.object({ character: z.literal("jimmy"), emotion: characterEmotionSchema, text: z.string() })).min(1),
+  dialogue: z.array(z.object({ character: z.enum(["jimmy", "byte"]), emotion: characterEmotionSchema, text: z.string() })).min(1),
   choices: z.array(choiceSchema).min(2).optional(),
 });
 
@@ -72,7 +74,7 @@ export const levelSchema = z.object({
     architectureChanges: architectureChangesSchema,
   })).optional(),
   id: z.string(), campaignId: z.string(), chapter: z.number().int().positive(), levelNumber: z.number().int().positive(), title: z.string(), kicker: z.string(), description: z.string(),
-  dialogue: z.array(z.object({ character: z.literal("jimmy"), emotion: characterEmotionSchema, text: z.string() })).min(1),
+  dialogue: z.array(z.object({ character: z.enum(["jimmy", "byte"]), emotion: characterEmotionSchema, text: z.string() })).min(1),
   metrics: z.array(z.object({ label: z.string(), value: z.string(), severity: z.enum(["normal", "warning", "critical"]) })), incidentFeedback: feedbackSchema.optional(),
   architectureBefore: architectureSchema, choices: z.array(choiceSchema).min(2), hints: z.array(z.string()), xpReward: z.number().positive(), unlocks: z.array(z.string()), nextLevel: z.string().optional(), lesson: z.string(),
 }).superRefine((level, context) => {

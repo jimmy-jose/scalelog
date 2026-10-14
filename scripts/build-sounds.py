@@ -60,7 +60,7 @@ def melody(notes, step=.105, length=.24):
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    # A shared D/A tonal family keeps navigation, Jimmy, and rewards related.
+    # A shared D/A tonal family keeps navigation, Byte, and rewards related.
     cue("tap", [(0, 294, .070, 1, "felt")], -16)
     cue("tab-select", [(0, 370, .085, 1, "felt")], -16)
     cue("switch", [(0, 247, .06, 1, "felt"), (.045, 330, .08, .65, "felt")], -15)

@@ -144,7 +144,7 @@ export default function CampaignOnboardingScreen() {
     : "I’ll keep the advice practical, and unpack the technical details whenever they matter.";
 
   return <Screen contentStyle={styles.screen}>
-    <TopBar back eyebrow="CAMPAIGN START" title={campaign.title} right={<Pill color={colors.mint}>{step === "welcome" ? "MEET JIMMY" : "THE BRIEF"}</Pill>} />
+    <TopBar back eyebrow="CAMPAIGN START" title={campaign.title} right={<Pill color={colors.mint}>{step === "welcome" ? "MEET BYTE" : "THE BRIEF"}</Pill>} />
     <View style={styles.progressRow}>
       <View style={[styles.progressStep, step === "welcome" && styles.progressStepActive]}><Text style={[styles.progressNumber, step === "welcome" && styles.progressNumberActive]}>01</Text><Text style={[styles.progressLabel, step === "welcome" && styles.progressLabelActive]}>YOUR COPILOT</Text></View>
       <View style={styles.progressConnector} />
@@ -153,16 +153,16 @@ export default function CampaignOnboardingScreen() {
 
     {step === "welcome" ? <Animated.View entering={FadeInDown.duration(300)} style={[styles.welcomeCard, wide && styles.welcomeWide]}>
       <View style={styles.portraitColumn}>
-        <View style={styles.portraitFrame}><Image source={jimmyWelcome} resizeMode="contain" style={styles.welcomePortrait} accessibilityLabel="Jimmy welcoming the player" /></View>
-        <Text style={styles.jimmyName}>JIMMY</Text>
+        <View style={styles.portraitFrame}><Image source={jimmyWelcome} resizeMode="contain" style={styles.welcomePortrait} accessibilityLabel="Byte welcoming the player" /></View>
+        <Text style={styles.jimmyName}>BYTE</Text>
         <Text style={styles.jimmyRole}>YOUR AI ASSISTANT</Text>
       </View>
       <View style={styles.welcomeCopy}>
         <Text style={styles.eyebrow}>BEFORE THE FIRST INCIDENT</Text>
-        <Text style={styles.heading}>{hasCompleteProfile ? `Hey, ${profile.name}. I’m Jimmy.` : "Let’s get to know each other."}</Text>
+        <Text style={styles.heading}>{hasCompleteProfile ? `Hey, ${profile.name}. I’m Byte.` : "Let’s get to know each other."}</Text>
         <Text style={styles.body}>{hasCompleteProfile
           ? `I’ll be your sounding board as you take the CTO seat at ${campaign.story.companyName}. ${ageGuidance}`
-          : `I’m Jimmy, your AI assistant. I’ll help you read the signals, weigh the trade-offs, and make the calls as the company grows.`}</Text>
+          : `I’m Byte, your AI assistant. I’ll help you read the signals, weigh the trade-offs, and make the calls as the company grows.`}</Text>
 
         {!hasCompleteProfile ? <View style={styles.form}>
           <View style={styles.field}>
@@ -185,13 +185,13 @@ export default function CampaignOnboardingScreen() {
     </Animated.View> : <Animated.View entering={FadeInDown.duration(340)} style={styles.briefPage}>
       <View style={[styles.briefHero, wide && styles.briefHeroWide]}>
         <View style={styles.briefCopy}>
-          <Text style={styles.eyebrow}>JIMMY’S FIELD BRIEF  ·  {campaign.title.toUpperCase()}</Text>
+          <Text style={styles.eyebrow}>BYTE’S FIELD BRIEF  ·  {campaign.title.toUpperCase()}</Text>
           <Text style={styles.briefTitle}>Welcome to {campaign.story.companyName}{profile.name ? `, ${profile.name}` : ""}.</Text>
           <Text style={styles.briefProduct}>{campaign.story.product}</Text>
-          <View style={styles.assistantLine}><View style={styles.onlineDot} /><Text style={styles.assistantText}>JIMMY  ·  YOUR AI ASSISTANT</Text></View>
-          <Text style={styles.jimmyQuote}>“I’ve got you. Let’s start with the system you have—not the one somebody says you should have.”</Text>
+          <View style={styles.assistantLine}><View style={styles.onlineDot} /><Text style={styles.assistantText}>BYTE  ·  YOUR AI ASSISTANT</Text></View>
+          <Text style={styles.jimmyQuote}>“I’ve got you. Let’s start with the system you have, not the one somebody says you should have.”</Text>
         </View>
-        <View style={styles.explainPortraitFrame}><Image source={jimmyExplaining} resizeMode="contain" style={styles.explainPortrait} accessibilityLabel="Jimmy explaining the campaign" /></View>
+        <View style={styles.explainPortraitFrame}><Image source={jimmyExplaining} resizeMode="contain" style={styles.explainPortrait} accessibilityLabel="Byte explaining the campaign" /></View>
       </View>
 
       <View style={[styles.briefGrid, wide && styles.briefGridWide]}>

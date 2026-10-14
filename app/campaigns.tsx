@@ -79,12 +79,12 @@ function CampaignHubCard({ campaign, index }: { campaign: (typeof campaigns)[num
           <View style={styles.activeLabel}><View style={[styles.activeDot, { backgroundColor: campaign.accent }]} /><Text style={styles.activeText}>{campaign.id === activeCampaignId ? "ACTIVE RUN" : `CAMPAIGN ${String(index + 1).padStart(2, "0")}`}</Text></View>
           <CampaignResetButton campaignId={campaign.id} campaignTitle={campaign.title} />
         </View>
-        <Image source={require("../assets/characters/jimmy_thinking.png")} resizeMode="contain" style={styles.jimmy} accessibilityLabel="Jimmy, your AI assistant" />
+        <Image source={require("../assets/characters/jimmy_thinking.png")} resizeMode="contain" style={styles.jimmy} accessibilityLabel="Byte, your AI assistant" />
         <View style={styles.featureCopy}>
           <Text style={styles.featureEyebrow}>{campaign.title.toUpperCase()}</Text>
           <Text style={styles.featureTitle}>{campaign.subtitle}</Text>
           <Text style={styles.featureDescription}>{campaign.description}</Text>
-          <View style={styles.jimmyByline}><View style={styles.jimmyStatus} /><Text style={styles.jimmyBylineText}>JIMMY  ·  YOUR AI ASSISTANT</Text></View>
+          <View style={styles.jimmyByline}><View style={styles.jimmyStatus} /><Text style={styles.jimmyBylineText}>BYTE  ·  YOUR AI ASSISTANT</Text></View>
           <Button style={{ alignSelf: "flex-start", marginTop: 16 }} onPress={enterBrief}>{campaignAction} →</Button>
         </View>
       </ImageBackground>

@@ -3,13 +3,13 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level035 = defineStartupLevel({
   "levelNumber": 35,
   "title": "Protect the Checkout, Shed the Rest",
-  "description": "A regional recovery rehearsal and a promotion overlap. Traffic tries to consume all recovered capacity. Core orders matter more than live analytics, fresh recommendations or bulk imports.",
+  "description": "During a regional recovery drill, a flash sale promotion launches simultaneously. Traffic spikes to 5,000 requests per second, overwhelming our tested origin capacity of 3,200 RPS. Core checkout transactions are competing with live merchant analytics, personalized product recommendations, and bulk product imports.",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "We have more offered work than tested capacity. Choose which promises to keep first, and reject excess work before it traps the system in a backlog."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "When a ship takes on water, you jettison the cargo, not the passengers. Core checkout must survive at all costs. Everything else (recommendations, live analytics, bulk imports) must be shed or served from stale cache."
+      }
   ],
   "metrics": [
     {
@@ -51,18 +51,18 @@ export const level035 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Accepted critical work stays within the measured latency envelope.",
         "downside": "Some features and requests are deliberately unavailable; deferred work needs a bounded drain plan.",
-        "jimmyExplanation": "Accepted critical work stays within the measured latency envelope. Some features and requests are deliberately unavailable; deferred work needs a bounded drain plan.",
+        "jimmyExplanation": "We implement priority-based load shedding: web servers prioritize checkout transactions, pause background analytics workers, serve cached product pages with stale-while-revalidate headers, and reject non-critical traffic with friendly 429 Retry-After headers.",
         "effectReasons": {
-          "upfrontCost": "$50,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+20,000, including 0 hires and the operating costs of this response.",
-          "reliability": "Some features and requests are deliberately unavailable; deferred work needs a bounded drain plan.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$50,000 covers priority admission control middleware, stale cache policies, and graceful degradation UI states.",
+          "monthlyBurn": "Edge traffic management rules and priority rate-limiting infrastructure cost $20,000/month.",
+          "reliability": "Guarantees checkout remains 100% available and responsive even when total traffic exceeds origin server capacity.",
+          "customerTrust": "Shoppers can always complete their purchases, even while optional background features temporarily degrade.",
+          "complexity": "Reduces cascading outage risk through well-defined, automated degradation tiers."
         }
       },
       "architectureChanges": changesFor("load-shedding", "priority-admission"),
       "outcomeTitle": "Checkout keeps its reserved budget.",
-      "outcomeDialogue": "Accepted critical work stays within the measured latency envelope. Some features and requests are deliberately unavailable; deferred work needs a bounded drain plan.",
+      "outcomeDialogue": "Traffic surged to 5,000 RPS, but our load-shedding policies held the line! Non-critical recommendation widgets degraded gracefully, while 100% of customer checkout transactions completed in under 500ms.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Admission control and graceful degradation protect explicit priorities within finite capacity. Next pressure: The final launch must combine these protections and prove them under one realistic test."
     },
@@ -88,18 +88,18 @@ export const level035 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A simpler envelope prevents collapse without elaborate priorities.",
         "downside": "Checkout and optional work compete for the same quota; more valuable sales are rejected.",
-        "jimmyExplanation": "A simpler envelope prevents collapse without elaborate priorities. Checkout and optional work compete for the same quota; more valuable sales are rejected.",
+        "jimmyExplanation": "Buffering all incoming requests in reverse-proxy queues without shedding non-critical load keeps all features running, but queues quickly fill up, causing request timeouts and 504 Gateway errors for everyone, including buyers trying to check out.",
         "effectReasons": {
-          "upfrontCost": "$22,500 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+17,000, including 0 hires and the operating costs of this response.",
-          "reliability": "Checkout and optional work compete for the same quota; more valuable sales are rejected.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$22,500 covers configuring reverse-proxy buffer pools and connection queue timeouts.",
+          "monthlyBurn": "Reverse-proxy memory and edge server capacity cost $17,000/month.",
+          "reliability": "Buffer bloat causes high request queuing latency, leading to widespread client timeouts and 504 errors.",
+          "customerTrust": "Shoppers abandon their carts when checkout pages take 45 seconds to respond.",
+          "complexity": "Simple queue configuration, but prone to buffer bloat and uncontrollable cascading queue delays."
         }
       },
       "architectureChanges": changesFor("load-shedding", "global-admission"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "A simpler envelope prevents collapse without elaborate priorities. Checkout and optional work compete for the same quota; more valuable sales are rejected.",
+      "outcomeDialogue": "Proxy buffers filled up during the traffic spike. Checkout requests were stuck behind slow analytics calls, resulting in widespread 504 timeouts.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Admission control and graceful degradation protect explicit priorities within finite capacity. Next pressure: The final launch must combine these protections and prove them under one realistic test."
     },
@@ -125,18 +125,18 @@ export const level035 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Short bursts can be smoothed when capacity catches up.",
         "downside": "Unbounded backlog violates deadlines and storage budgets; a queue cannot create sustained throughput.",
-        "jimmyExplanation": "Short bursts can be smoothed when capacity catches up. Unbounded backlog violates deadlines and storage budgets; a queue cannot create sustained throughput.",
+        "jimmyExplanation": "Spinning up 200 new web servers without admission control simply forwards the 5,000 RPS tidal wave directly into our database, exhausting database connection pools and bringing down the entire cluster.",
         "effectReasons": {
-          "upfrontCost": "$32,500 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+23,000, including 0 hires and the operating costs of this response.",
-          "reliability": "Unbounded backlog violates deadlines and storage budgets; a queue cannot create sustained throughput.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$32,500 is burned on runaway auto-scaling compute bills and emergency database recovery.",
+          "monthlyBurn": "Unconstrained auto-scaling compute and database emergency tiers cost $23,000/month.",
+          "reliability": "Unbounded app server scaling overwhelms backend database connection pools, causing total platform collapse.",
+          "customerTrust": "Total site outage during a major sales promotion destroys merchant revenue and trust.",
+          "complexity": "Managing runaway cloud billing alerts and cleaning up crashed database connection states."
         }
       },
       "architectureChanges": changesFor("unbounded-backlog"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "Short bursts can be smoothed when capacity catches up. Unbounded backlog violates deadlines and storage budgets; a queue cannot create sustained throughput.",
+      "outcomeDialogue": "Auto-scaling flooded the database with 2,000 new connections. The database crashed under connection thrashing, taking the entire platform offline for an hour.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Admission control and graceful degradation protect explicit priorities within finite capacity. The retained risk remains part of your company’s architecture."
     }
@@ -145,7 +145,7 @@ export const level035 = defineStartupLevel({
     "Offered work exceeds the tested recovery envelope; accepting everything turns overload into a cascading outage.",
     "Admission control and graceful degradation protect explicit priorities within finite capacity."
   ],
-  "lesson": "Admission control and graceful degradation protect explicit priorities within finite capacity.",
+  "lesson": "When capacity runs out, fail gracefully: don't let the whole ship sink. Prioritize revenue-generating checkout requests and aggressively shed non-critical load: disable recommendations, serve cached stale product pages, and pause background analytics.",
   "variants": [
     {
       "id": "without-regional-dr",

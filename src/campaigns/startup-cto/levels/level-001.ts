@@ -38,7 +38,7 @@ export const level001: Level = {
         },
       },
       architectureChanges: [{ type: "updateNode", nodeId: "monolith", patch: { label: "Modular monolith", subtitle: "clear boundaries", state: "normal" } }],
-      outcomeTitle: "Boring wins.", outcomeDialogue: "You kept the system boring—and the team shipped the next feature before standup. The monolith is not a failure state; it is a useful starting line.", outcomeEmotion: "smug", outcomeNote: "A small team gets speed, simple operations, and one place to reason about behavior.",
+      outcomeTitle: "Boring wins.", outcomeDialogue: "You kept the system boring, and the team shipped the next feature before standup. The monolith is not a failure state; it is a useful starting line.", outcomeEmotion: "smug", outcomeNote: "A small team gets speed, simple operations, and one place to reason about behavior.",
     },
     {
       id: "split-services", label: "Split into microservices", description: "Create separate services for users, orders, and billing before the first big launch.", cost: 12000, tone: "overkill",

@@ -3,12 +3,12 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level006 = defineStartupLevel({
   "levelNumber": 6,
   "title": "The Missing Product Photos",
-  "description": "Merchants upload product images successfully, then see missing pictures after a request moves to another host or a host is replaced. Cartline can now fund its third engineer.",
+  "description": "Merchants upload product images successfully, but customers see broken image icons (404s). The database saved the image path, but the actual image file was written to Server A's local hard drive. When a customer's request hits Server B or a server is replaced, the image file simply isn't there.",
   "dialogue": [
     {
       "character": "jimmy",
       "emotion": "thinking",
-      "text": "The database knows the photo exists. The host serving this request does not have its bytes. A durable reference needs durable storage behind it."
+      "text": "The database knows the photo exists, but the web server trying to serve the image has an empty folder. You can't store customer uploads on disposable server disks."
     },
     {
       "character": "jimmy",
@@ -56,18 +56,18 @@ export const level006 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Durable bytes outlive any application instance.",
         "downside": "Migration verification, access policies and storage/egress bills need an owner.",
-        "jimmyExplanation": "Durable bytes outlive any application instance. Migration verification, access policies and storage/egress bills need an owner.",
+        "jimmyExplanation": "Cloud object storage (like AWS S3 or Google Cloud Storage) is designed for this exact purpose: virtually unlimited storage, 99.999999999% durability, and direct signed URLs so users can upload and download without bogging down our web servers. It completely decouples file storage from server lifecycles.",
         "effectReasons": {
-          "upfrontCost": "$1,200 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+5,500, including 1 hires and the operating costs of this response.",
-          "reliability": "Migration verification, access policies and storage/egress bills need an owner.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$1,200 pays for the S3 integration, signed upload URL generation, data migration, and verification.",
+          "monthlyBurn": "Adding our 3rd engineer ($5,000/mo) plus cloud storage and egress fees brings the monthly increase to $5,500.",
+          "reliability": "Images achieve cloud durability; app servers can be created or destroyed without risking file loss.",
+          "customerTrust": "Merchants' storefronts display product pictures consistently with zero 404 errors.",
+          "complexity": "The team now manages bucket permissions, secure signed URLs, and storage lifecycle policies."
         }
       },
       "architectureChanges": changesFor("durable-media", "object-media"),
       "outcomeTitle": "The photo outlives the server.",
-      "outcomeDialogue": "Durable bytes outlive any application instance. Migration verification, access policies and storage/egress bills need an owner.",
+      "outcomeDialogue": "Images are safe in object storage. We can destroy, reboot, or scale app instances anytime without losing a single product photo, and our new engineer is already onboarded.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Externalize durable files before treating application hosts as disposable. Next pressure: Public images can later be delivered at the edge; object access and lifecycle rules become responsibilities."
     },
@@ -93,18 +93,18 @@ export const level006 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "POSIX access minimizes application changes and works across hosts.",
         "downside": "Filesystem throughput and mounts need monitoring; public delivery still passes through an origin.",
-        "jimmyExplanation": "POSIX access minimizes application changes and works across hosts. Filesystem throughput and mounts need monitoring; public delivery still passes through an origin.",
+        "jimmyExplanation": "Mounting a managed network filesystem (like NFS or EFS) lets our servers read and write files using standard folder paths without changing application code. It's an easy transition, but shared network mounts can become I/O bottlenecks and still tie our app servers to a shared filesystem.",
         "effectReasons": {
-          "upfrontCost": "$540 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+4,675, including 1 hires and the operating costs of this response.",
-          "reliability": "Filesystem throughput and mounts need monitoring; public delivery still passes through an origin.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$540 funds configuring network file mounts, mounting scripts, and file synchronization.",
+          "monthlyBurn": "Includes our 3rd engineer ($5,000/mo) plus managed NFS mount fees, offset by internal efficiency.",
+          "reliability": "Files are accessible from any host, but network filesystem latency can stall web worker threads under load.",
+          "customerTrust": "Product images load reliably across the site, restoring merchant confidence.",
+          "complexity": "Maintaining network mounts, handling mount disconnects, and tuning NFS locking add operational chores."
         }
       },
       "architectureChanges": changesFor("durable-media", "shared-files"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "POSIX access minimizes application changes and works across hosts. Filesystem throughput and mounts need monitoring; public delivery still passes through an origin.",
+      "outcomeDialogue": "The shared filesystem mount is working and images appear across all servers. It solved the 404s without rewriting our upload code, though network mount latency needs monitoring.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Externalize durable files before treating application hosts as disposable. Next pressure: Public images can later be delivered at the edge; object access and lifecycle rules become responsibilities."
     },
@@ -130,18 +130,18 @@ export const level006 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Reuses the existing upload code and storage layout.",
         "downside": "New files are absent until copying completes; deletions and concurrent writes can diverge.",
-        "jimmyExplanation": "Reuses the existing upload code and storage layout. New files are absent until copying completes; deletions and concurrent writes can diverge.",
+        "jimmyExplanation": "Running an rsync cron script to copy uploads between servers every five minutes is an operational nightmare. Any image uploaded at 2:01 PM will 404 until the 2:05 PM cron job runs. And if two servers write at the same time or a server crashes, files diverge and get lost.",
         "effectReasons": {
-          "upfrontCost": "$780 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+6,325, including 1 hires and the operating costs of this response.",
-          "reliability": "New files are absent until copying completes; deletions and concurrent writes can diverge.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$780 covers writing and debugging custom rsync scripts and SSH key distribution across hosts.",
+          "monthlyBurn": "Includes our 3rd engineer ($5,000/mo) plus wasted disk space across multiple instances.",
+          "reliability": "Sync delays leave newly uploaded images missing for up to 5 minutes, and cron failures silently drop files.",
+          "customerTrust": "Merchants get frustrated seeing broken images right after uploading products, leading to support tickets.",
+          "complexity": "Managing custom cron scripts, SSH access, and split-brain sync collisions creates constant on-call friction."
         }
       },
       "architectureChanges": changesFor("disk-sync"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "Reuses the existing upload code and storage layout. New files are absent until copying completes; deletions and concurrent writes can diverge.",
+      "outcomeDialogue": "The cron sync started colliding immediately. Merchants are still seeing 404s for the first five minutes after uploading, and server disks are filling up with duplicate files.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Externalize durable files before treating application hosts as disposable. The retained risk remains part of your company’s architecture."
     }
@@ -150,7 +150,7 @@ export const level006 = defineStartupLevel({
     "Image metadata is durable but the referenced bytes exist only on one disposable application disk.",
     "Externalize durable files before treating application hosts as disposable."
   ],
-  "lesson": "Externalize durable files before treating application hosts as disposable.",
+  "lesson": "Servers are disposable; user data is not: store uploaded files in cloud object storage (like S3) so any server can access them and no file is lost when a server is destroyed.",
   "variants": [
     {
       "id": "without-app-fleet",
@@ -159,7 +159,7 @@ export const level006 = defineStartupLevel({
           "app-fleet"
         ]
       },
-      "description": "The single-host replacement rehearsal loses recently uploaded images. You have not deployed a fleet, but the images still live on an ephemeral application disk.",
+      "description": "We simulated replacing our app host, and every uploaded product image vanished. Even without a load balancer, servers are ephemeral; when a cloud VM dies, everything on its local disk dies with it.",
       "metrics": [
         {
           "label": "Images lost on replacement",
@@ -176,7 +176,7 @@ export const level006 = defineStartupLevel({
         {
           "character": "jimmy",
           "emotion": "thinking",
-          "text": "The single-host replacement rehearsal loses recently uploaded images. You have not deployed a fleet, but the images still live on an ephemeral application disk."
+          "text": "We spun up a replacement host during the rehearsal, and every recently uploaded photo vanished into thin air. The database still points to the file paths, but the disk they were on was destroyed. We need storage that outlives the server."
         },
         {
           "character": "jimmy",

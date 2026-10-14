@@ -100,24 +100,24 @@ export default function GameplayScreen() {
           }}
         />
       {hintIndex < 0 ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Ask Jimmy, your AI assistant, for a hint" style={({ pressed }) => [styles.hintPrompt, pressed && styles.hintPromptPressed]} onPress={() => { gameFeedback.trigger("hintOpen"); setHintIndex(0); }}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Ask Byte, your AI assistant, for a hint" style={({ pressed }) => [styles.hintPrompt, pressed && styles.hintPromptPressed]} onPress={() => { gameFeedback.trigger("hintOpen"); setHintIndex(0); }}>
           <View style={styles.hintIcon}><Text style={styles.hintQuestion}>?</Text></View>
-          <View style={styles.hintCopy}><Text style={styles.hintTitle}>Ask Jimmy for a hint</Text></View>
+          <View style={styles.hintCopy}><Text style={styles.hintTitle}>Ask Byte for a hint</Text></View>
           <Text style={styles.hintArrow}>↗</Text>
         </Pressable>
       ) : (
         <Animated.View key={`${level.id}-${hintIndex}`} entering={FadeInDown.duration(280)} exiting={FadeOutUp.duration(160)} style={styles.jimmyHint}>
           <View style={styles.jimmyPortrait}>
-            <Animated.Image entering={FadeInLeft.delay(70).duration(360)} source={jimmyExplaining} resizeMode="contain" style={styles.jimmyImage} accessibilityLabel="Jimmy explaining a system design hint" />
+            <Animated.Image entering={FadeInLeft.delay(70).duration(360)} source={jimmyExplaining} resizeMode="contain" style={styles.jimmyImage} accessibilityLabel="Byte explaining a system design hint" />
           </View>
           <View style={styles.jimmyMessage}>
             <View style={styles.jimmyHeader}>
-              <View style={styles.jimmyIdentity}><View style={styles.jimmyOnline} /><Text style={styles.jimmyName}>JIMMY</Text><Text style={styles.jimmyRole}>AI ASSISTANT</Text></View>
+              <View style={styles.jimmyIdentity}><View style={styles.jimmyOnline} /><Text style={styles.jimmyName}>BYTE</Text><Text style={styles.jimmyRole}>AI ASSISTANT</Text></View>
               <Pressable accessibilityRole="button" accessibilityLabel="Close hint" hitSlop={8} onPress={() => { gameFeedback.trigger("uiTap"); setHintIndex(-1); }} style={styles.hintClose}><Text style={styles.hintCloseText}>×</Text></Pressable>
             </View>
             <Text style={styles.hintEyebrow}>A THING TO CONSIDER  ·  {String(hintIndex + 1).padStart(2, "0")}/{String(level.hints.length).padStart(2, "0")}</Text>
             <Text style={styles.hintText}>{level.hints[hintIndex]}</Text>
-            {level.hints.length > 1 && <Pressable accessibilityRole="button" accessibilityLabel="Ask Jimmy for another hint" onPress={() => { gameFeedback.trigger("hintOpen"); setHintIndex((current) => (current + 1) % level.hints.length); }} style={styles.nextHint}><Text style={styles.nextHintText}>ANOTHER CLUE</Text><Text style={styles.nextHintArrow}>→</Text></Pressable>}
+            {level.hints.length > 1 && <Pressable accessibilityRole="button" accessibilityLabel="Ask Byte for another hint" onPress={() => { gameFeedback.trigger("hintOpen"); setHintIndex((current) => (current + 1) % level.hints.length); }} style={styles.nextHint}><Text style={styles.nextHintText}>ANOTHER CLUE</Text><Text style={styles.nextHintArrow}>→</Text></Pressable>}
           </View>
         </Animated.View>
       )}

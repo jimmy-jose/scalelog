@@ -3,13 +3,13 @@ import { defineStartupLevel, changesFor, disable } from "./authoring";
 export const level020 = defineStartupLevel({
   "levelNumber": 20,
   "title": "The Order That Disappeared",
-  "description": "The mobile launch routes a post-checkout order lookup to a lagging replica despite the primary-only confirmation policy. The order appears seconds later, and some buyers retry.",
+  "description": "A shopper completes checkout, pays $120, and is immediately redirected to the order confirmation page. The page displays an error: 'Order Not Found!' In a panic, the shopper clicks 'Pay Now' again, getting billed twice. Tracing reveals the order was committed to the primary database, but the confirmation page queried our read replica, which was 600 milliseconds behind.",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "The order is there. We asked a reader that has not seen it yet. A one-second sleep is not proof that replication has caught up."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "This is the classic 'Read-Your-Own-Writes' consistency bug! The customer created an order on the primary writer, but their browser was routed to a read replica that was half a second behind. To the replica, the order literally did not exist yet!"
+      }
   ],
   "metrics": [
     {
@@ -51,18 +51,18 @@ export const level020 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Read-after-write works without forcing every report to be synchronous.",
         "downside": "Primary fallback requires a budget; routing rules must follow the user journey.",
-        "jimmyExplanation": "Read-after-write works without forcing every report to be synchronous. Primary fallback requires a budget; routing rules must follow the user journey.",
+        "jimmyExplanation": "We establish a session-aware read policy: for 5 seconds after a user performs a write (like placing an order or editing inventory), their subsequent read requests are pinned to the primary database. After 5 seconds, once replication lag is safely passed, their reads return to the read replica.",
         "effectReasons": {
-          "upfrontCost": "$8,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+5,500, including 0 hires and the operating costs of this response.",
-          "reliability": "Primary fallback requires a budget; routing rules must follow the user journey.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$4,500 covers session-aware database routing, replication watermark tracking, and checkout flow tests.",
+          "monthlyBurn": "Primary database connection capacity and routing telemetry add $2,400/month.",
+          "reliability": "Guarantees read-your-own-writes consistency across all user-facing mutation workflows.",
+          "customerTrust": "Shoppers see their orders immediately upon payment, eliminating duplicate payment attempts.",
+          "complexity": "The database router must inspect user session tokens to decide whether to query the primary or replica."
         }
       },
       "architectureChanges": changesFor("consistent-reads"),
       "outcomeTitle": "The buyer reads their own write.",
-      "outcomeDialogue": "Read-after-write works without forcing every report to be synchronous. Primary fallback requires a budget; routing rules must follow the user journey.",
+      "outcomeDialogue": "Ghost orders are gone! When a shopper places an order, their confirmation page reads directly from the primary database where the order was just saved, while general browsing continues to use the replica.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Consistency belongs to a workflow, not a blanket database label. Next pressure: Primary routing fixes visibility but primary availability still needs a failover contract."
     },
@@ -88,18 +88,18 @@ export const level020 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A single read source gives straightforward visibility semantics.",
         "downside": "Reports again consume write-tier headroom and raise infrastructure spend.",
-        "jimmyExplanation": "A single read source gives straightforward visibility semantics. Reports again consume write-tier headroom and raise infrastructure spend.",
+        "jimmyExplanation": "Passing the newly created order details directly in the checkout response or encrypted client state renders the confirmation page without querying the replica at all. It avoids database routing logic, though it only protects the immediate confirmation screen.",
         "effectReasons": {
-          "upfrontCost": "$3,600 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+7,700, including 0 hires and the operating costs of this response.",
-          "reliability": "Reports again consume write-tier headroom and raise infrastructure spend.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$2,025 covers updating checkout response payloads and client-side confirmation rendering.",
+          "monthlyBurn": "Payload serialization and client state validation add $2,160/month.",
+          "reliability": "Prevents confirmation page 404s without requiring complex dynamic database routing.",
+          "customerTrust": "Immediate purchase reassurance prevents panic re-orders on checkout completion.",
+          "complexity": "Keeps database topology simple, though client state must be securely validated."
         }
       },
       "architectureChanges": [...changesFor("consistent-reads", "primary-reads"), ...disable("reader-routing")],
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "A single read source gives straightforward visibility semantics. Reports again consume write-tier headroom and raise infrastructure spend.",
+      "outcomeDialogue": "The confirmation page renders reliably from the client payload now. Shoppers see their receipt instantly, though clicking 'Order History' within a few seconds can still show slight replication lag.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Consistency belongs to a workflow, not a blanket database label. Next pressure: Primary routing fixes visibility but primary availability still needs a failover contract."
     },
@@ -125,18 +125,18 @@ export const level020 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "A delay can hide some short replication gaps.",
         "downside": "Observed lag exceeds one second, so elapsed time is not a consistency guarantee.",
-        "jimmyExplanation": "A delay can hide some short replication gaps. Observed lag exceeds one second, so elapsed time is not a consistency guarantee.",
+        "jimmyExplanation": "Adding a 1-second sleep delay before loading the confirmation page is a horrific anti-pattern. If replication lag spikes to 1.5 seconds during a busy sale, the bug still happens. And in the meantime, you have deliberately forced every single paying customer to stare at a blank screen for a second!",
         "effectReasons": {
-          "upfrontCost": "$5,200 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+6,325, including 0 hires and the operating costs of this response.",
-          "reliability": "Observed lag exceeds one second, so elapsed time is not a consistency guarantee.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$2,925 is wasted on artificial sleep delays and hacky frontend timers.",
+          "monthlyBurn": "Tied-up worker threads waiting on sleep timers inflate monthly spend by $2,760.",
+          "reliability": "Arbitrary sleep timers cannot guarantee consistency when replication lag fluctuates under load.",
+          "customerTrust": "Intentionally slow confirmation screens frustrate shoppers without actually solving the missing order bug.",
+          "complexity": "Injecting sleep calls into request pipelines degrades worker capacity and creates difficult race conditions."
         }
       },
       "architectureChanges": changesFor("sleep-consistency"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "A delay can hide some short replication gaps. Observed lag exceeds one second, so elapsed time is not a consistency guarantee.",
+      "outcomeDialogue": "The arbitrary delay failed. During our evening traffic peak, replication lag hit two seconds, and customers STILL saw 'Order Not Found' after waiting through our artificial 1-second freeze!",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Consistency belongs to a workflow, not a blanket database label. The retained risk remains part of your company’s architecture."
     }
@@ -145,7 +145,7 @@ export const level020 = defineStartupLevel({
     "A read-after-write workflow was incorrectly classified as lag tolerant.",
     "Consistency belongs to a workflow, not a blanket database label."
   ],
-  "lesson": "Consistency belongs to a workflow, not a blanket database label.",
+  "lesson": "Guarantee 'read-your-own-writes' consistency: immediately after a user performs an action, route their subsequent reads to the primary database (or wait for replica catch-up) so they never see their own changes vanish.",
   "variants": [
     {
       "id": "without-reader-routing",

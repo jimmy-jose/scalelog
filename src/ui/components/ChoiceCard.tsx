@@ -20,10 +20,10 @@ function signed(value: number) {
 function getImpacts(choice: Choice): Impact[] {
   const effects = choice.effects;
   return [
-    effects.monthlyBurn ? { key: "monthlyBurn", label: "MONTHLY BURN", value: `${signed(effects.monthlyBurn)}/mo`, reason: choice.tradeoff.effectReasons.monthlyBurn ?? choice.tradeoff.jimmyExplanation } : undefined,
-    effects.reliability ? { key: "reliability", label: "RELIABILITY", value: signed(effects.reliability), reason: choice.tradeoff.effectReasons.reliability ?? choice.tradeoff.jimmyExplanation } : undefined,
-    effects.customerTrust ? { key: "customerTrust", label: "CUSTOMER TRUST", value: signed(effects.customerTrust), reason: choice.tradeoff.effectReasons.customerTrust ?? choice.tradeoff.jimmyExplanation } : undefined,
-    effects.complexity ? { key: "complexity", label: "OPS LOAD", value: signed(effects.complexity), reason: choice.tradeoff.effectReasons.complexity ?? choice.tradeoff.jimmyExplanation } : undefined,
+    effects.monthlyBurn ? { key: "monthlyBurn", label: "MONTHLY BURN", value: `${signed(effects.monthlyBurn)}/mo`, reason: choice.tradeoff.effectReasons.monthlyBurn ?? choice.tradeoff.byteExplanation ?? choice.tradeoff.jimmyExplanation } : undefined,
+    effects.reliability ? { key: "reliability", label: "RELIABILITY", value: signed(effects.reliability), reason: choice.tradeoff.effectReasons.reliability ?? choice.tradeoff.byteExplanation ?? choice.tradeoff.jimmyExplanation } : undefined,
+    effects.customerTrust ? { key: "customerTrust", label: "CUSTOMER TRUST", value: signed(effects.customerTrust), reason: choice.tradeoff.effectReasons.customerTrust ?? choice.tradeoff.byteExplanation ?? choice.tradeoff.jimmyExplanation } : undefined,
+    effects.complexity ? { key: "complexity", label: "OPS LOAD", value: signed(effects.complexity), reason: choice.tradeoff.effectReasons.complexity ?? choice.tradeoff.byteExplanation ?? choice.tradeoff.jimmyExplanation } : undefined,
   ].filter((impact): impact is Impact => Boolean(impact));
 }
 
@@ -47,7 +47,7 @@ export function ChoiceCard({ choice, xpReward, onPress, disabled, disabledLabel,
   const [explanation, setExplanation] = useState<{ label: string; text: string } | null>(null);
   const showExplanation = (label: string, key: ChoiceEffectKey) => {
     gameFeedback.trigger("uiTap");
-    const text = choice.tradeoff.effectReasons[key] ?? choice.tradeoff.jimmyExplanation;
+    const text = choice.tradeoff.effectReasons[key] ?? choice.tradeoff.byteExplanation ?? choice.tradeoff.jimmyExplanation;
     setExplanation((current) => current?.label === label ? null : { label, text });
   };
 
@@ -93,13 +93,13 @@ export function ChoiceCard({ choice, xpReward, onPress, disabled, disabledLabel,
         CTO confidence {signed(rewards.confidence)} · XP {signed(rewards.xp)} (minimum 0 total XP)
       </Text>
         <Text style={styles.description}>Cash forecast includes the upfront cost and one operating month. New revenue starts next month.</Text>
-        <Text style={styles.tradeoffText}>{choice.tradeoff.jimmyExplanation}</Text>
+        <Text style={styles.tradeoffText}>{choice.tradeoff.byteExplanation ?? choice.tradeoff.jimmyExplanation}</Text>
       </LearnMore>
 
       {explanation?.label === "UPFRONT COST" && <Animated.View entering={FadeInDown.duration(220)} style={styles.jimmyExplanation}>
-        <Image source={jimmyExplaining} resizeMode="contain" style={styles.jimmyImage} accessibilityLabel="Jimmy explaining the choice" />
+        <Image source={jimmyExplaining} resizeMode="contain" style={styles.jimmyImage} accessibilityLabel="Byte explaining the choice" />
         <View style={styles.explanationCopy}>
-          <View style={styles.explanationHeading}><View style={styles.jimmyOnline} /><Text style={styles.explanationLabel}>JIMMY EXPLAINS · {explanation.label}</Text></View>
+          <View style={styles.explanationHeading}><View style={styles.jimmyOnline} /><Text style={styles.explanationLabel}>BYTE EXPLAINS · {explanation.label}</Text></View>
           <Text style={styles.explanationText}>{explanation.text}</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Close explanation" onPress={() => setExplanation(null)} style={styles.askJimmy}><Text style={styles.askJimmyText}>Hide explanation</Text></Pressable>
         </View>

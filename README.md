@@ -55,7 +55,7 @@ The palette uses muted tactile clicks and warm, related chimes. Each WAV has a r
 | `uiTap` | `tap.wav` | Buttons, navigation, modal close |
 | `toggleSwitch` | `switch.wav` | Settings and company details |
 | `tabSelect` | `tab-select.wav` | Decision tabs |
-| `hintOpen` | `hint-open.wav` | Jimmy hints, with a distinct two-note motif |
+| `hintOpen` | `hint-open.wav` | Byte hints, with a distinct two-note motif |
 | `choiceSelected` | `choice-select.wav` | Confirming a decision |
 | `choiceSuccess` | `success.wav` | Recommended outcome |
 | `choiceWarning` | `warning.wav` | Risky or failed outcome |
@@ -73,7 +73,7 @@ The palette uses muted tactile clicks and warm, related chimes. Each WAV has a r
 ### Recommended in-game sound testing path
 
 1. **Controls & Settings**: Tap the gear icon in the top right to open **Settings**. Flip the **Sound Effects** switch to hear `toggleSwitch`. Tap **Back** to hear `uiTap`.
-2. **Hints & Decision Tabs**: Enter Level 1 (*"Your First Day"*). Switch between **Option 1, 2, and 3** in the Decision Deck to hear `tabSelect`. Tap **"Ask Jimmy for a hint"** to hear `hintOpen`. Toggle **"MORE +"** on the top company card to hear `toggleSwitch`.
+2. **Hints & Decision Tabs**: Enter Level 1 (*"Your First Day"*). Switch between **Option 1, 2, and 3** in the Decision Deck to hear `tabSelect`. Tap **"Ask Byte for a hint"** to hear `hintOpen`. Toggle **"MORE +"** on the top company card to hear `toggleSwitch`.
 3. **Architecture & Outcomes**: Tap **"Choose this path"** to hear `choiceSelected`. Watch the rewire modal appear to hear `architectureNodeAdded`. On the outcome screen, hear `choiceSuccess` (for recommended paths) or `choiceWarning` (for risky paths).
 4. **Progression & XP**: On the chapter handoff screen, hear `xpGain` as positive XP appears, followed by `levelComplete` on successful handoffs. Setbacks do not play the success motif.
 5. **Incident Alerts**: Proceed to Level 2 (*"The Dashboard Is Slow"*) or Level 3 (*"Too Many Connections"*) to hear the deep `incidentCritical` server alert pulse upon entry.
@@ -81,6 +81,8 @@ The palette uses muted tactile clicks and warm, related chimes. Each WAV has a r
 ## Deploy the web build to Vercel
 
 The repository includes `vercel.json`. Vercel runs `npx expo export --platform web` and serves the generated `dist` directory.
+
+Vercel Web Analytics is mounted once in the root layout for web builds. Enable **Analytics** for the Vercel project, then deploy the updated code to start collecting visitors and page views. Native builds omit the analytics SDK. No analytics API key or additional environment variable is needed.
 
 ## Content architecture
 

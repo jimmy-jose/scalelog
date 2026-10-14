@@ -3,13 +3,13 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level024 = defineStartupLevel({
   "levelNumber": 24,
   "title": "Find the Red Shoe, Not a Substring",
-  "description": "Enterprise merchants need typo tolerance, relevance and multiple facets over eight million catalogue variants. An indexed PostgreSQL full-text/trigram prototype handles simple search, but the representative faceted benchmark misses the target.",
+  "description": "Merchants demand advanced storefront search: typo tolerance ('snakers' -> 'sneakers'), relevance ranking, and multi-faceted filtering (size, color, brand) across 8 million product variants. An indexed PostgreSQL trigram and full-text prototype handles simple searches, but complex faceted queries take 1.8 seconds and drive database CPU to 90%.",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "PostgreSQL search was a sensible starting point. Our actual facet benchmark and relevance needs changed. A search index would still be a projection, not inventory truth."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "PostgreSQL is built for ACID transactions, not inverted search indexes! Running complex fuzzy matching, stemming, and multi-facet aggregations on our primary transactional database is dragging down core checkouts. We need a derived search index."
+      }
   ],
   "metrics": [
     {
@@ -51,18 +51,18 @@ export const level024 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Search-specific indexing meets the benchmark without loading transactional reads.",
         "downside": "The index is eventually consistent and needs replay, lag alerts and rebuild procedures.",
-        "jimmyExplanation": "Search-specific indexing meets the benchmark without loading transactional reads. The index is eventually consistent and needs replay, lag alerts and rebuild procedures.",
+        "jimmyExplanation": "We deploy a dedicated search cluster (Elasticsearch or OpenSearch) as a derived read projection. As products are edited, background workers update the search index. The search cluster handles fuzzy queries, faceting, and typo tolerance in 15 milliseconds, keeping PostgreSQL 100% focused on checkout transactions.",
         "effectReasons": {
-          "upfrontCost": "$22,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+11,000, including 0 hires and the operating costs of this response.",
-          "reliability": "The index is eventually consistent and needs replay, lag alerts and rebuild procedures.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$5,500 covers deploying the search cluster, index mapping design, CDC projection pipelines, and fallback routes.",
+          "monthlyBurn": "Running managed Elasticsearch/OpenSearch instances and projection workers adds $3,200/month.",
+          "reliability": "Completely isolates heavy discovery search traffic from the transactional database.",
+          "customerTrust": "Shoppers find products instantly with smart typo tolerance, directly driving higher merchant sales.",
+          "complexity": "The team now manages search index mappings, re-indexing pipelines, and projection synchronization lag."
         }
       },
       "architectureChanges": changesFor("search-projection"),
       "outcomeTitle": "Discovery gets a derived index.",
-      "outcomeDialogue": "Search-specific indexing meets the benchmark without loading transactional reads. The index is eventually consistent and needs replay, lag alerts and rebuild procedures.",
+      "outcomeDialogue": "Storefront search is blazing fast! Shoppers get instant fuzzy search and faceting in under 20 milliseconds, and PostgreSQL CPU is completely untouched by search traffic.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Use a derived specialized index when its semantics and measured workload justify it. Next pressure: Search index lag and indexing bursts will require independent ownership; it must never authorize stock."
     },
@@ -88,18 +88,18 @@ export const level024 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "A valid, cheaper design avoids another datastore.",
         "downside": "The enterprise search feature is reduced; the original faceted benchmark remains unmet.",
-        "jimmyExplanation": "A valid, cheaper design avoids another datastore. The enterprise search feature is reduced; the original faceted benchmark remains unmet.",
+        "jimmyExplanation": "Optimizing PostgreSQL full-text search with strict limit clauses and caching common search phrases provides acceptable search without running a separate Elasticsearch cluster. It saves money, though search lacks fuzzy typo tolerance.",
         "effectReasons": {
-          "upfrontCost": "$9,900 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+9,350, including 0 hires and the operating costs of this response.",
-          "reliability": "The enterprise search feature is reduced; the original faceted benchmark remains unmet.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$2,475 covers tuning PostgreSQL GIN indexes, search query limits, and result caching.",
+          "monthlyBurn": "Additional PostgreSQL compute and memory headroom add $2,880/month.",
+          "reliability": "Keeps search within the existing database infrastructure without managing multi-cluster data sync.",
+          "customerTrust": "Basic product searches are fast, though shoppers occasionally complain about missing fuzzy typo matching.",
+          "complexity": "Zero new search infrastructure to operate; all data remains in PostgreSQL."
         }
       },
       "architectureChanges": changesFor("postgres-search"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "A valid, cheaper design avoids another datastore. The enterprise search feature is reduced; the original faceted benchmark remains unmet.",
+      "outcomeDialogue": "PostgreSQL full-text search handles standard keyword queries well enough for now. It saved us from operating an Elasticsearch cluster, though shoppers must type exact words.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Use a derived specialized index when its semantics and measured workload justify it. Next pressure: Search index lag and indexing bursts will require independent ownership; it must never authorize stock."
     },
@@ -125,18 +125,18 @@ export const level024 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "One query engine can serve discovery and availability lookups.",
         "downside": "An eventually refreshed search projection cannot enforce transactional stock decrements.",
-        "jimmyExplanation": "One query engine can serve discovery and availability lookups. An eventually refreshed search projection cannot enforce transactional stock decrements.",
+        "jimmyExplanation": "Running unindexed LIKE '%keyword%' queries across 8 million rows on the primary database will trigger full table scans on every keystroke. Five concurrent searches will pin PostgreSQL CPU at 100% and knock down checkout.",
         "effectReasons": {
-          "upfrontCost": "$14,300 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+12,650, including 0 hires and the operating costs of this response.",
-          "reliability": "An eventually refreshed search projection cannot enforce transactional stock decrements.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$3,575 is burned mitigating severe database contention from unindexed search scans.",
+          "monthlyBurn": "Wasted database capacity trying to absorb full-table scans adds $3,680/month.",
+          "reliability": "Unindexed substring queries saturate database I/O, causing platform-wide cascading outages.",
+          "customerTrust": "Broken search and slow checkouts frustrate merchants and cause shoppers to abandon the site.",
+          "complexity": "Constantly killing runaway query processes and troubleshooting database CPU spikes."
         }
       },
       "architectureChanges": changesFor("search-authority"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "One query engine can serve discovery and availability lookups. An eventually refreshed search projection cannot enforce transactional stock decrements.",
+      "outcomeDialogue": "Unindexed substring searches crushed PostgreSQL immediately. A single search for 'shirt' scanned 8 million rows, driving CPU to 100% and causing checkout timeouts across the site.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Use a derived specialized index when its semantics and measured workload justify it. The retained risk remains part of your company’s architecture."
     }
@@ -145,7 +145,7 @@ export const level024 = defineStartupLevel({
     "The measured search workload and relevance requirements no longer fit the current transactional read path economically.",
     "Use a derived specialized index when its semantics and measured workload justify it."
   ],
-  "lesson": "Use a derived specialized index when its semantics and measured workload justify it.",
+  "lesson": "Don't force a relational database to be a search engine: stream data into a derived, specialized search index (like Elasticsearch or OpenSearch) that is optimized for fuzzy search, relevance, and faceting.",
   "recoveries": [
     {
       "capability": "durable-handoff",

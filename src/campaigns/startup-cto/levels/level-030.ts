@@ -3,13 +3,13 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level030 = defineStartupLevel({
   "levelNumber": 30,
   "title": "The Payment Provider’s Long Tail",
-  "description": "The new traces locate checkout’s long tail in an external payment provider. Authorization often succeeds after Cartline’s caller times out. Stock reservations and payment results must remain consistent.",
+  "description": "When charging a credit card, our call to the payment gateway times out after 10 seconds. We mark the order as 'Failed' and tell the customer to try again. But 5 seconds later, the gateway actually processes the charge! The customer is billed twice and stock inventory is corrupted.",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "A timeout tells us we do not know the result. It does not tell us the charge failed. Keep the payment identity while we find out."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "A network timeout never means the charge failed; it means we don't know what happened. Retrying blindly with a fresh charge request is how customers get double-billed and merchant accounts get banned."
+      }
   ],
   "metrics": [
     {
@@ -56,18 +56,18 @@ export const level030 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "Ambiguous authorization cannot trigger duplicate charges or false fulfillment.",
         "downside": "Pending is visible to customers; a late success after reservation expiry needs refund or reallocation handling.",
-        "jimmyExplanation": "Ambiguous authorization cannot trigger duplicate charges or false fulfillment. Pending is visible to customers; a late success after reservation expiry needs refund or reallocation handling.",
+        "jimmyExplanation": "We pass a deterministic idempotency key to the payment gateway and mark timed-out orders as 'Pending'. Background workers reconcile the final state using gateway webhooks or status lookups before releasing inventory or notifying the buyer.",
         "effectReasons": {
-          "upfrontCost": "$30,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+14,000, including 0 hires and the operating costs of this response.",
-          "reliability": "Pending is visible to customers; a late success after reservation expiry needs refund or reallocation handling.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$30,000 covers idempotency key generation, pending order state machines, and webhook reconciliation workers.",
+          "monthlyBurn": "Webhook ingress endpoints, reconciliation polling jobs, and payment monitoring cost $14,000/month.",
+          "reliability": "Completely eliminates double-charging bugs and keeps inventory reservations strictly consistent with payments.",
+          "customerTrust": "Shoppers and merchants never experience ghost charges or mysterious double deductions on their credit cards.",
+          "complexity": "Reconciliation state machine eliminates edge-case payment race conditions and manual accounting fixes."
         }
       },
       "architectureChanges": changesFor("payment-reconciliation"),
       "outcomeTitle": "Unknown payments stay pending.",
-      "outcomeDialogue": "Ambiguous authorization cannot trigger duplicate charges or false fulfillment. Pending is visible to customers; a late success after reservation expiry needs refund or reallocation handling.",
+      "outcomeDialogue": "Idempotency keys and webhook reconciliation completely eliminated double charges. When gateway latency spikes, orders stay safely in 'Pending' until the true state is confirmed.",
       "outcomeEmotion": "happy",
       "outcomeNote": "A timeout is an unknown result; payment correctness needs stable identity and reconciliation. Next pressure: Bounded provider pressure lets the business grow until data volume and write throughput dominate."
     },
@@ -93,18 +93,18 @@ export const level030 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Simpler containment protects correctness and provider capacity.",
         "downside": "Sales stop temporarily even when some authorizations could succeed.",
-        "jimmyExplanation": "Simpler containment protects correctness and provider capacity. Sales stop temporarily even when some authorizations could succeed.",
+        "jimmyExplanation": "Stopping automatic customer retries and routing timed-out orders into a manual support queue prevents duplicate billing, but creates an operational burden for the merchant support team.",
         "effectReasons": {
-          "upfrontCost": "$13,500 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+11,900, including 0 hires and the operating costs of this response.",
-          "reliability": "Sales stop temporarily even when some authorizations could succeed.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$13,500 covers manual review admin tools and automated support queue triage rules.",
+          "monthlyBurn": "Manual review tools and support escalation staffing cost $11,900/month.",
+          "reliability": "Prevents accidental duplicate charges, though orders sit in an unresolved state until human intervention.",
+          "customerTrust": "Buyers are protected from duplicate charges, but experience slow order confirmation during payment delays.",
+          "complexity": "Simple technical design, but transfers operational burden onto customer support staff."
         }
       },
       "architectureChanges": changesFor("payment-reconciliation", "checkout-paused"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "Simpler containment protects correctness and provider capacity. Sales stop temporarily even when some authorizations could succeed.",
+      "outcomeDialogue": "Double charges have stopped. The support team has to manually verify a dozen ambiguous transactions each day, but customer financial data remains intact.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "A timeout is an unknown result; payment correctness needs stable identity and reconciliation. Next pressure: Bounded provider pressure lets the business grow until data volume and write throughput dominate."
     },
@@ -130,18 +130,18 @@ export const level030 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "A second attempt may respond quickly.",
         "downside": "The first attempt may already have charged; new IDs bypass deduplication and can double-charge buyers.",
-        "jimmyExplanation": "A second attempt may respond quickly. The first attempt may already have charged; new IDs bypass deduplication and can double-charge buyers.",
+        "jimmyExplanation": "Immediately retrying timed-out payment requests without idempotency keys creates duplicate authorization holds on customer credit cards, triggering bank fraud flags and merchant chargeback fees.",
         "effectReasons": {
-          "upfrontCost": "$19,500 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+16,100, including 0 hires and the operating costs of this response.",
-          "reliability": "The first attempt may already have charged; new IDs bypass deduplication and can double-charge buyers.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$19,500 is lost to payment processor dispute fees, chargeback penalties, and emergency hotfixes.",
+          "monthlyBurn": "Dispute management overhead and payment processing penalties cost $16,100/month.",
+          "reliability": "Duplicate payment authorizations and inventory overselling corrupt core order data integrity.",
+          "customerTrust": "Severe customer outrage over duplicate credit card charges and bank overdraft penalties.",
+          "complexity": "Nightmarish manual financial reconciliation and chargeback dispute workflows across thousands of transactions."
         }
       },
       "architectureChanges": changesFor("new-payment-ids"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "A second attempt may respond quickly. The first attempt may already have charged; new IDs bypass deduplication and can double-charge buyers.",
+      "outcomeDialogue": "Hundreds of shoppers were charged two or three times for a single order. Payment gateway chargeback fees spiked and customer trust took a severe hit.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "A timeout is an unknown result; payment correctness needs stable identity and reconciliation. The retained risk remains part of your company’s architecture."
     }
@@ -150,7 +150,7 @@ export const level030 = defineStartupLevel({
     "A slow but successful dependency creates ambiguous outcomes and retry amplification, not application CPU shortage.",
     "A timeout is an unknown result; payment correctness needs stable identity and reconciliation."
   ],
-  "lesson": "A timeout is an unknown result; payment correctness needs stable identity and reconciliation.",
+  "lesson": "A network timeout does NOT mean failure; it means 'unknown.' Never retry a payment with a brand-new ID. Mark the transaction as 'Pending,' use an idempotency key with the provider, and reconcile the final status asynchronously via webhooks or polling before fulfilling or refunding.",
   "variants": [
     {
       "id": "without-observability",

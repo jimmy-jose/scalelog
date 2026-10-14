@@ -3,13 +3,13 @@ import { defineStartupLevel, changesFor } from "./authoring";
 export const level022 = defineStartupLevel({
   "levelNumber": 22,
   "title": "The Delete Reached Every Replica",
-  "description": "A faulty maintenance command removes an hour of order records. Replicas faithfully apply the deletion. The nightly backup is 19 hours old; the business accepts at most five minutes of recovery-point loss and a one-hour restore.",
+  "description": "During a late-night database maintenance task, a junior engineer accidentally runs DELETE FROM orders in production without a WHERE clause. Within 50 milliseconds, our read replicas and failover standbys faithfully execute the exact same command, wiping out orders everywhere. The nightly database backup is 19 hours old, but the business can only afford five minutes of lost data.",
   "dialogue": [
-    {
-      "character": "jimmy",
-      "emotion": "thinking",
-      "text": "The replicas did exactly their job: they copied the delete. We need an independent point in history, and a plan for the good orders written afterward."
-    }
+      {
+          "character": "jimmy",
+          "emotion": "thinking",
+          "text": "Replicas are for hardware failover, NOT backups! A replica is a live mirror: if you shoot yourself in the foot, the replica shoots itself in the foot too. We need Point-In-Time Recovery (PITR) to rewind the database to the exact second before that delete command ran."
+      }
   ],
   "metrics": [
     {
@@ -51,18 +51,18 @@ export const level022 = defineStartupLevel({
         "downsideLabel": "Cost and ownership",
         "upside": "A tested recovery path can undo logical corruption with explicit data reconciliation.",
         "downside": "A point-in-time restore also omits good writes after the chosen time; recovery is not just flipping a replica.",
-        "jimmyExplanation": "A tested recovery path can undo logical corruption with explicit data reconciliation. A point-in-time restore also omits good writes after the chosen time; recovery is not just flipping a replica.",
+        "jimmyExplanation": "Point-In-Time Recovery (PITR) combines daily base backups with continuous Write-Ahead Log (WAL) archiving to cloud object storage (S3). When a disaster strikes, we spin up an isolated database, replay WAL logs up to 23:14:02 (one second before the accidental delete), verify the recovered data, and restore with under five minutes of data loss.",
         "effectReasons": {
-          "upfrontCost": "$15,000 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+7,000, including 0 hires and the operating costs of this response.",
-          "reliability": "A point-in-time restore also omits good writes after the chosen time; recovery is not just flipping a replica.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$5,200 covers WAL archiving pipelines, S3 storage buckets, automated recovery drills, and PITR restore scripts.",
+          "monthlyBurn": "Continuous WAL streaming and encrypted long-term object storage add $3,000/month.",
+          "reliability": "Enables restoring the database to any chosen second in time, neutralizing human error and software bugs.",
+          "customerTrust": "Accidental data deletions are fully recoverable without permanent data loss, maintaining business integrity.",
+          "complexity": "Requires testing backup restoration procedures regularly and monitoring WAL archive streaming latency."
         }
       },
       "architectureChanges": changesFor("pitr"),
       "outcomeTitle": "Recovery reaches back in time.",
-      "outcomeDialogue": "A tested recovery path can undo logical corruption with explicit data reconciliation. A point-in-time restore also omits good writes after the chosen time; recovery is not just flipping a replica.",
+      "outcomeDialogue": "PITR saved the company! We rewound the database to 23:14:02, exactly one second before the delete query executed. All 19 hours of orders were fully restored with zero data loss.",
       "outcomeEmotion": "happy",
       "outcomeNote": "Backups count only when a measured restore satisfies the recovery objective. Next pressure: Growing datasets require restore benchmarks and retention controls; schema changes must be staged safely."
     },
@@ -88,18 +88,18 @@ export const level022 = defineStartupLevel({
         "downsideLabel": "Limits accepted",
         "upside": "Simple snapshots recover data without relying on production replicas.",
         "downside": "An hour between snapshots misses the required five-minute RPO.",
-        "jimmyExplanation": "Simple snapshots recover data without relying on production replicas. An hour between snapshots misses the required five-minute RPO.",
+        "jimmyExplanation": "Taking hourly EBS storage snapshots reduces our data loss window from 19 hours down to 60 minutes. It is much cheaper and easier to automate than continuous WAL archiving, but the business must accept losing up to an hour of orders during a disaster.",
         "effectReasons": {
-          "upfrontCost": "$6,750 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+5,950, including 0 hires and the operating costs of this response.",
-          "reliability": "An hour between snapshots misses the required five-minute RPO.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$2,340 covers snapshot automation policies, restore scripting, and snapshot retention rules.",
+          "monthlyBurn": "Storing hourly disk volume snapshots adds $2,700/month.",
+          "reliability": "Caps data loss to a predictable 1-hour window without operating complex WAL archiving infrastructure.",
+          "customerTrust": "Merchants are relieved that 19 hours of data wasn't lost, though losing 45 minutes still requires explanations.",
+          "complexity": "Simple to manage via cloud snapshot schedules, though recovery requires recreating volume attachments."
         }
       },
       "architectureChanges": changesFor("snapshots"),
       "outcomeTitle": "A narrower contract, deliberately.",
-      "outcomeDialogue": "Simple snapshots recover data without relying on production replicas. An hour between snapshots misses the required five-minute RPO.",
+      "outcomeDialogue": "The hourly snapshot restored the database to 45 minutes ago. It prevented a total catastrophe, though customer support had to manually contact buyers from the missing 45-minute window.",
       "outcomeEmotion": "thinking",
       "outcomeNote": "Backups count only when a measured restore satisfies the recovery objective. Next pressure: Growing datasets require restore benchmarks and retention controls; schema changes must be staged safely."
     },
@@ -125,18 +125,18 @@ export const level022 = defineStartupLevel({
         "downsideLabel": "Unresolved risk",
         "upside": "Useful for a failed primary when data is healthy.",
         "downside": "The fastest replica has already applied the deletion and cannot restore history.",
-        "jimmyExplanation": "Useful for a failed primary when data is healthy. The fastest replica has already applied the deletion and cannot restore history.",
+        "jimmyExplanation": "Relying solely on read replicas as your backup strategy is complete negligence. Replicas propagate DROP TABLE and DELETE queries within milliseconds. When a bad query runs, you have zero backup.",
         "effectReasons": {
-          "upfrontCost": "$9,750 funds this rollout, verification and migration effort.",
-          "monthlyBurn": "The monthly change is $+8,050, including 0 hires and the operating costs of this response.",
-          "reliability": "The fastest replica has already applied the deletion and cannot restore history.",
-          "customerTrust": "Merchant retention follows the response’s stated service contract and remaining risk.",
-          "complexity": "Operational load includes the rollout, ownership and ongoing failure modes described here."
+          "upfrontCost": "$3,380 is burned during emergency data recovery and forensic analysis.",
+          "monthlyBurn": "Manual data patch tools and external audit consultants add $3,450/month.",
+          "reliability": "Leaves the company with a catastrophic 24-hour data loss window whenever human error occurs.",
+          "customerTrust": "Permanent loss of a full day's commercial transactions destroys merchant trust and causes massive churn.",
+          "complexity": "Reconciling 19 hours of missing transactions from third-party Stripe logs takes weeks of grueling effort."
         }
       },
       "architectureChanges": changesFor("deleted-replica"),
       "outcomeTitle": "The trade-off catches up.",
-      "outcomeDialogue": "Useful for a failed primary when data is healthy. The fastest replica has already applied the deletion and cannot restore history.",
+      "outcomeDialogue": "We had to restore from the 19-hour-old nightly backup. 19 hours of customer orders, payments, and tracking numbers are permanently gone. Merchants are furious and threatening legal action.",
       "outcomeEmotion": "concerned",
       "outcomeNote": "Backups count only when a measured restore satisfies the recovery objective. The retained risk remains part of your company’s architecture."
     }
@@ -145,7 +145,7 @@ export const level022 = defineStartupLevel({
     "Replication preserves availability, not independent historical recovery points.",
     "Backups count only when a measured restore satisfies the recovery objective."
   ],
-  "lesson": "Backups count only when a measured restore satisfies the recovery objective.",
+  "lesson": "Replicas do not protect against human error: you need Point-In-Time Recovery (PITR) with continuous Write-Ahead Log (WAL) archiving to restore data to the exact second before a corrupting query ran.",
   "variants": [
     {
       "id": "without-multi-az",

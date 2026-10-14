@@ -6,7 +6,7 @@ export const level003: Level = {
   title: "Too Many Connections", kicker: "CHAPTER 01 · SHARE THE PIPE",
   description: "A traffic bump sends the monolith into a connection storm. PostgreSQL is healthy, but the app keeps opening more connections than the database can serve.",
   dialogue: [
-    { character: "jimmy", emotion: "panic", text: "{name}, PostgreSQL is rejecting connections. The database is not out of CPU—it is out of seats." },
+    { character: "jimmy", emotion: "panic", text: "{name}, PostgreSQL is rejecting connections. The database is not out of CPU; it is out of seats." },
     { character: "jimmy", emotion: "concerned", text: "Every API process is bringing its own crowd. We need a better way to share the room." },
   ],
   metrics: [{ label: "Connections", value: "498 / 500", severity: "critical" }, { label: "DB CPU", value: "42%", severity: "normal" }, { label: "Timeouts", value: "18%", severity: "critical" }],
@@ -69,7 +69,7 @@ export const level003: Level = {
       tradeoff: {
         upsideLabel: "More read capacity",
         downsideLabel: "Lag; storm remains",
-        upside: "A read replica can add read capacity if read throughput—not connection count—is the bottleneck.",
+        upside: "A read replica can add read capacity if read throughput, not connection count, is the bottleneck.",
         downside: "The connection storm still reaches the primary, while replication lag and $700 monthly spend arrive too.",
         jimmyExplanation: "A replica creates another place to serve reads, but each app process still opens too many connections to the primary. This can help a different bottleneck; for this incident it leaves the cause in place and adds replication behavior to operate.",
         effectReasons: {
