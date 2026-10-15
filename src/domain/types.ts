@@ -195,6 +195,8 @@ export interface OutcomeSnapshot {
   xpEarned: number;
   /** Decision quality out of 10, captured before content can change. */
   decisionScore?: number;
+  /** Whether any hint was opened before committing this decision. */
+  hintUsed?: boolean;
   nextLevel?: string;
   companyBefore: CampaignCompanyState;
   companyAfter: CampaignCompanyState;

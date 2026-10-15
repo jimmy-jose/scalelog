@@ -238,6 +238,86 @@ test('campaign scores weight each incident equally, round once, and reject incom
   }
 });
 
+test('hints reduce campaign score by 0.1 per scenario up to 1.0, cap at 0, and ignore repeat hints in a scenario', () => {
+  const campaign = { ...campaigns[0], levelIds: ['a', 'b', 'c'] };
+  const history = [
+    { levelId: 'a', decisionScore: 10, hintUsed: true },
+    { levelId: 'b', decisionScore: 10 / 3, hintUsed: false },
+    { levelId: 'c', decisionScore: 0 },
+  ];
+  const noReplay = () => { throw new Error('Saved scores must be authoritative'); };
+  // (10 + 3.3333333333333335 + 0) / 3 = 4.444444444444445 - 0.1 = 4.344444444444445 -> rounded 4.3
+  assert.equal(calculateCampaignScore(campaign, history, noReplay), 4.3);
+
+  // All 3 scenarios hinted: -0.3 penalty -> 4.444444444444445 - 0.3 = 4.144444444444445 -> rounded 4.1
+  const allHinted = history.map((entry) => ({ ...entry, hintUsed: true }));
+  assert.equal(calculateCampaignScore(campaign, allHinted, noReplay), 4.1);
+
+  // Capped at 1.0 maximum penalty even with 12 hinted scenarios:
+  const manyLevels = Array.from({ length: 12 }, (_, i) => `lvl-${i}`);
+  const manyCampaign = { ...campaigns[0], levelIds: manyLevels };
+  const manyHistory = manyLevels.map((id) => ({ levelId: id, decisionScore: 10, hintUsed: true }));
+  // 10 - 1.0 (capped from 1.2) = 9.0
+  assert.equal(calculateCampaignScore(manyCampaign, manyHistory, noReplay), 9.0);
+
+  // Score cannot fall below 0:
+  const zeroHistory = history.map((entry) => ({ ...entry, decisionScore: 0, hintUsed: true }));
+  assert.equal(calculateCampaignScore(campaign, zeroHistory, noReplay), 0);
+
+  // Unhinted / legacy history without hintUsed field receives 0 penalty:
+  const legacyHistory = history.map(({ hintUsed, ...entry }) => entry);
+  assert.equal(calculateCampaignScore(campaign, legacyHistory, noReplay), 4.4);
+});
+
+test('hint usage records immediately, survives reloads, attaches to outcomes, and lowers certificate score', async () => {
+  const firstLevelId = allLevels[0].id;
+  // Opening hint on an unlocked, uncompleted level succeeds and records hint use
+  assert.equal(store.getState().recordHintUse(firstLevelId), true);
+  assert.deepEqual(store.getState().progress.hintsUsed, [firstLevelId]);
+
+  // Calling again for the same level returns true and does not duplicate
+  assert.equal(store.getState().recordHintUse(firstLevelId), true);
+  assert.deepEqual(store.getState().progress.hintsUsed, [firstLevelId]);
+
+  // Locked or nonexistent levels cannot record hint use
+  assert.equal(store.getState().recordHintUse(allLevels[5].id), false);
+  assert.equal(store.getState().recordHintUse('nonexistent-level'), false);
+
+  // Survives persistence rehydrate
+  await store.persist.rehydrate();
+  assert.deepEqual(store.getState().progress.hintsUsed, [firstLevelId]);
+
+  // Complete level 0 with recommended choice
+  const level0 = getLevelAtStart(store.getState(), firstLevelId);
+  assert.equal(store.getState().chooseChoice(level0, level0.choices.find(c => c.tone === 'recommended')), true);
+  assert.equal(store.getState().history[0].hintUsed, true);
+
+  // Completed levels reject new hint recording
+  assert.equal(store.getState().recordHintUse(firstLevelId), false);
+
+  // Level 1: do NOT take hint
+  const secondLevelId = allLevels[1].id;
+  const level1 = getLevelAtStart(store.getState(), secondLevelId);
+  assert.equal(store.getState().chooseChoice(level1, level1.choices.find(c => c.tone === 'recommended')), true);
+  assert.equal(store.getState().history[1].hintUsed, false);
+
+  // Finish remaining levels (2 to 35) with recommended choices
+  for (let i = 2; i < allLevels.length; i++) {
+    const level = getLevelAtStart(store.getState(), allLevels[i].id);
+    assert.equal(store.getState().chooseChoice(level, level.choices.find(c => c.tone === 'recommended')), true);
+  }
+
+  // 36 levels with recommended choices (all 10s), exactly 1 hint used -> score is 10 - 0.1 = 9.9
+  assert.equal(getCampaignScore(store.getState()), 9.9);
+  const certificate = store.getState().certificates['startup-cto'];
+  assert.equal(certificate.score, 9.9);
+
+  // Resetting campaign clears hintsUsed for the new run while preserving certificate
+  store.getState().resetCampaign('startup-cto');
+  assert.deepEqual(store.getState().progress.hintsUsed, []);
+  assert.equal(store.getState().certificates['startup-cto'].score, 9.9);
+});
+
 test('scores are issued only on completion, survive reload and reset, and resolve legacy incident variants', async () => {
   finish(35);
   assert.equal(getCampaignScore(store.getState()), undefined);

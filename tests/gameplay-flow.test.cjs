@@ -257,6 +257,30 @@ test('an unknown historical decision never falls back to the latest unrelated re
   assert.match(render(Outcome), /No decision to review/);
 });
 
+test('hint prompt explains score penalty, updates after being opened, and is free on completed scenarios', () => {
+  params = { levelId: allLevels[0].id };
+  const initialMarkup = render(Gameplay);
+  assert.match(initialMarkup, /Ask Byte for a hint/);
+  assert.match(initialMarkup, /Hints reduce your final campaign score by 0\.1 per scenario/);
+
+  const hintButton = controls.find((c) => c.accessibilityLabel?.includes('hint'));
+  assert.ok(hintButton);
+  assert.match(hintButton.accessibilityHint, /Hints reduce your final campaign score by 0\.1 per scenario/);
+  hintButton.onPress();
+
+  assert.deepEqual(store.getState().progress.hintsUsed, [allLevels[0].id]);
+  const recordedMarkup = render(Gameplay);
+  assert.match(recordedMarkup, /Hint use recorded\. More hints in this scenario cost nothing extra\./);
+
+  chooseRecommended(0);
+
+  params = { levelId: allLevels[0].id };
+  const completedMarkup = render(Gameplay);
+  assert.match(completedMarkup, /Review hints freely\. Your recorded score will not change\./);
+  const completedHintButton = controls.find((c) => c.accessibilityLabel?.includes('hint'));
+  assert.ok(completedHintButton);
+  assert.match(completedHintButton.accessibilityHint, /Review hints freely/);
+});
 
 test('completion and certificate screens distinguish this run from the saved certificate score', () => {
   for (let index = 0; index < allLevels.length; index++) chooseRecommended(index);

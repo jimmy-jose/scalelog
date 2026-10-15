@@ -14,6 +14,7 @@ import { DecisionDeck } from "@/ui/components/DecisionDeck";
 import { Button } from "@/ui/components/Button";
 import { StepProgress } from "@/ui/components/StepProgress";
 import { ArchitectureTransition } from "@/ui/components/ArchitectureTransition";
+import { HINT_SCORE_EXPLANATION } from "@/domain/campaignScore";
 import type { Choice } from "@/domain/types";
 import { colors } from "@/ui/theme";
 import { formatCompact } from "@/lib/format";
@@ -36,6 +37,7 @@ export default function GameplayScreen() {
   const architecture = useGameStore((state) => state.architecture);
   const activeCampaignId = useGameStore((state) => state.activeCampaignId);
   const level = useMemo(() => getLevelAtStart({ activeCampaignId, progress, history, architecture }, String(levelId)), [activeCampaignId, progress, history, architecture, levelId]);
+  const recordHintUse = useGameStore((state) => state.recordHintUse);
   const chooseChoice = useGameStore((state) => state.chooseChoice);
   const setCurrentLevel = useGameStore((state) => state.setCurrentLevel);
   const [step, setStep] = useState(0);
@@ -67,6 +69,16 @@ export default function GameplayScreen() {
   if (!level || !graph) return <Screen><Text style={styles.missing}>Level not found.</Text><Button onPress={() => router.replace("/levels")}>Back to campaign map</Button></Screen>;
   if (level.campaignId !== activeCampaignId || !unlockedLevels.includes(level.id)) return <Redirect href="/levels" />;
   if (failureReason && !isCompleted) return <Redirect href="/complete" />;
+  const hintNote = isCompleted
+    ? "Review hints freely. Your recorded score will not change."
+    : progress.hintsUsed?.includes(level.id)
+      ? "Hint use recorded. More hints in this scenario cost nothing extra."
+      : HINT_SCORE_EXPLANATION;
+  const openHint = (index: number) => {
+    if (!isCompleted && !recordHintUse(level.id)) return;
+    gameFeedback.trigger("hintOpen");
+    setHintIndex(index);
+  };
   return <Screen contentStyle={styles.screen} resetKey={`${level.id}-${step}`}>
     <CompanySummary key={level.id} levelId={level.id} onBack={() => router.replace("/levels")} />
     {recordedOutcome && <View style={[styles.recordedDecision, isSuboptimal && styles.recordedDecisionSuboptimal]}>
@@ -115,10 +127,10 @@ export default function GameplayScreen() {
             }
           }}
         />
-      {hintIndex < 0 ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="Ask Byte, your AI assistant, for a hint" style={({ pressed }) => [styles.hintPrompt, pressed && styles.hintPromptPressed]} onPress={() => { gameFeedback.trigger("hintOpen"); setHintIndex(0); }}>
+      {level.hints.length > 0 && (hintIndex < 0 ? (
+        <Pressable accessibilityRole="button" accessibilityLabel="Ask Byte, your AI assistant, for a hint" accessibilityHint={hintNote} style={({ pressed }) => [styles.hintPrompt, pressed && styles.hintPromptPressed]} onPress={() => openHint(0)}>
           <View style={styles.hintIcon}><Text style={styles.hintQuestion}>?</Text></View>
-          <View style={styles.hintCopy}><Text style={styles.hintTitle}>Ask Byte for a hint</Text></View>
+          <View style={styles.hintCopy}><Text style={styles.hintTitle}>Ask Byte for a hint</Text><Text style={styles.hintNote}>{hintNote}</Text></View>
           <Text style={styles.hintArrow}>↗</Text>
         </Pressable>
       ) : (
@@ -133,10 +145,11 @@ export default function GameplayScreen() {
             </View>
             <Text style={styles.hintEyebrow}>A THING TO CONSIDER  ·  {String(hintIndex + 1).padStart(2, "0")}/{String(level.hints.length).padStart(2, "0")}</Text>
             <Text style={styles.hintText}>{level.hints[hintIndex]}</Text>
-            {level.hints.length > 1 && <Pressable accessibilityRole="button" accessibilityLabel="Ask Byte for another hint" onPress={() => { gameFeedback.trigger("hintOpen"); setHintIndex((current) => (current + 1) % level.hints.length); }} style={styles.nextHint}><Text style={styles.nextHintText}>ANOTHER CLUE</Text><Text style={styles.nextHintArrow}>→</Text></Pressable>}
+            <Text style={styles.hintNote}>{hintNote}</Text>
+            {level.hints.length > 1 && <Pressable accessibilityRole="button" accessibilityLabel="Ask Byte for another hint" onPress={() => openHint((hintIndex + 1) % level.hints.length)} style={styles.nextHint}><Text style={styles.nextHintText}>ANOTHER CLUE</Text><Text style={styles.nextHintArrow}>→</Text></Pressable>}
           </View>
         </Animated.View>
-      )}
+      ))}
       <Button variant="ghost" onPress={() => setStep(0)}>← The problem</Button>
     </View>
     {previewChoice && <ArchitectureTransition
@@ -172,6 +185,7 @@ const styles = StyleSheet.create({
   hintQuestion: { color: colors.blue, fontSize: 16, fontWeight: "900" },
   hintCopy: { flex: 1, paddingHorizontal: 11 },
   hintTitle: { color: "#E2EAF4", fontSize: 12, fontWeight: "800" },
+  hintNote: { color: colors.text, fontSize: 12, lineHeight: 18, marginTop: 6 },
   hintArrow: { color: colors.blue, fontSize: 17, fontWeight: "700" },
   byteHint: { minHeight: 174, flexDirection: "row", overflow: "hidden", borderRadius: 15, backgroundColor: "#101D30", borderWidth: 1, borderColor: "#344B68", marginTop: 3 },
   bytePortrait: { width: 116, alignSelf: "stretch", overflow: "hidden", backgroundColor: "#14243B", borderRightWidth: 1, borderRightColor: "#283D57" },

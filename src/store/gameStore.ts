@@ -34,6 +34,8 @@ interface PlayerProfile { name: string; age: number | null }
 interface ProgressState {
   completedLevels: string[];
   selectedChoices: Record<string, string>;
+  /** Optional for saves created before hint tracking. One entry per scenario. */
+  hintsUsed?: string[];
 }
 
 interface CampaignSave {
@@ -60,6 +62,7 @@ interface GameState extends CampaignSave {
   setProfile: (profile: PlayerProfile) => void;
   markCampaignBriefSeen: (campaignId: string) => void;
   chooseChoice: (level: Level, choice: Choice) => boolean;
+  recordHintUse: (levelId: string) => boolean;
   setCurrentLevel: (levelId: string) => void;
   updateAudioSettings: (settings: Partial<AudioSettings>) => void;
 }
@@ -110,7 +113,7 @@ function makeFreshCampaignSave(campaignId: string): CampaignSave {
     },
     company: { ...(campaign?.story.startingCompany as CampaignCompanyState | undefined) ?? { cash: 40000, monthlyRevenue: 2000, monthlyBurn: 7800, users: 250, engineers: 2, customerTrust: 72, reliability: 84, complexity: 14 } },
     architecture: cloneGraph(firstLevel?.architectureBefore ?? initialArchitecture),
-    progress: { completedLevels: [], selectedChoices: {} },
+    progress: { completedLevels: [], selectedChoices: {}, hintsUsed: [] },
     lastOutcome: undefined,
     failureReason: undefined,
     briefSeen: false,
@@ -202,6 +205,7 @@ function applyDecision(save: CampaignSave, level: Level, choice: Choice): Campai
     title: choice.outcomeTitle, dialogue: choice.outcomeDialogue, emotion: choice.outcomeEmotion,
     note: choice.outcomeNote, lesson: level.lesson, xpEarned: result.xpEarned,
     decisionScore: getDecisionScore(level, choice),
+    hintUsed: save.progress.hintsUsed?.includes(level.id) ?? false,
     nextLevel: failureReason ? undefined : nextLevel,
     architectureBefore: cloneGraph(save.architecture), architectureAfter: cloneGraph(architecture), incidentDescription: level.description,
     incidentArchitectureBefore: cloneGraph(incidentArchitecture),
@@ -218,7 +222,7 @@ function applyDecision(save: CampaignSave, level: Level, choice: Choice): Campai
       unlockedLevels: failureReason ? save.player.unlockedLevels : Array.from(new Set([...save.player.unlockedLevels, ...level.unlocks, ...(nextLevel ? [nextLevel] : [])])),
       awards: save.player.awards.map((award) => !failureReason && (award.id === "garage-cto" || award.id.endsWith("-completion")) && level.levelNumber >= 10 ? { ...award, unlocked: true } : award),
     },
-    progress: { completedLevels: [...save.progress.completedLevels, level.id], selectedChoices: { ...save.progress.selectedChoices, [level.id]: choice.id } },
+    progress: { ...save.progress, completedLevels: [...save.progress.completedLevels, level.id], selectedChoices: { ...save.progress.selectedChoices, [level.id]: choice.id } },
     lastOutcome: outcome, history: [...save.history, outcome],
   };
 }
@@ -241,7 +245,7 @@ const initialSave = makeFreshCampaignSave(initialCampaignId);
 // Keep storage lifecycle outside the persisted store: reporting a read failure
 // must not write a fresh campaign over the save that could not be loaded.
 export const useSaveStatus = create<{ status: "loading" | "ready" | "error" }>(() => ({ status: "loading" }));
-const initialState: Omit<GameState, "selectCampaign" | "resetCampaign" | "setProfile" | "markCampaignBriefSeen" | "chooseChoice" | "setCurrentLevel" | "updateAudioSettings" | "personalizeCertificate" | "markCertificateMinted"> = {
+const initialState: Omit<GameState, "selectCampaign" | "resetCampaign" | "setProfile" | "markCampaignBriefSeen" | "chooseChoice" | "setCurrentLevel" | "updateAudioSettings" | "personalizeCertificate" | "markCertificateMinted" | "recordHintUse"> = {
   ...initialSave,
   activeCampaignId: initialCampaignId,
   campaignSaves: { [initialCampaignId]: initialSave },
@@ -356,6 +360,17 @@ export const useGameStore = create<GameState>()(
         if (!level || level.campaignId !== state.activeCampaignId || state.failureReason || !state.player.unlockedLevels.includes(levelId) || state.progress.completedLevels.includes(levelId)) return {};
         return updateActiveSave(state, { player: { ...state.player, currentLevel: levelId } });
       }),
+      recordHintUse: (levelId) => {
+        const state = get();
+        const level = getLevelAtStart(state, levelId);
+        if (!level || level.campaignId !== state.activeCampaignId || !level.hints.length ||
+          state.failureReason || getFailureReason(state.company, state.player.confidence) ||
+          !state.player.unlockedLevels.includes(levelId) || state.progress.completedLevels.includes(levelId)) return false;
+        const hintsUsed = state.progress.hintsUsed ?? [];
+        if (hintsUsed.includes(levelId)) return true;
+        set(updateActiveSave(state, { progress: { ...state.progress, hintsUsed: [...hintsUsed, levelId] } }));
+        return true;
+      },
       chooseChoice: (level, choice) => {
         const state = get();
         const source = getLevel(level.id);
