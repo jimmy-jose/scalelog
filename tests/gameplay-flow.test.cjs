@@ -79,7 +79,7 @@ Module._load = function (id, parent, main) {
     useGameStore.subscribe = storeModule.useGameStore.subscribe;
     return { ...storeModule, useGameStore, useSaveStatus: (selector) => selector({ status: saveStatus }) };
   }
-  if (id.startsWith('@/ui/components/') && !id.endsWith('/TopBar') && !id.endsWith('/CertificateReward')) {
+  if (id.startsWith('@/ui/components/') && !id.endsWith('/TopBar') && !id.endsWith('/CertificateReward') && !id.endsWith('/CampaignScore')) {
     const name = id.slice(id.lastIndexOf('/') + 1);
     if (name === 'JimmyAvatar' || name === 'ByteAvatar') return { characterAssets: {} };
     if (name === 'Button') return { Button: Pressable };
@@ -243,4 +243,25 @@ test('an unknown historical decision never falls back to the latest unrelated re
   chooseRecommended(0);
   params = { levelId: 'missing-incident' };
   assert.match(render(Outcome), /No decision to review/);
+});
+
+
+test('completion and certificate screens distinguish this run from the saved certificate score', () => {
+  for (let index = 0; index < allLevels.length; index++) chooseRecommended(index);
+  const earned = store.getState().certificates['startup-cto'];
+  assert.match(render(Complete), /This run’s campaign score.*10.0 \/ 10/);
+  assert.match(render(Certificate), /Certificate campaign score.*10.0 \/ 10/);
+  store.getState().resetCampaign('startup-cto');
+  for (let index = 0; index < allLevels.length; index++) {
+    const level = storeModule.getLevelAtStart(store.getState(), allLevels[index].id);
+    const choice = level.choices.find(item => item.tone === (index >= 3 ? 'neutral' : 'recommended'));
+    assert.equal(store.getState().chooseChoice(level, choice), true);
+  }
+  const score = storeModule.getCampaignScore(store.getState());
+  assert.ok(score > 0 && score < 10);
+  assert.match(render(Complete), new RegExp(`This run’s campaign score.*${score.toFixed(1)} / 10`));
+  assert.equal(store.getState().certificates['startup-cto'].score, earned.score);
+  assert.match(render(Certificate), /Certificate campaign score.*10.0 \/ 10/);
+  store.setState({ certificates: { 'startup-cto': { ...earned, score: undefined } } });
+  assert.match(render(Certificate), /Not scored/);
 });

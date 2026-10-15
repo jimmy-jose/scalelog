@@ -1,3 +1,5 @@
+import { CampaignScore } from "@/ui/components/CampaignScore";
+import { formatCampaignScore, isValidCampaignScore } from "@/domain/campaignScore";
 import { useEffect, useRef, useState } from "react";
 import { Platform, StyleSheet, Text, TextInput, View } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
@@ -25,6 +27,7 @@ export default function VerifyScreen() {
     levels?: string;
     issued?: string;
     sig?: string;
+    score?: string;
   }>();
 
   const initialId = typeof params.id === "string" ? params.id.trim() : "";
@@ -32,6 +35,7 @@ export default function VerifyScreen() {
   const paramCampaign = typeof params.campaign === "string" ? params.campaign : CERTIFICATE_CAMPAIGN_ID;
   const paramLevels = Number(params.levels) || 36;
   const paramIssued = typeof params.issued === "string" ? params.issued : "";
+  const paramScore = params.score === undefined ? undefined : typeof params.score === "string" && params.score.trim() ? Number(params.score) : NaN;
   const paramSig = typeof params.sig === "string" ? params.sig : "";
 
   const [searchId, setSearchId] = useState(initialId);
@@ -42,6 +46,7 @@ export default function VerifyScreen() {
     recipientName: string;
     campaignTitle: string;
     levelCount: number;
+    score?: number;
     issuedAt: string;
     mintedAt?: string;
     maskedEmail?: string;
@@ -78,6 +83,7 @@ export default function VerifyScreen() {
           recipientName: res.recipientName,
           campaignTitle: res.campaignTitle || "Startup CTO",
           levelCount: res.levelCount || 36,
+          score: res.score,
           issuedAt: res.issuedAt || new Date().toISOString(),
           mintedAt: res.mintedAt,
           maskedEmail: res.maskedEmail,
@@ -95,6 +101,7 @@ export default function VerifyScreen() {
             campaignId: paramCampaign,
             recipientName: paramName,
             levelCount: paramLevels,
+            score: paramScore,
             issuedAt: paramIssued,
           },
           paramSig
@@ -106,6 +113,7 @@ export default function VerifyScreen() {
           recipientName: paramName,
           campaignTitle: "Startup CTO",
           levelCount: paramLevels,
+          score: paramScore,
           issuedAt: paramIssued,
           mintedAt: undefined,
           maskedEmail: undefined,
@@ -124,7 +132,7 @@ export default function VerifyScreen() {
     return () => {
       isMounted = false;
     };
-  }, [activeId, paramName, paramCampaign, paramLevels, paramIssued, paramSig]);
+  }, [activeId, paramName, paramCampaign, paramLevels, paramIssued, paramSig, paramScore]);
 
   const certificate: CampaignCertificate = {
     id: verifiedData?.id || activeId || "SL-SCTO-UNKNOWN",
@@ -132,6 +140,7 @@ export default function VerifyScreen() {
     campaignTitle: verifiedData?.campaignTitle || "Startup CTO",
     recipientName: verifiedData?.recipientName || "Verified Recipient",
     levelCount: verifiedData?.levelCount || 36,
+    score: verifiedData?.score,
     issuedAt: verifiedData?.issuedAt || new Date().toISOString(),
     mintedAt: verifiedData?.mintedAt,
     isMinted: true,
@@ -262,10 +271,12 @@ export default function VerifyScreen() {
             accessibilityRole="image"
             accessibilityLabel={`Certificate of Achievement for ${verifiedData.recipientName}. 36 scenarios completed. Issued on ${certificateDate(
               certificate
-            )}.`}
+            )}.${isValidCampaignScore(certificate.score) ? ` Campaign score ${formatCampaignScore(certificate.score)}.` : ""}`}
           >
             <SvgXml xml={xml} override={{ width: "100%", height: "100%", ref: svg }} />
           </View>
+
+          <CampaignScore score={certificate.score} label="Certificate campaign score" />
 
           {/* Credential Details Card */}
           <View style={styles.card}>

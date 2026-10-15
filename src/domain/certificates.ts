@@ -1,3 +1,4 @@
+import { formatCampaignScore, isValidCampaignScore } from "./campaignScore";
 import type { Campaign } from "./types";
 
 export const CERTIFICATE_CAMPAIGN_ID = "startup-cto";
@@ -10,6 +11,7 @@ export interface CampaignCertificate {
   recipientName: string;
   recipientEmail?: string;
   levelCount: number;
+  score?: number;
   issuedAt: string;
   mintedAt?: string;
   isMinted?: boolean;
@@ -53,13 +55,14 @@ export function canEarnCertificate(campaign: Campaign | undefined, save: {
     !save.failureReason && campaign.levelIds.every((id) => save.progress.completedLevels.includes(id)));
 }
 
-export function createCampaignCertificate(campaign: Campaign, name: string, now = new Date()): CampaignCertificate {
+export function createCampaignCertificate(campaign: Campaign, name: string, now = new Date(), score?: number): CampaignCertificate {
   return {
     id: `SL-SCTO-${now.toISOString().slice(0, 10).replace(/-/g, "")}-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
     campaignId: campaign.id,
     campaignTitle: campaign.title,
     recipientName: normalizeCertificateName(name).slice(0, CERTIFICATE_NAME_LIMIT),
     levelCount: campaign.levelIds.length,
+    ...(isValidCampaignScore(score) ? { score } : {}),
     issuedAt: now.toISOString(),
   };
 }
@@ -90,7 +93,7 @@ export function certificateReferralUrl(siteUrl?: string): string | undefined {
 
 export function certificateCaption(certificate: CampaignCertificate, siteUrl?: string): string {
   const referral = certificateReferralUrl(siteUrl);
-  return `I completed ${certificate.campaignTitle} on ScaleLog!\n\n${certificate.levelCount} system design scenarios: making architecture decisions, balancing cost and reliability, and learning from the consequences.\n\nWant to try the challenge?${referral ? `\n${referral}` : " Find ScaleLog and play your first campaign."}\n\n#SystemDesign #SoftwareEngineering #ScaleLog`;
+  return `I completed ${certificate.campaignTitle} on ScaleLog!${isValidCampaignScore(certificate.score) ? ` My campaign score: ${formatCampaignScore(certificate.score)}.` : ""}\n\n${certificate.levelCount} system design scenarios: making architecture decisions, balancing cost and reliability, and learning from the consequences.\n\nWant to try the challenge?${referral ? `\n${referral}` : " Find ScaleLog and play your first campaign."}\n\n#SystemDesign #SoftwareEngineering #ScaleLog`;
 }
 
 // Deterministic SHA-256 for secure client & test credential signature without native dependencies.
@@ -158,10 +161,11 @@ export function createCredentialSignature(certificate: {
   campaignId: string;
   recipientName: string;
   levelCount: number;
+  score?: number;
   issuedAt: string;
 }): string {
   const payload = `${CREDENTIAL_SECRET}|${certificate.id}|${certificate.campaignId}|${certificate.recipientName}|${certificate.levelCount}|${certificate.issuedAt}`;
-  return sha256Hex(payload).slice(0, 16);
+  return sha256Hex(payload + (certificate.score === undefined ? "" : `|score-v1:${certificate.score}`)).slice(0, 16);
 }
 
 export function verifyCredentialSignature(
@@ -170,11 +174,13 @@ export function verifyCredentialSignature(
     campaignId: string;
     recipientName: string;
     levelCount: number;
+    score?: number;
     issuedAt: string;
   },
   signature: string
 ): boolean {
   if (!signature || typeof signature !== "string") return false;
+  if (certificate.score !== undefined && !isValidCampaignScore(certificate.score)) return false;
   const expected = createCredentialSignature(certificate);
   return expected.toLowerCase() === signature.toLowerCase();
 }
@@ -197,5 +203,6 @@ export function getCertificateLegacyVerificationUrl(certificate: CampaignCertifi
     issued: certificate.issuedAt,
     sig,
   });
+  if (isValidCampaignScore(certificate.score)) searchParams.set("score", String(certificate.score));
   return `${site}/verify?${searchParams.toString()}`;
 }

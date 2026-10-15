@@ -1,3 +1,4 @@
+import { formatCampaignScore, isValidCampaignScore } from "@/domain/campaignScore";
 import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import Svg, { Circle, Path } from "react-native-svg";
@@ -18,6 +19,7 @@ export function CertificateReward() {
       <View style={styles.copy}><Text style={styles.kicker}>EARNED · FREE CERTIFICATE</Text><Text style={styles.title}>Your decisions deserve to be shared.</Text></View>
     </View>
     <Text style={styles.description}>You completed Startup CTO. Put your name on your certificate and share your milestone on LinkedIn.</Text>
+    {isValidCampaignScore(certificate.score) && <Text style={styles.description}>Certificate score: {formatCampaignScore(certificate.score)}. Your certificate preserves the first scored completion, including after replays.</Text>}
     <Button variant="secondary" onPress={() => router.push("/certificate")}>View your certificate</Button>
   </View>;
 }

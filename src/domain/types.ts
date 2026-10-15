@@ -193,6 +193,8 @@ export interface OutcomeSnapshot {
   note: string;
   lesson: string;
   xpEarned: number;
+  /** Decision quality out of 10, captured before content can change. */
+  decisionScore?: number;
   nextLevel?: string;
   companyBefore: CampaignCompanyState;
   companyAfter: CampaignCompanyState;

@@ -8,6 +8,7 @@ import { resolveLevel } from "@/domain/levelVariants";
 import { applyArchitectureChanges } from "@/domain/architecture";
 import { defaultAudioSettings, type AudioSettings } from "@/game/feedback/feedbackTypes";
 import { canEarnCertificate, createCampaignCertificate, normalizeCertificateName, normalizeCertificateEmail, CERTIFICATE_NAME_LIMIT, type CampaignCertificate } from "@/domain/certificates";
+import { calculateCampaignScore, getDecisionScore } from "@/domain/campaignScore";
 
 interface PlayerState {
   ctoXp: number;
@@ -181,6 +182,12 @@ export function getLevelAtStart(state: Pick<GameState, "activeCampaignId" | "pro
   return recordedDescription === undefined ? resolved : { ...resolved, description: recordedDescription };
 }
 
+export function getCampaignScore(state: Pick<GameState, "activeCampaignId" | "progress" | "history" | "architecture" | "failureReason">): number | undefined {
+  const campaign = campaigns.find((item) => item.id === state.activeCampaignId);
+  if (!campaign || state.failureReason || !campaign.levelIds.every((id) => state.progress.completedLevels.includes(id))) return undefined;
+  return calculateCampaignScore(campaign, state.history, (id) => getLevelAtStart(state, id));
+}
+
 function applyDecision(save: CampaignSave, level: Level, choice: Choice): CampaignSave {
   const result = resolveDecision(save.company, save.player.ctoXp, save.player.confidence, level, choice);
   const nextLevel = result.failureReason ? undefined : level.nextLevel;
@@ -194,6 +201,7 @@ function applyDecision(save: CampaignSave, level: Level, choice: Choice): Campai
     levelId: level.id, choiceId: choice.id, choiceLabel: choice.label, choiceCost: choice.cost,
     title: choice.outcomeTitle, dialogue: choice.outcomeDialogue, emotion: choice.outcomeEmotion,
     note: choice.outcomeNote, lesson: level.lesson, xpEarned: result.xpEarned,
+    decisionScore: getDecisionScore(level, choice),
     nextLevel: failureReason ? undefined : nextLevel,
     architectureBefore: cloneGraph(save.architecture), architectureAfter: cloneGraph(architecture), incidentDescription: level.description,
     incidentArchitectureBefore: cloneGraph(incidentArchitecture),
@@ -359,8 +367,8 @@ export const useGameStore = create<GameState>()(
           getChoiceBlockReason(state.company, canonicalChoice)) return false;
         const save = applyDecision(state, canonicalLevel, canonicalChoice);
         const campaign = campaigns.find((item) => item.id === state.activeCampaignId);
-        const certificate = !state.certificates[state.activeCampaignId] && canEarnCertificate(campaign, save)
-          ? createCampaignCertificate(campaign, state.profile.name) : undefined;
+        const certificate = state.certificates[state.activeCampaignId]?.score === undefined && canEarnCertificate(campaign, save)
+          ? createCampaignCertificate(campaign, state.profile.name, new Date(), getCampaignScore({ ...save, activeCampaignId: campaign.id })) : undefined;
         set({ ...updateActiveSave(state, save), ...(certificate ? {
           certificates: { ...state.certificates, [certificate.campaignId]: certificate },
         } : {}) });
@@ -385,7 +393,7 @@ export const useGameStore = create<GameState>()(
         for (const campaign of campaigns) {
           const save = saves[campaign.id];
           if (!certificates[campaign.id] && save && canEarnCertificate(campaign, save)) {
-            certificates[campaign.id] = createCampaignCertificate(campaign, merged.profile.name);
+            certificates[campaign.id] = createCampaignCertificate(campaign, merged.profile.name, new Date(), getCampaignScore({ ...save, activeCampaignId: campaign.id }));
           }
         }
         return { ...merged, ...activeSave, campaignSaves: saves, certificates };

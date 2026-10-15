@@ -27,3 +27,13 @@ Before minting their certificate, players can update their recipient name and li
 ## Validation
 
 `npm test` covers issuance, failed and incomplete runs, legacy-save backfill, replay retention, personalization, email normalization/masking/validation, mint payload validation, safe artwork text, referral URLs, web/native PNG and PDF export orchestration, cryptographic signatures, QR code generation, route access, and visual geometry. `npm run typecheck`, `npm run lint`, and `npm run build` check the app integration.
+
+## Campaign scores
+
+New completions receive a score out of 10, displayed to one decimal place on the ending screen, certificate screen, certificate artwork (including PNG/PDF exports), LinkedIn caption, and public verification page.
+
+Every scenario has equal weight. Its decision score is `10 × max(0, choice XP) / highest response XP`, using the existing XP rules and the actual resolved incident variant. Risky and overkill responses receive zero; neutral responses can receive partial credit. The denominator includes all responses for that incident, even those the player's finances cannot currently fund. Average the decision scores across every campaign scenario and round once to one decimal place. This measures decision quality under the game's reward model, rather than company size, completion percentage, or professional proficiency.
+
+Decision scores are saved with outcome snapshots so later content changes cannot alter a recorded score. Older outcome snapshots can be scored from their recorded choices and resolved historical incidents using current reward rules. Incomplete, failed, missing, or duplicate history does not produce a final score.
+
+The certificate snapshots the first scored completion and retains it through resets and replays. The ending screen always shows the current run's score; the certificate retains its own original score. Existing unscored certificates remain unchanged on load, since the current save may belong to another run. A successful new completion replaces an unscored certificate with a new scored credential ID. Older unscored credentials remain valid. Scores are included in registry requests, public responses, and legacy URL signatures; the registry validates numeric scores from 0 to 10 with at most one decimal place. As with completion data, this is a client-reported game result, not server-validated gameplay.

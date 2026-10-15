@@ -1,3 +1,4 @@
+import { isValidCampaignScore } from "./campaignScore";
 import {
   CERTIFICATE_CAMPAIGN_ID,
   CERTIFICATE_NAME_LIMIT,
@@ -16,6 +17,7 @@ export interface StoredCertificateRecord {
   recipientName: string;
   recipientEmail: string;
   levelCount: number;
+  score?: number;
   issuedAt: string;
   mintedAt: string;
   signature: string;
@@ -29,6 +31,7 @@ export interface VerificationResult {
   campaignId?: string;
   campaignTitle?: string;
   levelCount?: number;
+  score?: number;
   issuedAt?: string;
   mintedAt?: string;
   maskedEmail?: string;
@@ -48,7 +51,7 @@ export function validateMintPayload(body: unknown): {
     return { error: "Request body must be a JSON object." };
   }
 
-  const { id, recipientName, recipientEmail, campaignId, levelCount, issuedAt } =
+  const { id, recipientName, recipientEmail, campaignId, levelCount, issuedAt, score } =
     body as Record<string, unknown>;
 
   if (!isValidCertificateId(id)) {
@@ -76,6 +79,10 @@ export function validateMintPayload(body: unknown): {
     return { error: "Level count must be 36 for Startup CTO certification." };
   }
 
+  if (score !== undefined && (!isValidCampaignScore(score) || Math.abs(score * 10 - Math.round(score * 10)) > 1e-8)) {
+    return { error: "Campaign score must be a number from 0 to 10 with at most one decimal place." };
+  }
+
   const issued = typeof issuedAt === "string" ? issuedAt : new Date().toISOString();
   const mintedAt = new Date().toISOString();
 
@@ -86,6 +93,7 @@ export function validateMintPayload(body: unknown): {
     recipientName: cleanName,
     recipientEmail: cleanEmail,
     levelCount: 36,
+    ...(score === undefined ? {} : { score: score as number }),
     issuedAt: issued,
     mintedAt,
     isMinted: true,
@@ -101,6 +109,7 @@ export function validateMintPayload(body: unknown): {
       recipientName: certPayload.recipientName,
       recipientEmail: cleanEmail,
       levelCount: certPayload.levelCount,
+      ...(certPayload.score === undefined ? {} : { score: certPayload.score }),
       issuedAt: certPayload.issuedAt,
       mintedAt,
       signature,
@@ -119,6 +128,7 @@ export function buildPublicVerificationResponse(
     campaignId: record.campaignId,
     campaignTitle: record.campaignTitle || "Startup CTO",
     levelCount: record.levelCount,
+    ...(record.score === undefined ? {} : { score: record.score }),
     issuedAt: record.issuedAt,
     mintedAt: record.mintedAt,
     hasLinkedEmail: Boolean(record.recipientEmail),

@@ -1,3 +1,4 @@
+import { formatCampaignScore, isValidCampaignScore } from "@/domain/campaignScore";
 import {
   certificateIssuedMonthYear,
   getCertificateVerificationUrl,
@@ -437,6 +438,8 @@ export function certificateArtwork(
       ${text(600, 600, `${certificate.levelCount} / ${certificate.levelCount}`, 34, "#A35F35", 'class="serif-head" font-family="Georgia, serif" text-anchor="middle" font-weight="600"')}
       ${text(600, 626, "SCENARIOS COMPLETED", 9.5, "#7A6A5E", 'class="sans-head" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle" letter-spacing="2.5" font-weight="600"')}
     </g>
+
+    ${isValidCampaignScore(certificate.score) ? text(600, 654, `CAMPAIGN SCORE  ${formatCampaignScore(certificate.score)}`, 14, "#A35F35", 'class="sans-head" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle" font-weight="700"') : ""}
 
     <!-- Bottom Left: Circular ScaleLog Architecture Seal -->
     ${renderScaleLogSeal(145, 715)}

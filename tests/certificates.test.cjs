@@ -205,3 +205,95 @@ test('web export rasterizes the vector master, downloads a PNG, and reports rend
     global.setTimeout = originalTimeout;
   }
 });
+
+const { getDecisionScore, calculateCampaignScore } = require('../src/domain/campaignScore');
+const { getCampaignScore } = require('../src/store/gameStore');
+const { createCredentialSignature, verifyCredentialSignature, getCertificateLegacyVerificationUrl } = require('../src/domain/certificates');
+
+test('decision scores normalize XP, distinguish partial credit, and zero risky or overkill decisions', () => {
+  const level = { ...allLevels[0], xpReward: 100, choices: [
+    { id: 'best', tone: 'recommended', effects: { xp: 100 } },
+    { id: 'partial', tone: 'neutral', effects: { xp: 60 } },
+    { id: 'risk', tone: 'risky', effects: { xp: 500 } },
+    { id: 'overkill', tone: 'overkill', effects: {} },
+  ] };
+  assert.deepEqual(level.choices.map(choice => getDecisionScore(level, choice)), [10, 6, 0, 0]);
+  const noReward = { ...level, choices: [{ tone: 'neutral', effects: { xp: 0 } }] };
+  assert.equal(getDecisionScore(noReward, noReward.choices[0]), 0);
+});
+
+test('campaign scores weight each incident equally, round once, and reject incomplete or ambiguous history', () => {
+  const campaign = { ...campaigns[0], levelIds: ['a', 'b', 'c'] };
+  const history = [{ levelId: 'a', decisionScore: 10 }, { levelId: 'b', decisionScore: 10 / 3 }, { levelId: 'c', decisionScore: 0 }];
+  const noReplay = () => { throw new Error('Saved scores must be authoritative'); };
+  assert.equal(calculateCampaignScore(campaign, history, noReplay), 4.4);
+  assert.equal(calculateCampaignScore(campaign, history.slice(1), noReplay), undefined);
+  assert.equal(calculateCampaignScore(campaign, [...history, history[0]], noReplay), undefined);
+  assert.equal(calculateCampaignScore(campaign, [{ ...history[0], failureReason: 'failed' }, ...history.slice(1)], noReplay), undefined);
+  for (const decisionScore of [NaN, Infinity, -1, 11]) {
+    assert.equal(calculateCampaignScore(campaign, [{ ...history[0], decisionScore }, ...history.slice(1)], noReplay), undefined);
+  }
+});
+
+test('scores are issued only on completion, survive reload and reset, and resolve legacy incident variants', async () => {
+  finish(35);
+  assert.equal(getCampaignScore(store.getState()), undefined);
+  const source = allLevels.at(-1);
+  const level = getLevelAtStart(store.getState(), source.id);
+  store.getState().chooseChoice(level, level.choices.find(choice => choice.tone === 'recommended'));
+  const completed = store.getState();
+  const certificate = completed.certificates['startup-cto'];
+  assert.equal(certificate.score, 10);
+  assert.equal(getCampaignScore(completed), 10);
+  await store.persist.rehydrate();
+  assert.equal(store.getState().certificates['startup-cto'].score, 10);
+  const legacy = { ...completed, history: completed.history.map(({ decisionScore, ...entry }) => entry) };
+  assert.equal(getCampaignScore(legacy), 10);
+  const variant = { ...allLevels[0], choices: [{ id: 'variant-choice', tone: 'neutral', effects: { xp: 25 } }, { id: 'best', tone: 'recommended', effects: { xp: 100 } }] };
+  assert.equal(calculateCampaignScore({ ...campaigns[0], levelIds: [variant.id] }, [{ levelId: variant.id, choiceId: 'variant-choice' }], () => variant), 2.5);
+  store.getState().resetCampaign('startup-cto');
+  assert.equal(getCampaignScore(store.getState()), undefined);
+  assert.equal(store.getState().certificates['startup-cto'].score, 10);
+});
+
+test('unscored existing certificates stay unchanged on load and get a new identity after a scored replay', () => {
+  finish();
+  const { score, ...oldCertificate } = store.getState().certificates['startup-cto'];
+  store.setState({ certificates: { 'startup-cto': oldCertificate } });
+  const merge = store.persist.getOptions().merge;
+  assert.deepEqual(merge(store.getState(), store.getState()).certificates['startup-cto'], oldCertificate);
+  store.getState().resetCampaign('startup-cto');
+  finish();
+  const scored = store.getState().certificates['startup-cto'];
+  assert.equal(scored.score, 10);
+  assert.notEqual(scored.id, oldCertificate.id);
+});
+
+test('score is included in artwork, captions, registry requests and legacy signature verification', async () => {
+  finish();
+  const certificate = { ...store.getState().certificates['startup-cto'], score: 8.7, recipientEmail: 'alex@example.com' };
+  assert.match(certificateArtwork(certificate), /CAMPAIGN SCORE  8.7 \/ 10/);
+  assert.match(certificateCaption(certificate), /8.7 \/ 10/);
+  assert.match(certificateArtwork({ ...certificate, score: 0 }), /CAMPAIGN SCORE  0.0 \/ 10/);
+  assert.doesNotMatch(certificateArtwork({ ...certificate, score: undefined }), /CAMPAIGN SCORE/);
+  const signature = createCredentialSignature(certificate);
+  assert.equal(verifyCredentialSignature(certificate, signature), true);
+  assert.equal(verifyCredentialSignature({ ...certificate, score: 9.8 }, signature), false);
+  assert.equal(verifyCredentialSignature({ ...certificate, score: undefined }, signature), false);
+  const legacy = { ...certificate, score: undefined };
+  assert.equal(verifyCredentialSignature(legacy, createCredentialSignature(legacy)), true);
+  const url = new URL(getCertificateLegacyVerificationUrl(certificate, 'https://scalelog.example'));
+  assert.equal(url.searchParams.get('score'), '8.7');
+  assert.equal(url.searchParams.get('sig'), signature);
+  const previousFetch = global.fetch;
+  try {
+    let submitted;
+    global.fetch = async (_url, options) => {
+      submitted = JSON.parse(options.body);
+      return { ok: true, json: async () => ({ mintedAt: certificate.issuedAt }) };
+    };
+    const { mintCertificateOnServer } = require('../src/lib/certificateRegistry');
+    assert.equal((await mintCertificateOnServer(certificate)).success, true);
+    assert.equal(submitted.score, 8.7);
+  } finally { global.fetch = previousFetch; }
+});

@@ -1,3 +1,4 @@
+import { CampaignScore } from "@/ui/components/CampaignScore";
 import { useEffect, useMemo } from "react";
 import { CampaignResetButton } from "@/ui/components/CampaignResetButton";
 import { CertificateReward } from "@/ui/components/CertificateReward";
@@ -10,7 +11,7 @@ import Animated, { FadeInDown, useReducedMotion } from "react-native-reanimated"
 import { RewardCount } from "@/ui/components/RewardCount";
 import { RunProgress } from "@/ui/components/RunProgress";
 import { campaigns, getLevel } from "@/campaigns";
-import { getLevelAtStart, useGameStore } from "@/store/gameStore";
+import { getCampaignScore, getLevelAtStart, useGameStore } from "@/store/gameStore";
 import { ArchitectureCanvas } from "@/ui/components/ArchitectureCanvas";
 import { getCampaignEnding } from "@/domain/campaignEnding";
 import { premiumLaunchCapabilities, launchHazards } from "@/campaigns/startup-cto/launchContract";
@@ -36,6 +37,7 @@ export default function LevelCompleteScreen() {
   const architecture = useGameStore((state) => state.architecture);
   const progress = useGameStore((state) => state.progress);
   const history = useGameStore((state) => state.history);
+  const score = useGameStore(getCampaignScore);
   const campaign = campaigns.find((item) => item.id === activeCampaignId);
   const ending = useMemo(() => getCampaignEnding(architecture, company, premiumLaunchCapabilities, launchHazards), [architecture, company]);
   const level = outcome ? getLevel(outcome.levelId) : undefined;
@@ -102,6 +104,7 @@ export default function LevelCompleteScreen() {
       </LearnMore>}
     </Animated.View>}
 
+    {completed && <CampaignScore score={score} label="This run’s campaign score" />}
     {completed && <CertificateReward />}
     <View style={[styles.actions, wide && styles.actionsWide]}>
       <Button style={styles.primaryAction} onPress={() => nextLevel ? router.replace({ pathname: "/game/[levelId]", params: { levelId: nextLevel.id } }) : router.replace("/levels")}>

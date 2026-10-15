@@ -131,3 +131,20 @@ test("buildPublicVerificationResponse returns masked email and verification deta
   // Email raw is not exposed in public verification response
   assert.equal(publicRes.recipientEmail, undefined);
 });
+
+test('minting validates and preserves scores including zero while accepting older unscored certificates', () => {
+  const payload = { id: 'SL-SCTO-20261014-ABC12345', recipientName: 'Alex', recipientEmail: 'alex@example.com', campaignId: 'startup-cto', levelCount: 36 };
+  for (const score of [0, 8.7, 10]) {
+    const result = validateMintPayload({ ...payload, score });
+    assert.equal(result.error, undefined);
+    assert.equal(result.record.score, score);
+    assert.equal(buildPublicVerificationResponse(result.record).score, score);
+  }
+  for (const score of [-0.1, 10.1, NaN, Infinity, '8.7', null, {}, 8.75]) {
+    assert.match(validateMintPayload({ ...payload, score }).error, /score/i);
+  }
+  const legacy = validateMintPayload(payload);
+  assert.equal(legacy.error, undefined);
+  assert.equal(legacy.record.score, undefined);
+  assert.equal(buildPublicVerificationResponse(legacy.record).score, undefined);
+});

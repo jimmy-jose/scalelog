@@ -36,6 +36,7 @@ export async function mintCertificateOnServer(
         recipientEmail: certificate.recipientEmail,
         campaignId: certificate.campaignId,
         levelCount: certificate.levelCount,
+        score: certificate.score,
         issuedAt: certificate.issuedAt,
       }),
     });

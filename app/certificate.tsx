@@ -1,3 +1,5 @@
+import { CampaignScore } from "@/ui/components/CampaignScore";
+import { formatCampaignScore, isValidCampaignScore } from "@/domain/campaignScore";
 import { useRef, useState } from "react";
 import { Linking, Platform, StyleSheet, Text, TextInput, View } from "react-native";
 import Svg, { SvgXml } from "react-native-svg";
@@ -200,10 +202,12 @@ export default function CertificateScreen() {
           recipientName || "your name"
         }. ${certificate.campaignTitle}, ${certificate.levelCount} scenarios completed. Issued by ScaleLog on ${certificateDate(
           certificate
-        )}. Certificate ${certificate.id}.`}
+        )}. Certificate ${certificate.id}.${isValidCampaignScore(certificate.score) ? ` Campaign score ${formatCampaignScore(certificate.score)}.` : ""}`}
       >
         <SvgXml xml={xml} override={{ width: "100%", height: "100%", ref: svg }} />
       </View>
+
+      <CampaignScore score={certificate.score} label="Certificate campaign score" />
 
       {/* Minting / Personalization Card */}
       <View style={styles.card}>
