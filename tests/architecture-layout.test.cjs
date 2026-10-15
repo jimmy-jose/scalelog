@@ -27,6 +27,10 @@ function verify(graph, width) {
     assert.ok(node.x >= 0 && node.y >= 0);
     assert.ok(node.x + layout.nodeWidth <= layout.width);
     assert.ok(node.y + layout.nodeHeight <= layout.height);
+    const lane = layout.lanes[node.laneIndex];
+    assert.ok(lane, `Node ${node.node.id} missing lane`);
+    assert.ok(node.y >= lane.y + 40, `Node ${node.node.id} overlaps stage header: node.y=${node.y}, lane.y=${lane.y}`);
+    assert.ok(node.y + layout.nodeHeight <= lane.y + lane.height, `Node ${node.node.id} extends outside lane`);
     for (const other of layout.nodes) if (node !== other) {
       assert.ok(node.x + layout.nodeWidth <= other.x || other.x + layout.nodeWidth <= node.x ||
         node.y + layout.nodeHeight <= other.y || other.y + layout.nodeHeight <= node.y, `Overlapping cards: ${node.node.id}, ${other.node.id}`);

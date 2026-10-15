@@ -94,21 +94,24 @@ export function buildArchitectureLayout(graph: ArchitectureGraph, availableWidth
     }
   }
   const nodeWidth = 200, nodeHeight = 96, margin = 24, gap = 72;
+  const headerPadding = 48, bottomPadding = 16, laneGap = 36;
+  const laneHeight = nodeHeight + headerPadding + bottomPadding;
+  const stagePitch = laneHeight + laneGap;
   const maxSiblings = Math.max(1, ...ordered.map(stage => stage.length));
   const width = Math.max(availableWidth, margin * 2 + maxSiblings * (nodeWidth + gap) - gap);
-  const height = Math.max(180, margin * 2 + ordered.length * (nodeHeight + 80));
+  const height = Math.max(180, margin * 2 + ordered.length * stagePitch);
   const nodes: PlacedNode[] = [];
   const lanes = ordered.map((stage, index) => {
     const id = `stage-${index}`;
     const laneWidth = width - margin * 2;
     const x = margin;
-    const y = margin + index * (nodeHeight + 80);
+    const y = margin + index * stagePitch;
     stage.forEach((nodeId, row) => nodes.push({ node: nodesById.get(nodeId)!, lane: id, laneIndex: index,
       x: (width - (stage.length * (nodeWidth + gap) - gap)) / 2 + row * (nodeWidth + gap),
-      y: y + 32,
+      y: y + headerPadding,
     }));
     return { id, title: stageTitle(stage.map(nodeId => nodesById.get(nodeId)!), stage.every(nodeId => !reachable.has(nodeId))),
-      color: index === 0 ? "#71C9ED" : "#92A9C0", x, y, width: laneWidth, height: nodeHeight + 44 };
+      color: index === 0 ? "#71C9ED" : "#92A9C0", x, y, width: laneWidth, height: laneHeight };
   });
   return { width, height, nodeWidth, nodeHeight, lanes, nodes };
 }
