@@ -47,6 +47,9 @@ export default function GameplayScreen() {
   );
   const isCompleted = Boolean(level && progress.completedLevels.includes(level.id));
   const recordedOutcome = level ? history.find((entry) => entry.levelId === level.id) : undefined;
+  const preferredChoice = level?.choices.find((item) => item.tone === "recommended");
+  const loggedChoice = level?.choices.find((item) => item.id === (recordedOutcome?.choiceId ?? progress.selectedChoices[level.id]));
+  const isSuboptimal = Boolean(loggedChoice && preferredChoice && loggedChoice.id !== preferredChoice.id);
   useEffect(() => { if (level) setCurrentLevel(level.id); }, [level, setCurrentLevel]);
   useEffect(() => { setStep(0); setHintIndex(-1); setPreviewChoice(null); }, [level?.id]);
   const incidentFeedback = level?.incidentFeedback ?? (level?.metrics.some((metric) => metric.severity === "critical")
@@ -66,8 +69,20 @@ export default function GameplayScreen() {
   if (failureReason && !isCompleted) return <Redirect href="/complete" />;
   return <Screen contentStyle={styles.screen} resetKey={`${level.id}-${step}`}>
     <CompanySummary key={level.id} levelId={level.id} onBack={() => router.replace("/levels")} />
-    {recordedOutcome && <View style={styles.recordedDecision}>
+    {recordedOutcome && <View style={[styles.recordedDecision, isSuboptimal && styles.recordedDecisionSuboptimal]}>
+      <View style={styles.recordedHeader}>
+        <View style={[styles.statusDot, { backgroundColor: isSuboptimal ? colors.yellow : colors.mint }]} />
+        <Text style={[styles.recordedKicker, { color: isSuboptimal ? colors.yellow : colors.mint }]}>
+          {isSuboptimal ? "RECORDED DECISION · A STRONGER FIT WAS AVAILABLE" : "RECORDED DECISION · RECOMMENDED ARCHITECTURE PATH"}
+        </Text>
+      </View>
       <Text style={styles.context}>Your recorded decision: {recordedOutcome.choiceLabel}</Text>
+      {isSuboptimal && preferredChoice && (
+        <View style={styles.retrospectiveBox}>
+          <Text style={styles.retrospectiveBetterChoice}>Better choice: {preferredChoice.label}</Text>
+          <Text style={styles.retrospectiveReason}>{preferredChoice.tradeoff.byteExplanation}</Text>
+        </View>
+      )}
       <Button variant="secondary" onPress={() => router.push({ pathname: "/outcome", params: { levelId: level.id } })}>Review this outcome →</Button>
     </View>}
     <StepProgress labels={["The problem", "Your decision"]} current={step} onBack={setStep} />
@@ -139,7 +154,14 @@ const styles = StyleSheet.create({
   signal: { color: colors.yellow, fontSize: 12, lineHeight: 18, fontWeight: "700" },
   criticalSignal: { color: colors.red },
   context: { color: colors.text, fontSize: 13, lineHeight: 20 },
-  recordedDecision: { gap: 10, marginBottom: 12 },
+  recordedDecision: { gap: 10, marginBottom: 14, padding: 14, borderRadius: 12, backgroundColor: "#0E1A2B", borderWidth: 1, borderColor: "#273D58" },
+  recordedDecisionSuboptimal: { borderColor: "#5E461F", backgroundColor: "#151B25" },
+  recordedHeader: { flexDirection: "row", alignItems: "center", gap: 7 },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  recordedKicker: { fontSize: 8, fontWeight: "900", letterSpacing: 0.9 },
+  retrospectiveBox: { padding: 11, borderRadius: 8, backgroundColor: "#0D1724", borderWidth: 1, borderColor: "#243A52", gap: 4 },
+  retrospectiveBetterChoice: { color: colors.white, fontSize: 12, fontWeight: "800" },
+  retrospectiveReason: { color: "#BAC8D8", fontSize: 11, lineHeight: 16 },
   hidden: { display: "none" },
   screen: { maxWidth: 900, paddingHorizontal: 18, paddingBottom: 44 },
   missing: { color: colors.white, padding: 30 },

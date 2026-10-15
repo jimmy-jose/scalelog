@@ -113,6 +113,33 @@ export default function OutcomeScreen() {
     </Animated.View>
     {outcome.failureReason && <Text accessibilityRole="alert" style={styles.failure}>{outcome.failureReason}</Text>}
     <View style={styles.lesson}><Text style={styles.lessonKicker}>TAKE THIS FORWARD</Text><Text style={styles.lessonText}>{outcome.lesson}</Text></View>
+    {missedPreferredPath ? (
+      <Animated.View entering={FadeInDown.delay(110).duration(300)} style={styles.retrospectiveCard}>
+        <View style={styles.retrospectiveHeader}>
+          <View style={[styles.speakerDot, { backgroundColor: colors.yellow }]} />
+          <Text style={styles.retrospectiveKicker}>BYTE’S RETROSPECTIVE  ·  A STRONGER FIT WAS AVAILABLE</Text>
+        </View>
+        <Text style={styles.retrospectiveTitle}>I would have chosen {missedPreferredPath.label}.</Text>
+        <Text style={styles.retrospectiveExplanation}>{missedPreferredPath.tradeoff.byteExplanation}</Text>
+        <View style={styles.retrospectiveComparison}>
+          <View style={styles.comparisonBox}>
+            <Text style={styles.comparisonLabel}>WHY IT WAS BETTER</Text>
+            <Text style={styles.comparisonText}>{missedPreferredPath.tradeoff.upside}</Text>
+          </View>
+          {choice?.tradeoff.downside ? (
+            <View style={[styles.comparisonBox, styles.comparisonBoxDrawback]}>
+              <Text style={[styles.comparisonLabel, { color: colors.yellow }]}>DRAWBACK OF YOUR CHOICE</Text>
+              <Text style={styles.comparisonText}>{choice.tradeoff.downside}</Text>
+            </View>
+          ) : null}
+        </View>
+      </Animated.View>
+    ) : choice?.tone === "recommended" ? (
+      <View style={styles.idealPathBanner}>
+        <View style={[styles.speakerDot, { backgroundColor: colors.mint }]} />
+        <Text style={styles.idealPathText}>RECOMMENDED ARCHITECTURE PATH  ·  You made Byte’s optimal call for this incident.</Text>
+      </View>
+    ) : null}
     <View style={styles.footer}>
       <Button onPress={() => router.replace(reviewingHistory ? "/levels" : "/complete")}>{reviewingHistory ? "Back to campaign map →" : outcome.failureReason ? "View run summary →" : "Continue →"}</Button>
     </View>
@@ -139,11 +166,6 @@ export default function OutcomeScreen() {
         <Text style={styles.progressionText}>CTO confidence: {outcome.confidenceBefore} → {outcome.confidenceAfter}/100. {outcome.xpEarned === 0 ? "No XP awarded. XP cannot fall below zero." : ""}</Text>
       </View>
     </Animated.View>
-      {missedPreferredPath && <Animated.View entering={FadeInDown.delay(130).duration(300)} style={styles.recommendation}>
-        <View style={styles.recommendationHeading}><View style={styles.speakerDot} /><Text style={styles.recommendationLabel}>BYTE’S RETROSPECTIVE  ·  A STRONGER FIT</Text></View>
-        <Text style={styles.recommendationTitle}>I would have chosen {missedPreferredPath.label}.</Text>
-        <Text style={styles.recommendationText}>{missedPreferredPath.tradeoff.byteExplanation}</Text>
-      </Animated.View>}
     </LearnMore>
 
   </Screen>;
@@ -170,11 +192,18 @@ const styles = StyleSheet.create({
   sceneGround: { position: "absolute", zIndex: 3, left: 0, right: 0, bottom: 0, height: 18, backgroundColor: "rgba(5, 13, 27, 0.78)", borderTopWidth: 1, borderTopColor: "rgba(168, 191, 213, 0.16)" },
   speakerDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.mint },
   dialogueText: { color: "#DCE6F2", fontSize: 13, lineHeight: 19, fontWeight: "600", marginTop: 7 },
-  recommendation: { paddingHorizontal: 18, paddingVertical: 14, borderTopWidth: 1, borderTopColor: "#263B53", backgroundColor: "#101D30" },
-  recommendationHeading: { flexDirection: "row", alignItems: "center", gap: 7 },
-  recommendationLabel: { color: colors.blue, fontSize: 8, fontWeight: "900", letterSpacing: 0.9 },
-  recommendationTitle: { color: colors.white, fontSize: 13, lineHeight: 18, fontWeight: "900", marginTop: 7 },
-  recommendationText: { color: "#AEBED0", fontSize: 11, lineHeight: 17, marginTop: 4 },
+  retrospectiveCard: { marginTop: 14, borderRadius: 14, borderWidth: 1, borderColor: "#61471F", backgroundColor: "#151B25", padding: 15 },
+  retrospectiveHeader: { flexDirection: "row", alignItems: "center", gap: 7 },
+  retrospectiveKicker: { color: colors.yellow, fontSize: 8, fontWeight: "900", letterSpacing: 1 },
+  retrospectiveTitle: { color: colors.white, fontSize: 15, lineHeight: 20, fontWeight: "900", marginTop: 8 },
+  retrospectiveExplanation: { color: "#B8C9DC", fontSize: 12, lineHeight: 18, marginTop: 5 },
+  retrospectiveComparison: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
+  comparisonBox: { flex: 1, minWidth: 200, padding: 11, borderRadius: 9, backgroundColor: "#0E1826", borderWidth: 1, borderColor: "#243B54" },
+  comparisonBoxDrawback: { borderColor: "#4C381E", backgroundColor: "#171618" },
+  comparisonLabel: { color: colors.mint, fontSize: 8, fontWeight: "900", letterSpacing: 0.9 },
+  comparisonText: { color: "#D5E1EE", fontSize: 11, lineHeight: 16, marginTop: 4, fontWeight: "600" },
+  idealPathBanner: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 13, paddingVertical: 10, borderRadius: 10, backgroundColor: "#0C2329", borderWidth: 1, borderColor: "#1A4947", marginTop: 14 },
+  idealPathText: { color: colors.mint, fontSize: 9, fontWeight: "800", letterSpacing: 0.7 },
   sectionHeading: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", gap: 10, marginBottom: 9 },
   sectionKicker: { color: colors.mint, fontSize: 8, fontWeight: "900", letterSpacing: 1.2 },
   sectionTitle: { color: colors.white, fontSize: 17, lineHeight: 22, fontWeight: "900", marginTop: 4 },
