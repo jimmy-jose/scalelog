@@ -88,8 +88,7 @@ function renderArcText(
 /**
  * Classical copper laurel wreath flanking the scenarios completed count.
  */
-function renderLaurelWreaths(): string {
-  // Pairs of leaves along the crescent branch
+function renderLaurelWreaths(wide: boolean): string {
   const sprigs = [
     { ox: 494, oy: 644, orot: -25, ix: 504, iy: 638, irot: 5 },
     { ox: 483, oy: 636, orot: -45, ix: 494, iy: 628, irot: -12 },
@@ -99,42 +98,19 @@ function renderLaurelWreaths(): string {
     { ox: 476, oy: 581, orot: -125, ix: 485, iy: 574, irot: -88 },
     { ox: 483, oy: 568, orot: -140, ix: 490, iy: 563, irot: -105 },
   ];
-
-  const renderSide = (mirror: boolean) => {
-    const leavesSvg = sprigs
-      .map(({ ox, oy, orot, ix, iy, irot }) => {
-        const actualOx = mirror ? 600 + (600 - ox) : ox;
-        const actualIx = mirror ? 600 + (600 - ix) : ix;
-        const actualOrot = mirror ? -orot : orot;
-        const actualIrot = mirror ? -irot : irot;
-        return `
-          <ellipse cx="${actualOx}" cy="${oy}" rx="6" ry="2.7" transform="rotate(${actualOrot}, ${actualOx}, ${oy})" fill="#A35F35" />
-          <ellipse cx="${actualIx}" cy="${iy}" rx="5.3" ry="2.4" transform="rotate(${actualIrot}, ${actualIx}, ${iy})" fill="#A35F35" />
-        `;
-      })
-      .join("");
-
-    const topLeafX = mirror ? 600 + (600 - 489) : 489;
-    const topLeafRot = mirror ? 65 : -65;
-    const topLeaf = `<ellipse cx="${topLeafX}" cy="556" rx="6" ry="2.6" transform="rotate(${topLeafRot}, ${topLeafX}, 556)" fill="#A35F35" />`;
-
-    const stemD = mirror
-      ? "M 506 648 C 532 638, 538 608, 521 562"
-      : "M 494 648 C 468 638, 462 608, 479 562";
-
-    return `
-      <path d="${stemD}" fill="none" stroke="#A35F35" stroke-width="1.3" stroke-linecap="round"/>
-      ${leavesSvg}
-      ${topLeaf}
-    `;
-  };
-
-  return `
-    <g id="laurel-wreaths">
-      ${renderSide(false)}
-      ${renderSide(true)}
-    </g>
-  `;
+  // Mirror the complete branch so stems and leaves always share the same geometry.
+  const branch = `<g transform="translate(${wide ? -110 : 0}, 0)">
+    <path d="M 494 648 C 468 638, 462 608, 479 562" fill="none" stroke="#A35F35" stroke-width="1.3" stroke-linecap="round"/>
+    ${sprigs.map(({ ox, oy, orot, ix, iy, irot }) => `
+      <ellipse cx="${ox}" cy="${oy}" rx="6" ry="2.7" transform="rotate(${orot}, ${ox}, ${oy})" fill="#A35F35"/>
+      <ellipse cx="${ix}" cy="${iy}" rx="5.3" ry="2.4" transform="rotate(${irot}, ${ix}, ${iy})" fill="#A35F35"/>
+    `).join("")}
+    <ellipse cx="489" cy="556" rx="6" ry="2.6" transform="rotate(-65, 489, 556)" fill="#A35F35"/>
+  </g>`;
+  return `<g id="laurel-wreaths">
+    ${branch}
+    <g transform="translate(1200, 0) scale(-1, 1)">${branch}</g>
+  </g>`;
 }
 
 /**
@@ -333,6 +309,8 @@ export function certificateArtwork(
     ? certificate.campaignTitle
     : `${certificate.campaignTitle}: From Garage to Growth`;
 
+  const hasScore = isValidCampaignScore(certificate.score);
+  const completedX = hasScore ? 490 : 600;
   const issueDateStr = certificateIssuedMonthYear(certificate);
 
   const text = (
@@ -378,12 +356,12 @@ export function certificateArtwork(
     </g>
 
     <!-- Top Right Corner Text & Divider -->
-    <g class="sans-head" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" letter-spacing="2" fill="#A35F35" font-weight="500">
-      <line x1="1092" y1="64" x2="1092" y2="118" stroke="#A35F35" stroke-width="1"/>
-      ${text(1104, 70, "SYSTEMS", 8.5, "#A35F35")}
-      ${text(1104, 84, "ARCHITECTURE", 8.5, "#A35F35")}
-      ${text(1104, 98, "TRADEOFFS", 8.5, "#A35F35")}
-      ${text(1104, 112, "IN PRACTICE", 8.5, "#A35F35")}
+    <g id="corner-topics" class="sans-head" font-family="system-ui, -apple-system, sans-serif" font-size="8.5" letter-spacing="1.6" fill="#A35F35" font-weight="500" text-anchor="end">
+      <line x1="1020" y1="64" x2="1020" y2="118" stroke="#A35F35" stroke-width="1"/>
+      ${text(1144, 70, "SYSTEMS", 8.5, "#A35F35")}
+      ${text(1144, 84, "ARCHITECTURE", 8.5, "#A35F35")}
+      ${text(1144, 98, "TRADE-OFFS", 8.5, "#A35F35")}
+      ${text(1144, 112, "IN PRACTICE", 8.5, "#A35F35")}
     </g>
 
     <!-- Top Center Branding -->
@@ -427,19 +405,22 @@ export function certificateArtwork(
 
     <!-- Description Paragraph -->
     <g class="serif-head" font-family="Georgia, serif" font-size="14.5" fill="#17202B" letter-spacing="0.2">
-      ${text(600, 478, `For successfully completing the ScaleLog campaign “${campaignDisplay}”`, 14.5, "#17202B", 'text-anchor="middle"')}
-      ${text(600, 502, "and demonstrating practical understanding of architecture trade-offs across", 14.5, "#17202B", 'text-anchor="middle"')}
+      ${text(600, 478, `For completing “${campaignDisplay}” on ScaleLog`, 14.5, "#17202B", 'text-anchor="middle"')}
+      ${text(600, 502, "and exploring architecture trade-offs in", 14.5, "#17202B", 'text-anchor="middle"')}
       ${text(600, 526, "scalability, reliability, performance, and cost.", 14.5, "#17202B", 'text-anchor="middle"')}
     </g>
 
-    <!-- Achievement Indicator with Copper Laurels -->
+    <!-- Separate completion and score columns, framed by mirrored laurels. -->
     <g id="achievement-indicator">
-      ${renderLaurelWreaths()}
-      ${text(600, 600, `${certificate.levelCount} / ${certificate.levelCount}`, 34, "#A35F35", 'class="serif-head" font-family="Georgia, serif" text-anchor="middle" font-weight="600"')}
-      ${text(600, 626, "SCENARIOS COMPLETED", 9.5, "#7A6A5E", 'class="sans-head" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle" letter-spacing="2.5" font-weight="600"')}
+      ${renderLaurelWreaths(hasScore)}
+      ${text(completedX, 600, `${certificate.levelCount} / ${certificate.levelCount}`, 34, "#A35F35", 'class="serif-head" font-family="Georgia, serif" text-anchor="middle" font-weight="600"')}
+      ${text(completedX, 626, "SCENARIOS COMPLETED", 9.5, "#7A6A5E", 'class="sans-head" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle" letter-spacing="1.5" font-weight="600"')}
+      ${hasScore ? `<g id="campaign-score">
+        <line x1="600" y1="568" x2="600" y2="636" stroke="#D8C8B8" stroke-width="1"/>
+        ${text(710, 600, formatCampaignScore(certificate.score!), 34, "#A35F35", 'class="serif-head" font-family="Georgia, serif" text-anchor="middle" font-weight="600"')}
+        ${text(710, 626, "CAMPAIGN SCORE", 9.5, "#7A6A5E", 'class="sans-head" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle" letter-spacing="1.5" font-weight="600"')}
+      </g>` : ""}
     </g>
-
-    ${isValidCampaignScore(certificate.score) ? text(600, 654, `CAMPAIGN SCORE  ${formatCampaignScore(certificate.score)}`, 14, "#A35F35", 'class="sans-head" font-family="system-ui, -apple-system, sans-serif" text-anchor="middle" font-weight="700"') : ""}
 
     <!-- Bottom Left: Circular ScaleLog Architecture Seal -->
     ${renderScaleLogSeal(145, 715)}
@@ -447,18 +428,18 @@ export function certificateArtwork(
     <!-- Bottom Center Metadata Columns -->
     <g class="sans-head" font-family="system-ui, -apple-system, sans-serif">
       <!-- Col 1: Issued -->
-      ${text(370, 696, "ISSUED", 9, "#7A6A5E", 'text-anchor="middle" letter-spacing="2" font-weight="600"')}
-      ${text(370, 722, issueDateStr, 13.5, "#17202B", 'text-anchor="middle"')}
-      <line x1="465" y1="688" x2="465" y2="728" stroke="#D8C8B8" stroke-width="1"/>
+      ${text(330, 696, "ISSUED", 9, "#7A6A5E", 'text-anchor="middle" letter-spacing="2" font-weight="600"')}
+      ${text(330, 722, issueDateStr, 13.5, "#17202B", 'text-anchor="middle"')}
+      <line x1="425" y1="688" x2="425" y2="728" stroke="#D8C8B8" stroke-width="1"/>
 
       <!-- Col 2: Credential ID -->
-      ${text(580, 696, "CREDENTIAL ID", 9, "#7A6A5E", 'text-anchor="middle" letter-spacing="2" font-weight="600"')}
-      ${text(580, 722, certificate.id, 13.5, "#17202B", 'text-anchor="middle" letter-spacing="0.5"')}
-      <line x1="695" y1="688" x2="695" y2="728" stroke="#D8C8B8" stroke-width="1"/>
+      ${text(585, 696, "CREDENTIAL ID", 9, "#7A6A5E", 'text-anchor="middle" letter-spacing="2" font-weight="600"')}
+      ${text(585, 722, certificate.id, Math.min(12, 280 / (Array.from(certificate.id).length * 0.75)), "#17202B", 'text-anchor="middle" letter-spacing="0"')}
+      <line x1="745" y1="688" x2="745" y2="728" stroke="#D8C8B8" stroke-width="1"/>
 
       <!-- Col 3: Project -->
-      ${text(810, 696, "PROJECT", 9, "#7A6A5E", 'text-anchor="middle" letter-spacing="2" font-weight="600"')}
-      ${text(810, 722, domain, 13.5, "#17202B", 'text-anchor="middle"')}
+      ${text(850, 696, "WEBSITE", 9, "#7A6A5E", 'text-anchor="middle" letter-spacing="2" font-weight="600"')}
+      ${text(850, 722, domain, Math.min(12, 180 / (Array.from(domain).length * 0.75)), "#17202B", 'text-anchor="middle"')}
 
       <!-- Horizontal Divider with Centered Copper Diamond -->
       <line x1="360" y1="780" x2="575" y2="780" stroke="#D8C8B8" stroke-width="0.75"/>
@@ -466,7 +447,7 @@ export function certificateArtwork(
       <line x1="625" y1="780" x2="840" y2="780" stroke="#D8C8B8" stroke-width="0.75"/>
 
       <!-- Footer Callout -->
-      ${text(600, 804, "LEARN SYSTEM DESIGN BY MAKING REAL ENGINEERING DECISIONS.", 9, "#7A6A5E", 'text-anchor="middle" letter-spacing="2.5" font-weight="500"')}
+      ${text(600, 804, "LEARN SYSTEM DESIGN THROUGH PRACTICE.", 9, "#7A6A5E", 'text-anchor="middle" letter-spacing="2.5" font-weight="500"')}
     </g>
 
     <!-- Bottom Right: Real QR Code for Credential Verification (if public siteUrl is configured) -->

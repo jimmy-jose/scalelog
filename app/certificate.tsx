@@ -1,7 +1,7 @@
 import { CampaignScore } from "@/ui/components/CampaignScore";
 import { formatCampaignScore, isValidCampaignScore } from "@/domain/campaignScore";
 import { useRef, useState } from "react";
-import { Linking, Platform, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, StyleSheet, Text, TextInput, View } from "react-native";
 import Svg, { SvgXml } from "react-native-svg";
 import * as Clipboard from "expo-clipboard";
 import { router } from "expo-router";
@@ -9,7 +9,6 @@ import { useGameStore } from "@/store/gameStore";
 import {
   CERTIFICATE_CAMPAIGN_ID,
   CERTIFICATE_NAME_LIMIT,
-  certificateCaption,
   certificateDate,
   getCertificateVerificationUrl,
   isValidCertificateEmail,
@@ -19,6 +18,7 @@ import {
 } from "@/domain/certificates";
 import { certificateArtwork } from "@/lib/certificateArtwork";
 import { exportCertificate, getCertificateSiteUrl } from "@/lib/certificateExport";
+import { certificateShareMessage, shareCertificateMessage, shareCertificateOnLinkedIn } from "@/lib/certificateSharing";
 import { mintCertificateOnServer } from "@/lib/certificateRegistry";
 import { Screen } from "@/ui/components/Screen";
 import { TopBar } from "@/ui/components/TopBar";
@@ -37,6 +37,8 @@ export default function CertificateScreen() {
   const [busyPng, setBusyPng] = useState(false);
   const [busyPdf, setBusyPdf] = useState(false);
   const [copying, setCopying] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [sharingLinkedIn, setSharingLinkedIn] = useState(false);
   const [copyingUrl, setCopyingUrl] = useState(false);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
@@ -73,7 +75,7 @@ export default function CertificateScreen() {
 
   const siteUrl = getCertificateSiteUrl();
   const xml = certificateArtwork(preview, siteUrl);
-  const caption = certificateCaption(certificate, siteUrl);
+  const caption = certificateShareMessage(certificate, siteUrl);
   const verificationUrl = getCertificateVerificationUrl(preview, siteUrl);
 
   const handleMint = async () => {
@@ -83,7 +85,7 @@ export default function CertificateScreen() {
       return;
     }
     if (!validEmail) {
-      setError("Please enter a valid email address before minting your certificate.");
+      setError("Please enter a valid email address to save your certificate details.");
       setFeedbackFor("mint");
       return;
     }
@@ -105,14 +107,14 @@ export default function CertificateScreen() {
       });
 
       if (!result.success) {
-        throw new Error(result.error || "Failed to mint certificate to the ScaleLog registry.");
+        throw new Error(result.error || "Could not save your certificate details. Please try again.");
       }
 
       markMinted(certificate.campaignId, result.mintedAt);
       setShowEdit(false);
-      setStatus("✓ Certificate minted! Your unique credential ID is recorded and verifiable.");
+      setStatus("Certificate details saved. Your certificate is ready to download or share.");
     } catch (err: any) {
-      setError(err?.message || "Minting failed. Please try again.");
+      setError(err?.message || "Could not save your certificate details. Please try again.");
     } finally {
       setMinting(false);
     }
@@ -175,22 +177,45 @@ export default function CertificateScreen() {
     }
   };
 
-  const shareOnLinkedIn = () => {
+  const shareMessage = async () => {
+    if (sharing || sharingLinkedIn) return;
+    setSharing(true);
     setError("");
     setStatus("");
     setFeedbackFor("share");
-    const shareTarget = verificationUrl ?? siteUrl ?? "https://scalelog-fawn.vercel.app";
-    const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareTarget)}`;
-    void Linking.openURL(linkedInShareUrl).catch(() =>
-      setError("LinkedIn could not be opened. Open the LinkedIn app or website to create your post.")
-    );
+    try {
+      const result = await shareCertificateMessage(caption);
+      if (result === "copied") setStatus("Message and links copied. Paste them into your post or message.");
+      if (result === "shared") setStatus("Message passed to your sharing app. Review it before posting.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Sharing could not be opened. Copy the message below instead.");
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const shareOnLinkedIn = async () => {
+    if (sharing || sharingLinkedIn) return;
+    setSharingLinkedIn(true);
+    setError("");
+    setStatus("");
+    setFeedbackFor("share");
+    try {
+      const copied = await shareCertificateOnLinkedIn(caption, verificationUrl ?? siteUrl ?? "https://scalelog-fawn.vercel.app");
+      if (copied) setStatus("Message copied. Paste it into your LinkedIn post and add your certificate image if you like.");
+      else setError("LinkedIn opened, but the message could not be copied. Select and copy it below, then paste it into your post.");
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "LinkedIn could not be opened. Copy the message below instead.");
+    } finally {
+      setSharingLinkedIn(false);
+    }
   };
 
   return (
     <Screen contentStyle={styles.screen}>
-      <TopBar back eyebrow="YOUR FIRST CAMPAIGN" title="You earned this." />
+      <TopBar back eyebrow="CAMPAIGN COMPLETE" title="You earned this." />
       <Text style={styles.intro}>
-        A milestone with your name on it. Your Startup CTO certificate is free to keep, export, and share.
+        You completed Startup CTO. Add your name, download your certificate, and share your result.
       </Text>
 
       {/* Vector Certificate Master Preview */}
@@ -213,15 +238,15 @@ export default function CertificateScreen() {
       <View style={styles.card}>
         <View style={styles.mintHeader}>
           <Text style={styles.sectionTitle}>
-            {certificate.isMinted ? "Verified Milestone" : "Mint your certificate"}
+            {certificate.isMinted ? "Your certificate details" : "Personalize your certificate"}
           </Text>
           {certificate.isMinted ? (
             <View style={styles.badgeMinted}>
-              <Text style={styles.badgeMintedText}>✓ REGISTRY MINTED</Text>
+              <Text style={styles.badgeMintedText}>DETAILS SAVED</Text>
             </View>
           ) : (
             <View style={styles.badgeDraft}>
-              <Text style={styles.badgeDraftText}>PENDING MINT</Text>
+              <Text style={styles.badgeDraftText}>ADD YOUR DETAILS</Text>
             </View>
           )}
         </View>
@@ -243,8 +268,8 @@ export default function CertificateScreen() {
               </View>
             ) : null}
             <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>QR Code Verification</Text>
-              <Text style={styles.metaValueMint}>Active & Verifiable</Text>
+              <Text style={styles.metaLabel}>Verification link</Text>
+              <Text style={styles.metaValueMint}>Open to check status</Text>
             </View>
             <Button variant="secondary" onPress={() => setShowEdit(true)}>
               Update name or email
@@ -253,8 +278,7 @@ export default function CertificateScreen() {
         ) : (
           <View style={styles.form}>
             <Text style={styles.body}>
-              Before minting, link your email and update your name. This records your milestone in the ScaleLog registry,
-              generating a unique verifiable QR code.
+              Add the name you want on your certificate and an email address to associate with its record.
             </Text>
 
             <Text nativeID="certificate-name-label" style={styles.label}>
@@ -281,7 +305,7 @@ export default function CertificateScreen() {
             />
 
             <Text nativeID="certificate-email-label" style={styles.label}>
-              Link your email
+              Email address
             </Text>
             <TextInput
               value={email}
@@ -290,8 +314,8 @@ export default function CertificateScreen() {
                 setError("");
                 setStatus("");
               }}
-              accessibilityLabel="Link your email"
-              accessibilityHint="Enter your email to link with your certificate."
+              accessibilityLabel="Email address"
+              accessibilityHint="Enter the email address to associate with this certificate."
               placeholder="you@example.com"
               placeholderTextColor={colors.muted}
               maxLength={120}
@@ -304,7 +328,7 @@ export default function CertificateScreen() {
               style={[styles.input, emailFocused && styles.inputFocused]}
             />
             <Text style={styles.hint}>
-              Your email is used to verify ownership and will not be displayed on the public certificate artwork.
+              Your email is not shown on the certificate. The verification page displays a masked version.
             </Text>
 
             <Button
@@ -312,7 +336,7 @@ export default function CertificateScreen() {
               disabled={!validName || !validEmail}
               onPress={() => void handleMint()}
             >
-              {certificate.isMinted ? "Save & Re-mint Certificate" : "Mint Certificate & Enable QR Verification"}
+              {certificate.isMinted ? "Save changes" : "Save certificate details"}
             </Button>
 
             {certificate.isMinted ? (
@@ -338,7 +362,7 @@ export default function CertificateScreen() {
       {/* Export Card */}
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Export certificate</Text>
-        <Text style={styles.body}>Download high-resolution vector exports to keep or print.</Text>
+        <Text style={styles.body}>Download a high-resolution PNG to share or a landscape A4 PDF to print.</Text>
         <View style={styles.actions}>
           <Button
             loading={busyPng}
@@ -368,23 +392,25 @@ export default function CertificateScreen() {
             {status}
           </Text>
         ) : null}
-        <Text style={styles.hint}>Landscape A4 · High-resolution vector export · Free, always</Text>
+        <Text style={styles.hint}>PNG: 2400 × 1696 pixels · PDF: landscape A4 · Free to download</Text>
       </View>
 
       {/* Share on LinkedIn Card */}
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Share your milestone on LinkedIn</Text>
+        <Text style={styles.sectionTitle}>Share your achievement</Text>
         <Text style={styles.body}>
-          1. Save your certificate (PNG or PDF).{"\n"}
-          2. Copy the verified credential URL or suggested caption below.{"\n"}
-          3. Share directly to LinkedIn.
+          Share your result with the short message below. It includes a link to try ScaleLog.
+          You can also download your certificate above and attach it to your post.
         </Text>
         <Text selectable style={styles.caption}>
           {caption}
         </Text>
         <View style={styles.actions}>
+          <Button loading={sharing} disabled={sharingLinkedIn} style={styles.action} onPress={() => void shareMessage()}>
+            Share result
+          </Button>
           <Button variant="secondary" loading={copying} style={styles.action} onPress={() => void copyCaption()}>
-            Copy LinkedIn caption
+            Copy message
           </Button>
           {verificationUrl ? (
             <Button
@@ -393,15 +419,17 @@ export default function CertificateScreen() {
               style={styles.action}
               onPress={() => void copyVerificationUrl()}
             >
-              Copy credential verification URL
+              Copy verification link
             </Button>
           ) : null}
           <Button
             variant="secondary"
             style={styles.action}
-            onPress={() => shareOnLinkedIn()}
+            loading={sharingLinkedIn}
+            disabled={sharing}
+            onPress={() => void shareOnLinkedIn()}
           >
-            Share directly on LinkedIn
+            Copy message & open LinkedIn
           </Button>
         </View>
         {feedbackFor === "share" && error ? (
@@ -414,12 +442,12 @@ export default function CertificateScreen() {
             {status}
           </Text>
         ) : null}
-        <Text style={styles.hint}>Make the caption your own before posting.</Text>
+        <Text style={styles.hint}>Sharing includes this message automatically when the receiving app supports it. For LinkedIn, we copy it for you to paste. You can edit it before posting.</Text>
       </View>
 
       <Text style={styles.footnote}>
-        Issued by ScaleLog for completing an interactive learning campaign. This certificate recognizes completion and is
-        not a professional accreditation. It is saved on this device with your progress.
+        Issued by ScaleLog for completing an interactive learning campaign. The score reflects in-game decisions; this is
+        not a professional accreditation. A local copy is saved with your progress.
       </Text>
     </Screen>
   );

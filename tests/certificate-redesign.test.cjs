@@ -121,7 +121,7 @@ test("certificate artwork includes full hierarchy: borders, headers, seals, laur
   assert.match(xml, /SCALE/);
   assert.match(xml, /SYSTEMS/);
   assert.match(xml, /ARCHITECTURE/);
-  assert.match(xml, /TRADEOFFS/);
+  assert.match(xml, /TRADE-OFFS/);
   assert.match(xml, /IN PRACTICE/);
 
   // Main headings
@@ -148,9 +148,9 @@ test("certificate artwork includes full hierarchy: borders, headers, seals, laur
   assert.match(xml, /October 2026/);
   assert.match(xml, /CREDENTIAL ID/);
   assert.match(xml, /SL-SCTO-20261014-JJ2026/);
-  assert.match(xml, /PROJECT/);
+  assert.match(xml, /WEBSITE/);
   assert.match(xml, /scalelog.example/);
-  assert.match(xml, /LEARN SYSTEM DESIGN BY MAKING REAL ENGINEERING DECISIONS/);
+  assert.match(xml, /LEARN SYSTEM DESIGN THROUGH PRACTICE/);
 });
 
 test("long recipient names are scaled gracefully without clipping", () => {

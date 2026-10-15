@@ -145,6 +145,9 @@ test('referral captions use public URLs with campaign attribution and strip priv
   const caption = certificateCaption(certificate, 'https://scalelog.example/private?token=secret#profile');
   assert.match(caption, /https:\/\/scalelog.example\/\?utm_source=linkedin&utm_medium=certificate&utm_campaign=startup_cto/);
   assert.doesNotMatch(caption, /secret|private|Alex|Age/);
+  assert.match(caption, /Learn system design through 36 interactive scenarios. Try ScaleLog:/);
+  assert.ok(caption.split(/\s+/).length < 40, 'The promotional message should stay brief');
+  assert.doesNotMatch(caption, /#SystemDesign|#SoftwareEngineering|#ScaleLog/);
   for (const url of ['http://localhost:8081', 'http://127.0.0.1', 'https://user:secret@example.com', 'javascript:alert(1)', 'broken']) assert.equal(publicSiteUrl(url), undefined);
   assert.doesNotMatch(certificateCaption(certificate, 'http://localhost:8081'), /localhost/);
 });
@@ -272,9 +275,9 @@ test('unscored existing certificates stay unchanged on load and get a new identi
 test('score is included in artwork, captions, registry requests and legacy signature verification', async () => {
   finish();
   const certificate = { ...store.getState().certificates['startup-cto'], score: 8.7, recipientEmail: 'alex@example.com' };
-  assert.match(certificateArtwork(certificate), /CAMPAIGN SCORE  8.7 \/ 10/);
+  assert.match(certificateArtwork(certificate), />8.7 \/ 10<\/text>/);
   assert.match(certificateCaption(certificate), /8.7 \/ 10/);
-  assert.match(certificateArtwork({ ...certificate, score: 0 }), /CAMPAIGN SCORE  0.0 \/ 10/);
+  assert.match(certificateArtwork({ ...certificate, score: 0 }), />0.0 \/ 10<\/text>/);
   assert.doesNotMatch(certificateArtwork({ ...certificate, score: undefined }), /CAMPAIGN SCORE/);
   const signature = createCredentialSignature(certificate);
   assert.equal(verifyCredentialSignature(certificate, signature), true);

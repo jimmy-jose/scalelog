@@ -2,17 +2,18 @@
 
 Completing every Startup CTO scenario without a failed run unlocks a free certificate. Players can find it on the ending screen, campaign map, or Player & company screen. The certificate is retained when the campaign is reset and replayed.
 
-The redesigned certificate screen lets players review and edit their name, export high-resolution PNG (2400 × 1696, 2× scale) and landscape A4 PDF documents, share directly to LinkedIn, and copy their cryptographic credential verification URL. Players can attach the exported asset or share the verification link with Open Graph preview cards.
+The redesigned certificate screen lets players review and edit their name, export high-resolution PNG (2400 × 1696, 2× scale) and landscape A4 PDF documents, share a short message through the device share sheet or open LinkedIn, and copy their cryptographic credential verification URL. Players can attach the exported asset or share the verification link with Open Graph preview cards.
 
-The visual design is an elegant, premium software architecture credential rendered in landscape A4 aspect ratio (1.414:1) with a warm ivory background (`#F8F5EE`), deep charcoal typography (`#17202B`), copper accents (`#A35F35`), double-line decorative border with square corner accents, subtle architectural wireframe illustrations, circular ScaleLog seal with 3D isometric cubes, and copper laurels around the completed scenario count.
+The visual design is an elegant, premium software architecture credential rendered in landscape A4 aspect ratio (1.414:1) with a warm ivory background (`#F8F5EE`), deep charcoal typography (`#17202B`), copper accents (`#A35F35`), double-line decorative border with square corner accents, subtle architectural wireframe illustrations, circular ScaleLog seal with 3D isometric cubes, and mirrored copper laurels framing separate completion and campaign score columns.
 
 ## Export and sharing
 
-1. **Download Certificate (PNG):** High-resolution rasterization (2400 × 1696 at 2× scale) preserving vector precision and typography.
-2. **Download Certificate (PDF):** Pure vector-compliant PDF 1.4 document sized for standard A4 landscape printing (`841.89 × 595.28` pt).
-3. **Share on LinkedIn:** Opens LinkedIn sharing intent linking to the recipient's public credential verification URL.
-4. **Copy Credential URL:** Copies the cryptographically signed verification URL to the clipboard.
-5. **Copy LinkedIn Caption:** Copies suggested caption with attribution to ScaleLog.
+1. **Download Certificate (PNG):** High-resolution rasterization (2400 × 1696 at 2× scale) rendered from the shared SVG artwork.
+2. **Download Certificate (PDF):** PDF 1.4 document containing the high-resolution certificate image sized for standard A4 landscape printing (`841.89 × 595.28` pt).
+3. **Share result:** Sends the completion, optional score, short ScaleLog invitation, and public links to the device share sheet. Browsers without Web Share support copy the message instead. The receiving app controls whether it retains the supplied text.
+4. **Copy message & open LinkedIn:** Automatically copies the message and opens LinkedIn with the credential URL. LinkedIn’s URL sharing flow does not offer a documented caption parameter; the player pastes the copied message before posting.
+5. **Copy verification link:** Copies the credential lookup URL to the clipboard.
+6. **Copy message:** Copies the same brief message, without extra hashtags. File downloads remain separate so the player can attach their certificate if desired.
 
 ## Credential Verification, Email Linking & Verifiable QR Code
 

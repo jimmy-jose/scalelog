@@ -92,8 +92,8 @@ export function certificateReferralUrl(siteUrl?: string): string | undefined {
 }
 
 export function certificateCaption(certificate: CampaignCertificate, siteUrl?: string): string {
-  const referral = certificateReferralUrl(siteUrl);
-  return `I completed ${certificate.campaignTitle} on ScaleLog!${isValidCampaignScore(certificate.score) ? ` My campaign score: ${formatCampaignScore(certificate.score)}.` : ""}\n\n${certificate.levelCount} system design scenarios: making architecture decisions, balancing cost and reliability, and learning from the consequences.\n\nWant to try the challenge?${referral ? `\n${referral}` : " Find ScaleLog and play your first campaign."}\n\n#SystemDesign #SoftwareEngineering #ScaleLog`;
+  const referral = certificateReferralUrl(siteUrl) ?? certificateReferralUrl("https://scalelog-fawn.vercel.app");
+  return `I completed ${certificate.campaignTitle} on ScaleLog!${isValidCampaignScore(certificate.score) ? ` My score: ${formatCampaignScore(certificate.score)}.` : ""}\n\nLearn system design through ${certificate.levelCount} interactive scenarios. Try ScaleLog: ${referral}`;
 }
 
 // Deterministic SHA-256 for secure client & test credential signature without native dependencies.

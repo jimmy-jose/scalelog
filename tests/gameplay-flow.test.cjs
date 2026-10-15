@@ -17,6 +17,11 @@ let storeModule;
 let controls = [];
 let decks = [];
 let navigation = [];
+let clipboardMessages = [];
+let openedUrls = [];
+let clipboardAvailable = true;
+let shareAction = 'sharedAction';
+let nativeSharePayloads = [];
 
 function host(tag = 'div') {
   return ({ children }) => React.createElement(tag, null, children);
@@ -31,7 +36,8 @@ const View = host();
 const Text = host('span');
 const native = {
   View, Text, Pressable, Image: () => null, ImageBackground: View,
-  Platform: { OS: 'web' }, Linking: { openURL: async () => {} },
+  Platform: { OS: 'web' }, Linking: { openURL: async (url) => { openedUrls.push(url); } },
+  Share: { dismissedAction: 'dismissedAction', share: async (payload) => { nativeSharePayloads.push(payload); return { action: shareAction }; } },
   TextInput: host('input'), ActivityIndicator: () => React.createElement('span', null, 'Loading'),
   StyleSheet: { create: (styles) => styles, absoluteFill: {} },
   useWindowDimensions: () => ({ width: 1000, height: 800 }),
@@ -68,7 +74,7 @@ Module._load = function (id, parent, main) {
   if (id === 'expo-status-bar') return { StatusBar: () => null };
   if (id === 'expo-linear-gradient') return { LinearGradient: View };
   if (id === 'react-native-svg') return { __esModule: true, default: View, SvgXml: () => null, Circle: () => null, Path: () => null, Rect: () => null };
-  if (id === 'expo-clipboard') return { setStringAsync: async () => true };
+  if (id === 'expo-clipboard') return { setStringAsync: async (message) => { clipboardMessages.push(message); return clipboardAvailable; } };
   if (id === '@/lib/certificateExport') return { exportCertificate: async () => {}, getCertificateSiteUrl: () => 'https://scalelog.example' };
   if (id === '@/lib/certificateRegistry') return { mintCertificateOnServer: async () => ({ success: true }), fetchVerifiedCertificate: async () => ({ verified: true }) };
   if (id === '@/game/feedback/GameFeedbackManager') return { gameFeedback: { trigger: () => {}, configure: () => {}, connectAudioLifecycle: () => () => {} } };
@@ -129,6 +135,12 @@ test.beforeEach(() => {
   params = {};
   saveStatus = 'ready';
   navigation = [];
+  clipboardMessages = [];
+  openedUrls = [];
+  clipboardAvailable = true;
+  shareAction = 'sharedAction';
+  nativeSharePayloads = [];
+  native.Platform.OS = 'web';
 });
 
 test('certificate route is locked before completion and reachable from the ending, map and profile afterward', () => {
@@ -144,8 +156,8 @@ test('certificate route is locked before completion and reachable from the endin
   }
   const markup = render(Certificate);
   assert.match(markup, /Download certificate · PNG/);
-  assert.match(markup, /36 system design scenarios/);
-  assert.match(markup, /Copy LinkedIn caption/);
+  assert.match(markup, /36 interactive scenarios/);
+  assert.match(markup, /Copy message/);
   assert.match(markup, /utm_source=linkedin/);
   assert.equal(button('Download certificate').disabled, false);
   store.getState().personalizeCertificate('startup-cto', '');
@@ -264,4 +276,72 @@ test('completion and certificate screens distinguish this run from the saved cer
   assert.match(render(Certificate), /Certificate campaign score.*10.0 \/ 10/);
   store.setState({ certificates: { 'startup-cto': { ...earned, score: undefined } } });
   assert.match(render(Certificate), /Not scored/);
+});
+
+
+function mockNavigator(t, value) {
+  const descriptor = Object.getOwnPropertyDescriptor(global, 'navigator');
+  Object.defineProperty(global, 'navigator', { configurable: true, value });
+  t.after(() => {
+    if (descriptor) Object.defineProperty(global, 'navigator', descriptor);
+    else delete global.navigator;
+  });
+}
+
+test('sharing from the certificate includes the short app invitation, score and certificate link automatically', async (t) => {
+  const payloads = [];
+  mockNavigator(t, { share: async (payload) => { payloads.push(payload); } });
+  allLevels.forEach((_level, index) => chooseRecommended(index));
+  render(Certificate);
+  await button('Share result').onPress();
+  assert.equal(payloads.length, 1);
+  assert.match(payloads[0].text, /I completed Startup CTO on ScaleLog! My score: 10.0 \/ 10\./);
+  assert.match(payloads[0].text, /Try ScaleLog: https:\/\/scalelog.example/);
+  assert.match(payloads[0].text, /My certificate: https:\/\/scalelog.example\/verify\?id=SL-SCTO-/);
+  assert.doesNotMatch(payloads[0].text, /#|recipientEmail|Alex/);
+  assert.equal(clipboardMessages.length, 0);
+});
+
+test('LinkedIn action automatically copies the message and opens only the supported URL share flow', async () => {
+  allLevels.forEach((_level, index) => chooseRecommended(index));
+  render(Certificate);
+  await button('Copy message & open LinkedIn').onPress();
+  assert.equal(clipboardMessages.length, 1);
+  assert.match(clipboardMessages[0], /Try ScaleLog:/);
+  const url = new URL(openedUrls[0]);
+  assert.equal(url.origin, 'https://www.linkedin.com');
+  assert.equal(url.pathname, '/sharing/share-offsite/');
+  assert.deepEqual([...url.searchParams.keys()], ['url']);
+  assert.match(url.searchParams.get('url'), /scalelog.example\/verify\?id=/);
+});
+
+test('browser sharing falls back to copying but cancellation leaves the clipboard untouched', async (t) => {
+  const { shareCertificateMessage } = require('../src/lib/certificateSharing');
+  const browser = {};
+  mockNavigator(t, browser);
+  assert.equal(await shareCertificateMessage('Short invitation'), 'copied');
+  assert.deepEqual(clipboardMessages, ['Short invitation']);
+  browser.share = async () => { throw Object.assign(new Error('Cancelled'), { name: 'AbortError' }); };
+  assert.equal(await shareCertificateMessage('Cancelled invitation'), 'cancelled');
+  assert.equal(clipboardMessages.length, 1);
+  browser.share = async () => { throw new Error('Permission denied'); };
+  assert.equal(await shareCertificateMessage('Fallback invitation'), 'copied');
+  clipboardAvailable = false;
+  await assert.rejects(shareCertificateMessage('Unavailable'), /Select and copy the message/);
+});
+
+test('native sharing includes the message and handles dismissed shares', async () => {
+  const { shareCertificateMessage } = require('../src/lib/certificateSharing');
+  native.Platform.OS = 'ios';
+  assert.equal(await shareCertificateMessage('My result. Try ScaleLog!'), 'shared');
+  assert.equal(nativeSharePayloads[0].message, 'My result. Try ScaleLog!');
+  shareAction = 'dismissedAction';
+  assert.equal(await shareCertificateMessage('Dismissed'), 'cancelled');
+});
+
+test('LinkedIn still opens when copying is denied and reports that the caption needs copying manually', async () => {
+  const { shareCertificateOnLinkedIn } = require('../src/lib/certificateSharing');
+  clipboardAvailable = false;
+  assert.equal(await shareCertificateOnLinkedIn('Message', 'https://scalelog.example/verify?id=SAMPLE'), false);
+  assert.equal(openedUrls.length, 1);
 });

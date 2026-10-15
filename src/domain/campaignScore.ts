@@ -1,7 +1,7 @@
 import { getChoiceRewards } from "./simulation";
 import type { Campaign, Choice, Level, OutcomeSnapshot } from "./types";
 
-export const CAMPAIGN_SCORE_EXPLANATION = "Each scenario counts equally. Your decision earns a share of 10 points based on its XP reward compared with the highest XP response for that incident. Risky and overkill choices earn 0. The average is rounded to one decimal place.";
+export const CAMPAIGN_SCORE_EXPLANATION = "Each scenario counts equally. Decisions earn up to 10 points in proportion to the highest XP reward for that scenario. Risky and overkill choices earn 0. Your final score is the average, rounded to one decimal place.";
 
 export function isValidCampaignScore(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 10;
